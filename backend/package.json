@@ -1,0 +1,31 @@
+{
+  "name": "system-design-platform-backend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Node.js API for the System Design Platform, backed by Google ADK and Gemini.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.12.7"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "adk:web": "npx @google/adk-devtools web src/agent.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "@google/adk": "^0.2.0",
+    "@google/genai": "latest",
+    "dotenv": "^16.6.1",
+    "fastify": "^5.6.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@google/adk-devtools": "^0.2.0",
+    "@types/node": "^24.5.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
