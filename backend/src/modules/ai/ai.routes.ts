@@ -1,4 +1,9 @@
-import type { FastifyPluginAsync } from "fastify";
+import {
+  Router,
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import {
   generateHintsRequestSchema,
   validateDesignRequestSchema,
@@ -11,30 +16,48 @@ type AiRoutesOptions = {
   llmProvider: LlmProvider;
 };
 
-export const aiRoutes: FastifyPluginAsync<AiRoutesOptions> = async (
-  app,
-  { llmProvider },
-) => {
+const createAsyncHandler =
+  (
+    handler: (
+      request: Request,
+      response: Response,
+      next: NextFunction,
+    ) => Promise<void>,
+  ) =>
+  (request: Request, response: Response, next: NextFunction): void => {
+    void handler(request, response, next).catch(next);
+  };
+
+export const createAiRouter = ({ llmProvider }: AiRoutesOptions): Router => {
+  const router = Router();
   const validationWorkflow = new FeedbackValidationWorkflow(llmProvider);
   const hintWorkflow = new HintGenerationWorkflow(llmProvider);
 
-  app.post("/validate-design", async (request) => {
-    const payload = validateDesignRequestSchema.parse(request.body);
-    const data = await validationWorkflow.run(payload);
+  router.post(
+    "/validate-design",
+    createAsyncHandler(async (request, response) => {
+      const payload = validateDesignRequestSchema.parse(request.body);
+      const data = await validationWorkflow.run(payload);
 
-    return {
-      data,
-      meta: llmProvider.getMetadata(),
-    };
-  });
+      response.json({
+        data,
+        meta: llmProvider.getMetadata(),
+      });
+    }),
+  );
 
-  app.post("/generate-hints", async (request) => {
-    const payload = generateHintsRequestSchema.parse(request.body);
-    const data = await hintWorkflow.run(payload);
+  router.post(
+    "/generate-hints",
+    createAsyncHandler(async (request, response) => {
+      const payload = generateHintsRequestSchema.parse(request.body);
+      const data = await hintWorkflow.run(payload);
 
-    return {
-      data,
-      meta: llmProvider.getMetadata(),
-    };
-  });
+      response.json({
+        data,
+        meta: llmProvider.getMetadata(),
+      });
+    }),
+  );
+
+  return router;
 };

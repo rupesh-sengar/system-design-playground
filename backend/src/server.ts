@@ -4,11 +4,17 @@ import { getEnv } from "./config/env.js";
 
 const start = async (): Promise<void> => {
   const config = getEnv();
-  const app = await buildApp(config);
+  const app = buildApp(config);
 
-  await app.listen({
-    host: config.HOST,
-    port: config.PORT,
+  await new Promise<void>((resolve, reject) => {
+    const server = app.listen(config.PORT, config.HOST, () => {
+      console.info(
+        `API server listening on http://${config.HOST}:${config.PORT}`,
+      );
+      resolve();
+    });
+
+    server.on("error", reject);
   });
 };
 

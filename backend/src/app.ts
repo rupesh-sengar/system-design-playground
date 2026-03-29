@@ -1,32 +1,41 @@
-import Fastify, { type FastifyInstance } from "fastify";
-import cors from "@fastify/cors";
+import cors from "cors";
+import express, { type Express, type Request, type Response } from "express";
 import type { AppConfig } from "./config/env.js";
-import { aiRoutes } from "./modules/ai/ai.routes.js";
+import { createAiRouter } from "./modules/ai/ai.routes.js";
 import { createLlmProvider } from "./providers/llm/create-llm-provider.js";
+import { createAuth0JwtMiddleware } from "./shared/http/create-auth0-jwt-middleware.js";
 import { registerErrorHandler } from "./shared/http/register-error-handler.js";
 
-export const buildApp = async (config: AppConfig): Promise<FastifyInstance> => {
-  const app = Fastify({
-    logger: {
-      level: config.LOG_LEVEL,
-    },
-  });
+export const buildApp = (config: AppConfig): Express => {
+  const app = express();
 
-  await app.register(cors, {
-    origin: config.corsOrigins,
-  });
+  app.use(
+    cors({
+      origin: config.corsOrigins,
+    }),
+  );
+  app.use(express.json({ limit: "1mb" }));
 
   const llmProvider = createLlmProvider(config);
 
-  app.get("/healthz", async () => ({
-    provider: llmProvider.getMetadata(),
-    status: "ok",
-  }));
-
-  await app.register(aiRoutes, {
-    prefix: "/v1/ai",
-    llmProvider,
+  app.get("/healthz", (_request: Request, response: Response) => {
+    response.json({
+      auth: {
+        audience: config.auth0.audience,
+        domain: config.auth0.domain,
+        enabled: config.auth0.isEnabled,
+        requiredScopes: config.auth0.requiredScopes,
+      },
+      provider: llmProvider.getMetadata(),
+      status: "ok",
+    });
   });
+
+  app.use(
+    "/v1/ai",
+    ...createAuth0JwtMiddleware(config),
+    createAiRouter({ llmProvider }),
+  );
 
   registerErrorHandler(app);
 

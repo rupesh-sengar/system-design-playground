@@ -1,8 +1,40 @@
-const DEFAULT_API_BASE_URL = "http://localhost:8080";
+const DEFAULT_API_BASE_URL =
+  "https://system-design-playground-oky8.onrender.com";
 
 type ErrorPayload = {
   error?: string;
 };
+
+interface JsonRequestOptions extends RequestInit {
+  requiresAuth?: boolean;
+}
+
+type AccessTokenResolver = () => Promise<string | null>;
+
+export type ApiErrorKind =
+  | "auth"
+  | "forbidden"
+  | "network"
+  | "rate-limit"
+  | "request"
+  | "service"
+  | "unknown";
+
+export interface ApiErrorDetails {
+  kind: ApiErrorKind;
+  message: string;
+  retryable: boolean;
+  statusCode: number | null;
+}
+
+let accessTokenResolver: AccessTokenResolver | null = null;
+
+export class ApiAuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ApiAuthError";
+  }
+}
 
 export class ApiError extends Error {
   constructor(
@@ -13,6 +45,12 @@ export class ApiError extends Error {
     this.name = "ApiError";
   }
 }
+
+export const setApiAccessTokenResolver = (
+  resolver: AccessTokenResolver | null,
+): void => {
+  accessTokenResolver = resolver;
+};
 
 export const getApiBaseUrl = (): string => {
   const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
@@ -28,29 +66,131 @@ export const getApiErrorMessage = (
   error: unknown,
   fallbackMessage: string,
 ): string => {
+  return getApiErrorDetails(error, fallbackMessage).message;
+};
+
+export const getApiErrorDetails = (
+  error: unknown,
+  fallbackMessage: string,
+): ApiErrorDetails => {
   if (error instanceof ApiError) {
-    return error.message;
+    if (error.statusCode === 401) {
+      return {
+        kind: "auth",
+        message: error.message || "Your session expired. Sign in again.",
+        retryable: false,
+        statusCode: error.statusCode,
+      };
+    }
+
+    if (error.statusCode === 403) {
+      return {
+        kind: "forbidden",
+        message:
+          error.message ||
+          "This account is not allowed to use the AI workspace.",
+        retryable: false,
+        statusCode: error.statusCode,
+      };
+    }
+
+    if (error.statusCode === 429) {
+      return {
+        kind: "rate-limit",
+        message:
+          error.message ||
+          "Too many AI requests were sent. Wait a moment and retry.",
+        retryable: true,
+        statusCode: error.statusCode,
+      };
+    }
+
+    if (error.statusCode >= 500) {
+      return {
+        kind: "service",
+        message:
+          error.message ||
+          "The AI service is temporarily unavailable. Retry shortly.",
+        retryable: true,
+        statusCode: error.statusCode,
+      };
+    }
+
+    return {
+      kind: "request",
+      message: error.message || fallbackMessage,
+      retryable: true,
+      statusCode: error.statusCode,
+    };
+  }
+
+  if (error instanceof ApiAuthError) {
+    return {
+      kind: "auth",
+      message: error.message,
+      retryable: false,
+      statusCode: null,
+    };
+  }
+
+  if (error instanceof TypeError) {
+    return {
+      kind: "network",
+      message:
+        "Unable to reach the AI service. Check your connection and retry.",
+      retryable: true,
+      statusCode: null,
+    };
   }
 
   if (error instanceof Error) {
-    return error.message;
+    return {
+      kind: "unknown",
+      message: error.message || fallbackMessage,
+      retryable: true,
+      statusCode: null,
+    };
   }
 
-  return fallbackMessage;
+  return {
+    kind: "unknown",
+    message: fallbackMessage,
+    retryable: true,
+    statusCode: null,
+  };
 };
 
 export const requestJson = async <T>(
   path: string,
-  init: RequestInit = {},
+  init: JsonRequestOptions = {},
 ): Promise<T> => {
-  const headers = new Headers(init.headers);
+  const { requiresAuth = false, ...requestInit } = init;
+  const headers = new Headers(requestInit.headers);
 
-  if (init.body && !headers.has("Content-Type")) {
+  if (requestInit.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
+  if (requiresAuth) {
+    if (!accessTokenResolver) {
+      throw new ApiAuthError(
+        "Authentication is not configured in the frontend.",
+      );
+    }
+
+    const accessToken = await accessTokenResolver();
+
+    if (!accessToken) {
+      throw new ApiAuthError(
+        "Unable to acquire an access token for this request.",
+      );
+    }
+
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    ...init,
+    ...requestInit,
     headers,
   });
 
@@ -62,8 +202,7 @@ export const requestJson = async <T>(
     const errorPayload = payload as ErrorPayload | null;
 
     throw new ApiError(
-      errorPayload?.error ??
-        `Request failed with status ${response.status}.`,
+      errorPayload?.error ?? `Request failed with status ${response.status}.`,
       response.status,
     );
   }

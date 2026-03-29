@@ -1,6 +1,11 @@
-import type { PracticePlaygroundViewModel } from "../model/types";
+import { useAppAuth } from "@/features/auth/app-auth";
+import type {
+  PracticeAiRequestError,
+  PracticePlaygroundViewModel,
+} from "../model/types";
 
 interface PracticeAiReviewPanelProps {
+  actionMode?: "full" | "clear-only" | "none";
   activeStageTitle: string;
   assistant: PracticePlaygroundViewModel["assistant"];
 }
@@ -18,13 +23,7 @@ const formatTimestamp = (value: string): string => {
   });
 };
 
-const FeedbackList = ({
-  items,
-  title,
-}: {
-  items: string[];
-  title: string;
-}) => {
+const FeedbackList = ({ items, title }: { items: string[]; title: string }) => {
   if (items.length === 0) {
     return null;
   }
@@ -41,10 +40,108 @@ const FeedbackList = ({
   );
 };
 
+interface AiRequestNoticeProps {
+  canReload: boolean;
+  canRetry: boolean;
+  error: PracticeAiRequestError | null;
+  hasResult: boolean;
+  loadingLabel: string;
+  onReload: () => Promise<void>;
+  onRetry: () => Promise<void>;
+  requestLabel: string;
+  status: "idle" | "loading" | "success" | "error";
+}
+
+const AiRequestNotice = ({
+  canReload,
+  canRetry,
+  error,
+  hasResult,
+  loadingLabel,
+  onReload,
+  onRetry,
+  requestLabel,
+  status,
+}: AiRequestNoticeProps) => {
+  if (status === "loading") {
+    return (
+      <div
+        aria-live="polite"
+        className="playground-ai__banner playground-ai__banner--info playground-ai__banner--loading"
+      >
+        <span aria-hidden="true" className="playground-ai__loader" />
+        <div className="playground-ai__banner-copy">
+          <strong>{loadingLabel}</strong>
+          <p>
+            {hasResult
+              ? "Keeping the previous result visible until the latest response is ready."
+              : "This may take a few moments depending on provider latency."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!error) {
+    return null;
+  }
+
+  const bannerVariant =
+    error.kind === "rate-limit"
+      ? "playground-ai__banner--warning"
+      : "playground-ai__banner--error";
+
+  return (
+    <div className={`playground-ai__banner ${bannerVariant}`}>
+      <div className="playground-ai__banner-copy">
+        <strong>{requestLabel} request failed</strong>
+        <p>
+          {hasResult
+            ? `Showing the previous result. ${error.message}`
+            : error.message}
+        </p>
+      </div>
+
+      <div className="playground-ai__banner-actions">
+        {error.retryable ? (
+          <button
+            className="secondary-action playground-ai__inline-action"
+            type="button"
+            disabled={!canRetry}
+            onClick={() => void onRetry()}
+          >
+            Retry
+          </button>
+        ) : null}
+
+        {hasResult ? (
+          <button
+            className="secondary-action playground-ai__inline-action"
+            type="button"
+            disabled={!canReload}
+            onClick={() => void onReload()}
+          >
+            Reload
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
 export const PracticeAiReviewPanel = ({
+  actionMode = "full",
   activeStageTitle,
   assistant,
 }: PracticeAiReviewPanelProps) => {
+  const {
+    authError,
+    canRequestApiToken,
+    isAuthenticated,
+    isConfigured,
+    isLoading,
+    login,
+  } = useAppAuth();
   const {
     actions,
     activeStageState,
@@ -58,6 +155,36 @@ export const PracticeAiReviewPanel = ({
 
   const hintResult = activeStageState.hintResult;
   const validationResult = activeStageState.validationResult;
+  const authReady =
+    isConfigured && canRequestApiToken && isAuthenticated && !isLoading;
+  const showSignInCta =
+    actionMode === "full" &&
+    isConfigured &&
+    canRequestApiToken &&
+    !isAuthenticated &&
+    !isLoading;
+  const showRequestActions = actionMode === "full" && !showSignInCta;
+  const showRecoveryActions = actionMode !== "none";
+  const showClearAction =
+    hasAnyFeedback && (actionMode === "full" || actionMode === "clear-only");
+  const helperText = !isConfigured
+    ? "Configure Auth0 in the frontend before using protected AI routes."
+    : !canRequestApiToken
+      ? "Add an Auth0 audience so the app can request API tokens automatically."
+      : !isAuthenticated
+        ? "Login with Auth0 to enable AI feedback requests."
+        : isLoading
+          ? "Authentication is still initializing."
+          : canValidateDraft
+            ? "Ready for structured review"
+            : "Write at least 20 characters to validate";
+
+  const showEmptyState =
+    !hasAnyFeedback &&
+    activeStageState.hintStatus !== "loading" &&
+    activeStageState.validationStatus !== "loading" &&
+    !activeStageState.hintError &&
+    !activeStageState.validationError;
 
   return (
     <section className="playground-ai">
@@ -72,27 +199,40 @@ export const PracticeAiReviewPanel = ({
         </div>
 
         <div className="playground-ai__actions">
-          <button
-            className="secondary-action"
-            type="button"
-            disabled={!canRequestHints}
-            onClick={() => void actions.requestHints()}
-          >
-            {activeStageState.hintStatus === "loading"
-              ? "Generating hints..."
-              : "Get hints"}
-          </button>
-          <button
-            className="primary-action"
-            type="button"
-            disabled={!canValidateDraft}
-            onClick={() => void actions.validateDraft()}
-          >
-            {activeStageState.validationStatus === "loading"
-              ? "Validating..."
-              : "Validate draft"}
-          </button>
-          {hasAnyFeedback ? (
+          {showSignInCta ? (
+            <button
+              className="primary-action"
+              type="button"
+              onClick={() => void login()}
+            >
+              Sign in to use AI
+            </button>
+          ) : showRequestActions ? (
+            <>
+              <button
+                className="secondary-action"
+                type="button"
+                disabled={!authReady || !canRequestHints}
+                onClick={() => void actions.requestHints()}
+              >
+                {activeStageState.hintStatus === "loading"
+                  ? "Generating hints..."
+                  : "Get hints"}
+              </button>
+              <button
+                className="primary-action"
+                type="button"
+                disabled={!authReady || !canValidateDraft}
+                onClick={() => void actions.validateDraft()}
+              >
+                {activeStageState.validationStatus === "loading"
+                  ? "Validating..."
+                  : "Validate draft"}
+              </button>
+            </>
+          ) : null}
+
+          {showClearAction ? (
             <button
               className="secondary-action"
               type="button"
@@ -106,30 +246,43 @@ export const PracticeAiReviewPanel = ({
 
       <div className="playground-ai__meta">
         <span>{draftWordCount} words in current draft</span>
-        <span>
-          {canValidateDraft
-            ? "Ready for structured review"
-            : "Write at least 20 characters to validate"}
-        </span>
+        <span>{helperText}</span>
       </div>
 
-      {activeStageState.hintError ? (
+      {authError ? (
         <div className="playground-ai__banner playground-ai__banner--error">
-          {activeStageState.hintError}
+          <div className="playground-ai__banner-copy">
+            <strong>Authentication error</strong>
+            <p>{authError}</p>
+          </div>
         </div>
       ) : null}
 
-      {activeStageState.validationError ? (
-        <div className="playground-ai__banner playground-ai__banner--error">
-          {activeStageState.validationError}
-        </div>
-      ) : null}
+      <AiRequestNotice
+        canReload={showRecoveryActions && authReady && canRequestHints}
+        canRetry={showRecoveryActions && authReady && canRequestHints}
+        error={activeStageState.hintError}
+        hasResult={hintResult !== null}
+        loadingLabel="Generating hints"
+        onReload={actions.reloadHints}
+        onRetry={actions.retryHints}
+        requestLabel="Hints"
+        status={activeStageState.hintStatus}
+      />
 
-      {!hasAnyFeedback &&
-      activeStageState.hintStatus !== "loading" &&
-      activeStageState.validationStatus !== "loading" &&
-      !activeStageState.hintError &&
-      !activeStageState.validationError ? (
+      <AiRequestNotice
+        canReload={showRecoveryActions && authReady && canValidateDraft}
+        canRetry={showRecoveryActions && authReady && canValidateDraft}
+        error={activeStageState.validationError}
+        hasResult={validationResult !== null}
+        loadingLabel="Validating the current draft"
+        onReload={actions.reloadValidation}
+        onRetry={actions.retryValidation}
+        requestLabel="Validation"
+        status={activeStageState.validationStatus}
+      />
+
+      {showEmptyState ? (
         <p className="playground-ai__empty">
           No AI feedback yet. Use the current stage notes and request hints or
           validation when you want a review pass.
@@ -156,15 +309,24 @@ export const PracticeAiReviewPanel = ({
                     Draft changed since request
                   </span>
                 ) : null}
+                {showRecoveryActions ? (
+                  <button
+                    className="secondary-action playground-ai__inline-action"
+                    type="button"
+                    disabled={!authReady || !canRequestHints}
+                    onClick={() => void actions.reloadHints()}
+                  >
+                    {activeStageState.hintStatus === "loading"
+                      ? "Reloading..."
+                      : "Reload"}
+                  </button>
+                ) : null}
               </div>
             </div>
 
             <div className="playground-ai__grid">
               <FeedbackList items={hintResult.hints} title="Next hints" />
-              <FeedbackList
-                items={hintResult.focusAreas}
-                title="Focus areas"
-              />
+              <FeedbackList items={hintResult.focusAreas} title="Focus areas" />
             </div>
 
             {hintResult.caution ? (
@@ -198,10 +360,25 @@ export const PracticeAiReviewPanel = ({
                 <span className="playground-ai__chip">
                   {validationResult.meta.model}
                 </span>
+                <span className="playground-ai__chip">
+                  {formatTimestamp(validationResult.receivedAt)}
+                </span>
                 {isValidationStale ? (
                   <span className="playground-ai__chip playground-ai__chip--stale">
                     Draft changed since request
                   </span>
+                ) : null}
+                {showRecoveryActions ? (
+                  <button
+                    className="secondary-action playground-ai__inline-action"
+                    type="button"
+                    disabled={!authReady || !canValidateDraft}
+                    onClick={() => void actions.reloadValidation()}
+                  >
+                    {activeStageState.validationStatus === "loading"
+                      ? "Reloading..."
+                      : "Reload"}
+                  </button>
                 ) : null}
               </div>
             </div>

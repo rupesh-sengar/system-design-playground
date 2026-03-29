@@ -21,11 +21,12 @@ interface ProblemCatalogPanelProps {
   pagination: ProblemCatalogPagination;
   paginatedProblems: Problem[];
   practicedIds: Set<string>;
-  selectedProblemId: string | null;
   onCategoryChange: (category: string) => void;
   onClearFilters: () => void;
   onDifficultyChange: (difficulty: DifficultyFilter) => void;
   onPageChange: (page: number) => void;
+  onPickRandomProblem: () => void;
+  onResetProgress: () => void;
   onSearchChange: (search: string) => void;
   onSelectProblem: (problemId: string) => void;
   onSortChange: (sortBy: SortMode) => void;
@@ -83,11 +84,12 @@ export const ProblemCatalogPanel = ({
   pagination,
   paginatedProblems,
   practicedIds,
-  selectedProblemId,
   onCategoryChange,
   onClearFilters,
   onDifficultyChange,
   onPageChange,
+  onPickRandomProblem,
+  onResetProgress,
   onSearchChange,
   onSelectProblem,
   onSortChange,
@@ -110,79 +112,121 @@ export const ProblemCatalogPanel = ({
   return (
     <section className="catalog panel">
       <div className="catalog-head">
-        <div>
+        <div className="catalog-head__copy">
           <p className="section-label">Problem Library</p>
           <h2>Interview prompts by scale, domain, and system depth</h2>
+          <p className="catalog-subtitle">
+            Browse prompts, filter quickly, and jump straight into practice.
+          </p>
         </div>
 
-        <div className="catalog-meta">
-          <span>{metrics.visibleCount} visible</span>
-          <span>{metrics.visibleCategoryCount} categories in view</span>
-          <span>{metrics.bookmarkedCount} bookmarked</span>
+        <div className="catalog-head__side">
+          <div className="catalog-actions">
+            <button
+              className="primary-action"
+              type="button"
+              onClick={onPickRandomProblem}
+            >
+              Random Drill
+            </button>
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={onResetProgress}
+            >
+              Reset Progress
+            </button>
+          </div>
+
+          <div className="catalog-meta">
+            <span>{metrics.visibleCount} visible</span>
+            <span>{metrics.practicedCount} practiced</span>
+            <span>{metrics.bookmarkedCount} bookmarked</span>
+          </div>
         </div>
       </div>
 
-      <div className="filter-grid">
-        <label className="field">
-          <span>Search</span>
-          <input
-            type="search"
-            placeholder="Search by title, category, or focus area"
-            autoComplete="off"
-            value={filters.search}
-            onChange={handleSearchChange}
-          />
-        </label>
+      <section className="catalog-filters" aria-label="Problem filters">
+        <div className="catalog-filters__top">
+          <div className="filter-grid">
+            <label className="field">
+              <span>Search</span>
+              <input
+                type="search"
+                placeholder="Search by title, category, or focus area"
+                autoComplete="off"
+                value={filters.search}
+                onChange={handleSearchChange}
+              />
+            </label>
 
-        <label className="field">
-          <span>Category</span>
-          <select value={filters.category} onChange={handleCategoryChange}>
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </label>
+            <label className="field">
+              <span>Category</span>
+              <select value={filters.category} onChange={handleCategoryChange}>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <label className="field">
-          <span>Sort</span>
-          <select value={filters.sortBy} onChange={handleSortChange}>
-            <option value="recommended">Recommended</option>
-            <option value="difficulty">Difficulty</option>
-            <option value="title">Title</option>
-            <option value="category">Category</option>
-          </select>
-        </label>
-      </div>
+            <label className="field">
+              <span>Sort</span>
+              <select value={filters.sortBy} onChange={handleSortChange}>
+                <option value="recommended">Recommended</option>
+                <option value="difficulty">Difficulty</option>
+                <option value="title">Title</option>
+                <option value="category">Category</option>
+              </select>
+            </label>
+          </div>
 
-      <div className="pill-row">
-        {difficultyLevels.map((level) => (
-          <FilterPill
-            key={level}
-            active={filters.difficulty === level}
-            count={
-              level === "All"
-                ? metrics.baseFilteredCount
-                : difficultyCounts[level]
-            }
-            label={level}
-            onClick={() => onDifficultyChange(level)}
-          />
-        ))}
-      </div>
+          <button
+            className="secondary-action catalog-filters__clear"
+            type="button"
+            onClick={onClearFilters}
+          >
+            Clear Filters
+          </button>
+        </div>
 
-      <div className="pill-row pill-row--muted">
-        {statusOptions.map((status) => (
-          <FilterPill
-            key={status.id}
-            active={filters.status === status.id}
-            label={status.label}
-            tone="muted"
-            onClick={() => onStatusChange(status.id)}
-          />
-        ))}
-      </div>
+        <div className="filter-groups">
+          <div className="filter-group">
+            <span className="filter-group__label">Difficulty</span>
+            <div className="pill-row">
+              {difficultyLevels.map((level) => (
+                <FilterPill
+                  key={level}
+                  active={filters.difficulty === level}
+                  count={
+                    level === "All"
+                      ? metrics.baseFilteredCount
+                      : difficultyCounts[level]
+                  }
+                  label={level}
+                  onClick={() => onDifficultyChange(level)}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="filter-group">
+            <span className="filter-group__label">Status</span>
+            <div className="pill-row pill-row--muted">
+              {statusOptions.map((status) => (
+                <FilterPill
+                  key={status.id}
+                  active={filters.status === status.id}
+                  label={status.label}
+                  tone="muted"
+                  onClick={() => onStatusChange(status.id)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="problem-list">
         {paginatedProblems.length > 0 ? (
@@ -191,7 +235,6 @@ export const ProblemCatalogPanel = ({
               key={problem.id}
               isBookmarked={bookmarkedIds.has(problem.id)}
               isPracticed={practicedIds.has(problem.id)}
-              isSelected={selectedProblemId === problem.id}
               problem={problem}
               onSelect={() => onSelectProblem(problem.id)}
             />

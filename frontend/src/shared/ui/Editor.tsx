@@ -76,7 +76,7 @@ const Editor = ({ placeholder, value, onChange }: EditorProps) => {
       statusbar: true,
       toolbarAdaptive: false,
       toolbarSticky: false,
-      minHeight: 360,
+      minHeight: 0,
       enter: "p",
       events: {
         change: () => {

@@ -28,11 +28,28 @@ export type PracticeStageDraftMap = Record<PracticeStageId, PracticeStageDraft>;
 
 export type AsyncRequestStatus = "idle" | "loading" | "success" | "error";
 
+export type PracticeAiRequestErrorKind =
+  | "auth"
+  | "forbidden"
+  | "network"
+  | "rate-limit"
+  | "request"
+  | "service"
+  | "unknown";
+
 export interface PracticeAiMeta {
   configured: boolean;
   model: string;
   orchestration: "google-adk";
   provider: "gemini";
+}
+
+export interface PracticeAiRequestError {
+  kind: PracticeAiRequestErrorKind;
+  message: string;
+  occurredAt: string;
+  retryable: boolean;
+  statusCode: number | null;
 }
 
 export interface PracticeStageHintResult {
@@ -68,10 +85,10 @@ export interface PracticeStageValidationResult {
 }
 
 export interface PracticeCoachStageState {
-  hintError: string | null;
+  hintError: PracticeAiRequestError | null;
   hintResult: PracticeStageHintResult | null;
   hintStatus: AsyncRequestStatus;
-  validationError: string | null;
+  validationError: PracticeAiRequestError | null;
   validationResult: PracticeStageValidationResult | null;
   validationStatus: AsyncRequestStatus;
 }
@@ -116,6 +133,10 @@ export interface PracticePlaygroundViewModel {
   assistant: {
     actions: {
       clearActiveStageFeedback: () => void;
+      reloadHints: () => Promise<void>;
+      reloadValidation: () => Promise<void>;
+      retryHints: () => Promise<void>;
+      retryValidation: () => Promise<void>;
       requestHints: () => Promise<void>;
       validateDraft: () => Promise<void>;
     };

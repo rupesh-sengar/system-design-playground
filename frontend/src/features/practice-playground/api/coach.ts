@@ -25,10 +25,7 @@ type ProblemPayload = {
 };
 
 type HintResponseEnvelope = {
-  data: Omit<
-    PracticeStageHintResult,
-    "meta" | "receivedAt" | "sourceDraft"
-  >;
+  data: Omit<PracticeStageHintResult, "meta" | "receivedAt" | "sourceDraft">;
   meta: AiProviderMeta;
 };
 
@@ -64,6 +61,7 @@ export const generateStageHints = async ({
 }): Promise<HintResponseEnvelope> =>
   requestJson("/v1/ai/generate-hints", {
     method: "POST",
+    requiresAuth: true,
     body: JSON.stringify({
       currentDraft,
       maxHints,
@@ -83,6 +81,7 @@ export const validateStageDraft = async ({
 }): Promise<ValidationResponseEnvelope> =>
   requestJson("/v1/ai/validate-design", {
     method: "POST",
+    requiresAuth: true,
     body: JSON.stringify({
       constraints: [problem.scale],
       problem: toProblemPayload(problem),

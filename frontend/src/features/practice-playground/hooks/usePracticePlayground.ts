@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getApiErrorMessage } from "@/shared/api/http";
+import { getApiErrorDetails } from "@/shared/api/http";
 import {
   isRichTextEffectivelyEmpty,
   richTextToPlainText,
@@ -18,6 +18,7 @@ import type {
   PracticePlaygroundViewModel,
   PracticeCoachStageState,
   PracticeCoachStageStateMap,
+  PracticeAiRequestError,
   PracticeProblem,
   PracticeSession,
   PracticeSessionStore,
@@ -45,6 +46,21 @@ const createEmptyCoachStateMap = (): PracticeCoachStageStateMap =>
 
 const countWords = (value: string): number =>
   value.split(/\s+/).filter(Boolean).length;
+
+const toPracticeAiRequestError = (
+  error: unknown,
+  fallbackMessage: string,
+): PracticeAiRequestError => {
+  const details = getApiErrorDetails(error, fallbackMessage);
+
+  return {
+    kind: details.kind,
+    message: details.message,
+    occurredAt: new Date().toISOString(),
+    retryable: details.retryable,
+    statusCode: details.statusCode,
+  };
+};
 
 export const usePracticePlayground = (
   problem: PracticeProblem | null,
@@ -280,7 +296,7 @@ export const usePracticePlayground = (
     } catch (error) {
       updateCoachState(stageId, (current) => ({
         ...current,
-        hintError: getApiErrorMessage(
+        hintError: toPracticeAiRequestError(
           error,
           "Unable to generate hints right now.",
         ),
@@ -324,13 +340,29 @@ export const usePracticePlayground = (
     } catch (error) {
       updateCoachState(stageId, (current) => ({
         ...current,
-        validationError: getApiErrorMessage(
+        validationError: toPracticeAiRequestError(
           error,
           "Unable to validate this draft right now.",
         ),
         validationStatus: "error",
       }));
     }
+  };
+
+  const retryHints = async (): Promise<void> => {
+    await requestHints();
+  };
+
+  const retryValidation = async (): Promise<void> => {
+    await validateDraft();
+  };
+
+  const reloadHints = async (): Promise<void> => {
+    await requestHints();
+  };
+
+  const reloadValidation = async (): Promise<void> => {
+    await validateDraft();
   };
 
   const clearActiveStageFeedback = (): void => {
@@ -361,7 +393,11 @@ export const usePracticePlayground = (
     assistant: {
       actions: {
         clearActiveStageFeedback,
+        reloadHints,
+        reloadValidation,
         requestHints,
+        retryHints,
+        retryValidation,
         validateDraft,
       },
       activeStageState,

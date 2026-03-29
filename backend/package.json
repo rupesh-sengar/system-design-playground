@@ -15,15 +15,18 @@
     "adk:web": "npx @google/adk-devtools web src/agent.ts"
   },
   "dependencies": {
-    "@fastify/cors": "^10.0.1",
     "@google/adk": "^0.2.0",
     "@google/genai": "latest",
+    "cors": "^2.8.5",
     "dotenv": "^16.6.1",
-    "fastify": "^5.6.1",
+    "express-oauth2-jwt-bearer": "^1.7.1",
+    "express": "^5.1.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@google/adk-devtools": "^0.2.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
     "@types/node": "^24.5.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
