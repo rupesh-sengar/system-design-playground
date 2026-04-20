@@ -5,7 +5,10 @@ import {
   richTextToPlainText,
   sanitizeRichTextHtml,
 } from "@/shared/lib/richText";
-import { generateStageHints, validateStageDraft } from "../api/coach";
+import {
+  useGenerateStageHintsMutation,
+  useValidateStageDraftMutation,
+} from "../api/coachApi";
 import {
   buildPracticeMetrics,
   buildStageContextCards,
@@ -65,6 +68,8 @@ const toPracticeAiRequestError = (
 export const usePracticePlayground = (
   problem: PracticeProblem | null,
 ): PracticePlaygroundViewModel => {
+  const [triggerGenerateStageHints] = useGenerateStageHintsMutation();
+  const [triggerValidateStageDraft] = useValidateStageDraftMutation();
   const [sessions, setSessions] = useState<PracticeSessionStore>(() =>
     parseStoredSessions(window.localStorage.getItem(STORAGE_KEY)),
   );
@@ -276,11 +281,11 @@ export const usePracticePlayground = (
     }));
 
     try {
-      const response = await generateStageHints({
+      const response = await triggerGenerateStageHints({
         currentDraft: sourceDraft,
         problem,
         stageId,
-      });
+      }).unwrap();
 
       updateCoachState(stageId, (current) => ({
         ...current,
@@ -320,11 +325,11 @@ export const usePracticePlayground = (
     }));
 
     try {
-      const response = await validateStageDraft({
+      const response = await triggerValidateStageDraft({
         problem,
         stageId,
         submission: sourceDraft,
-      });
+      }).unwrap();
 
       updateCoachState(stageId, (current) => ({
         ...current,

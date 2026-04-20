@@ -10,6 +10,12 @@ interface JsonRequestOptions extends RequestInit {
 }
 
 type AccessTokenResolver = () => Promise<string | null>;
+type RtkQueryErrorPayload = {
+  error?: string;
+  kind?: ApiErrorKind;
+  retryable?: boolean;
+  statusCode?: number | null;
+};
 
 export type ApiErrorKind =
   | "auth"
@@ -73,6 +79,103 @@ export const getApiErrorDetails = (
   error: unknown,
   fallbackMessage: string,
 ): ApiErrorDetails => {
+  if (typeof error === "object" && error !== null && "status" in error) {
+    const rtkError = error as {
+      data?: RtkQueryErrorPayload;
+      status: number | string;
+    };
+    const statusCode =
+      typeof rtkError.status === "number"
+        ? rtkError.status
+        : (rtkError.data?.statusCode ?? null);
+
+    if (rtkError.status === "FETCH_ERROR") {
+      return {
+        kind: rtkError.data?.kind ?? "network",
+        message:
+          rtkError.data?.error ??
+          "Unable to reach the AI service. Check your connection and retry.",
+        retryable: rtkError.data?.retryable ?? true,
+        statusCode,
+      };
+    }
+
+    if (rtkError.status === "TIMEOUT_ERROR") {
+      return {
+        kind: rtkError.data?.kind ?? "network",
+        message:
+          rtkError.data?.error ??
+          "The request timed out before the service responded.",
+        retryable: rtkError.data?.retryable ?? true,
+        statusCode,
+      };
+    }
+
+    if (
+      rtkError.status === "PARSING_ERROR" ||
+      rtkError.status === "CUSTOM_ERROR"
+    ) {
+      return {
+        kind: rtkError.data?.kind ?? "unknown",
+        message: rtkError.data?.error ?? fallbackMessage,
+        retryable: rtkError.data?.retryable ?? true,
+        statusCode,
+      };
+    }
+
+    if (typeof rtkError.status === "number") {
+      if (rtkError.status === 401) {
+        return {
+          kind: rtkError.data?.kind ?? "auth",
+          message:
+            rtkError.data?.error ?? "Your session expired. Sign in again.",
+          retryable: rtkError.data?.retryable ?? false,
+          statusCode,
+        };
+      }
+
+      if (rtkError.status === 403) {
+        return {
+          kind: rtkError.data?.kind ?? "forbidden",
+          message:
+            rtkError.data?.error ??
+            "This account is not allowed to use the AI workspace.",
+          retryable: rtkError.data?.retryable ?? false,
+          statusCode,
+        };
+      }
+
+      if (rtkError.status === 429) {
+        return {
+          kind: rtkError.data?.kind ?? "rate-limit",
+          message:
+            rtkError.data?.error ??
+            "Too many AI requests were sent. Wait a moment and retry.",
+          retryable: rtkError.data?.retryable ?? true,
+          statusCode,
+        };
+      }
+
+      if (rtkError.status >= 500) {
+        return {
+          kind: rtkError.data?.kind ?? "service",
+          message:
+            rtkError.data?.error ??
+            "The AI service is temporarily unavailable. Retry shortly.",
+          retryable: rtkError.data?.retryable ?? true,
+          statusCode,
+        };
+      }
+
+      return {
+        kind: rtkError.data?.kind ?? "request",
+        message: rtkError.data?.error ?? fallbackMessage,
+        retryable: rtkError.data?.retryable ?? true,
+        statusCode,
+      };
+    }
+  }
+
   if (error instanceof ApiError) {
     if (error.statusCode === 401) {
       return {

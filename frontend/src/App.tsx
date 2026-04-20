@@ -4,6 +4,7 @@ import {
   useProblemLibrary,
 } from "@/features/problem-library";
 import { AuthSessionControl } from "@/features/auth/components/AuthSessionControl";
+import { ThemeModeControl } from "@/features/theme/components/ThemeModeControl";
 import { useAppRoute } from "@/app/router";
 import { PracticePlaygroundPage } from "@/features/practice-playground";
 
@@ -52,7 +53,10 @@ export default function App() {
             <p className="eyebrow">System Design Lab</p>
             <span>{toolbarContext}</span>
           </div>
-          <AuthSessionControl />
+          <div className="app-toolbar__controls">
+            <ThemeModeControl />
+            <AuthSessionControl />
+          </div>
         </div>
 
         <PracticePlaygroundPage
@@ -78,7 +82,10 @@ export default function App() {
           <p className="eyebrow">System Design Lab</p>
           <span>{toolbarContext}</span>
         </div>
-        <AuthSessionControl />
+        <div className="app-toolbar__controls">
+          <ThemeModeControl />
+          <AuthSessionControl />
+        </div>
       </div>
 
       <main className="workspace workspace--library-only">

@@ -15,9 +15,11 @@
     "@editorjs/editorjs": "^2.31.4",
     "@editorjs/header": "^2.8.8",
     "@editorjs/list": "^2.0.9",
+    "@reduxjs/toolkit": "^2.11.2",
     "jodit": "^4.11.11",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-redux": "^9.2.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
