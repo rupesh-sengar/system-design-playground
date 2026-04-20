@@ -33,6 +33,24 @@ AUTH0_REQUIRED_SCOPE=read:ai
 
 If `AUTH0_REQUIRED_SCOPE` is provided, the token must include that scope as well.
 
+## Postgres schema
+
+The first Postgres migration lives at `db/migrations/001_initial_postgres_schema.sql`.
+
+It creates:
+
+- `app_users`
+- `user_problem_progress`
+- `practice_sessions`
+- `practice_stage_drafts`
+
+Apply it with:
+
+```bash
+cd backend
+psql "$DATABASE_URL" -f db/migrations/001_initial_postgres_schema.sql
+```
+
 ## ADK dev UI
 
 ```bash
