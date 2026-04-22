@@ -15,4 +15,4 @@ To apply the initial schema with `psql`:
 psql "$DATABASE_URL" -f db/migrations/001_initial_postgres_schema.sql
 ```
 
-The next backend step is wiring request handlers to upsert `app_users`, `user_problem_progress`, and `practice_sessions` from authenticated API calls.
+The backend now upserts `app_users`, `user_problem_progress`, and `practice_sessions` from authenticated API calls under `/v1/persistence/*`.

@@ -119,6 +119,13 @@ export interface StageContextCard {
   items: string[];
 }
 
+export interface PracticeSessionStorageState {
+  errorMessage: string | null;
+  isLoading: boolean;
+  isRemote: boolean;
+  isSaving: boolean;
+}
+
 export interface PracticePlaygroundViewModel {
   actions: {
     goToNextStage: () => void;
@@ -150,6 +157,7 @@ export interface PracticePlaygroundViewModel {
   };
   metrics: PracticeMetrics;
   session: PracticeSession | null;
+  storage: PracticeSessionStorageState;
   stageContextCards: StageContextCard[];
   stages: PracticeStageDefinition[];
   drafts: PracticeStageDraftMap | null;

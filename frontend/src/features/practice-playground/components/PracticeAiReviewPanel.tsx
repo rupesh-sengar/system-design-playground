@@ -137,6 +137,7 @@ export const PracticeAiReviewPanel = ({
   const {
     authError,
     canRequestApiToken,
+    isApiAuthReady,
     isAuthenticated,
     isConfigured,
     isLoading,
@@ -155,8 +156,7 @@ export const PracticeAiReviewPanel = ({
 
   const hintResult = activeStageState.hintResult;
   const validationResult = activeStageState.validationResult;
-  const authReady =
-    isConfigured && canRequestApiToken && isAuthenticated && !isLoading;
+  const authReady = isApiAuthReady;
   const showSignInCta =
     actionMode === "full" &&
     isConfigured &&

@@ -5,15 +5,7 @@ import {
 } from "express-oauth2-jwt-bearer";
 import type { Request, RequestHandler, Response } from "express";
 import type { AppConfig } from "../../config/env.js";
-
-class ServiceUnavailableError extends Error {
-  statusCode = 503;
-
-  constructor(message: string) {
-    super(message);
-    this.name = "ServiceUnavailableError";
-  }
-}
+import { ServiceUnavailableError } from "./errors.js";
 
 const failClosedHandler = (
   _request: Request,

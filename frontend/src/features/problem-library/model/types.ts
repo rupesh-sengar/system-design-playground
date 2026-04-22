@@ -43,6 +43,13 @@ export interface ProblemLibraryMetrics {
   filteredDifficultyCounts: DifficultyCounts;
 }
 
+export interface ProblemLibraryPersistenceState {
+  errorMessage: string | null;
+  isLoading: boolean;
+  isRemote: boolean;
+  isSyncing: boolean;
+}
+
 export const defaultCatalogFilters: CatalogFilters = {
   search: "",
   difficulty: "All",

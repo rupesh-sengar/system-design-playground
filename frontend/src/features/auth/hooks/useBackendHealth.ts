@@ -7,7 +7,7 @@ import {
 
 const HEALTH_CHECK_SUCCESS_INTERVAL_MS = 30_000;
 const HEALTH_CHECK_RETRY_INTERVAL_MS = 4_000;
-const MAX_HEALTH_RETRIES = 5;
+const MAX_HEALTH_RETRIES = 15;
 
 type BackendConnectionStatus =
   | "idle"
@@ -109,7 +109,8 @@ export const useBackendHealth = (enabled: boolean) => {
     const runHealthCheck = async (): Promise<void> => {
       setState((current) => ({
         ...current,
-        errorMessage: current.status === "connected" ? null : current.errorMessage,
+        errorMessage:
+          current.status === "connected" ? null : current.errorMessage,
         status:
           current.status === "connected"
             ? "connected"

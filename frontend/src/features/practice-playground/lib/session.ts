@@ -13,6 +13,29 @@ import type {
   StageContextCard,
 } from "../model/types";
 
+export interface PersistedPracticeStageDraft {
+  isComplete: boolean;
+  notesHtml: string;
+  updatedAt: string | null;
+}
+
+export type PersistedPracticeStageDraftMap = Record<
+  PracticeStageId,
+  PersistedPracticeStageDraft
+>;
+
+export interface PersistedPracticeSession {
+  activeStageId: PracticeStageId;
+  problemId: string;
+  stages: PersistedPracticeStageDraftMap;
+  updatedAt: string;
+}
+
+export interface PersistedPracticeSessionInput {
+  activeStageId: PracticeStageId;
+  stages: PersistedPracticeStageDraftMap;
+}
+
 const countWords = (value: string): number =>
   richTextToPlainText(value).trim().split(/\s+/).filter(Boolean).length;
 
@@ -32,6 +55,21 @@ export const createDefaultSession = (): PracticeSession => ({
   updatedAt: null,
 });
 
+export const normalizePracticeSession = (
+  session: PracticeSession,
+): PracticeSession => ({
+  ...session,
+  stages: Object.fromEntries(
+    Object.entries(session.stages).map(([stageId, draft]) => [
+      stageId,
+      {
+        ...draft,
+        notes: sanitizeRichTextHtml(draft.notes),
+      },
+    ]),
+  ) as PracticeStageDraftMap,
+});
+
 export const parseStoredSessions = (
   rawValue: string | null,
 ): PracticeSessionStore => {
@@ -49,24 +87,68 @@ export const parseStoredSessions = (
     return Object.fromEntries(
       Object.entries(parsed).map(([problemId, session]) => [
         problemId,
-        {
-          ...session,
-          stages: Object.fromEntries(
-            Object.entries(session.stages).map(([stageId, draft]) => [
-              stageId,
-              {
-                ...draft,
-                notes: sanitizeRichTextHtml(draft.notes),
-              },
-            ]),
-          ) as PracticeStageDraftMap,
-        },
+        normalizePracticeSession(session),
       ]),
     );
   } catch {
     return {};
   }
 };
+
+export const toPersistedPracticeSessionInput = (
+  session: PracticeSession,
+): PersistedPracticeSessionInput => ({
+  activeStageId: session.activeStageId,
+  stages: Object.fromEntries(
+    Object.entries(session.stages).map(([stageId, draft]) => [
+      stageId,
+      {
+        isComplete: draft.isComplete,
+        notesHtml: sanitizeRichTextHtml(draft.notes),
+        updatedAt: draft.updatedAt,
+      },
+    ]),
+  ) as PersistedPracticeStageDraftMap,
+});
+
+export const fromPersistedPracticeSession = (
+  session: PersistedPracticeSession | null,
+): PracticeSession | null => {
+  if (!session) {
+    return null;
+  }
+
+  return normalizePracticeSession({
+    activeStageId: session.activeStageId,
+    stages: Object.fromEntries(
+      Object.entries(session.stages).map(([stageId, draft]) => [
+        stageId,
+        {
+          isComplete: draft.isComplete,
+          notes: draft.notesHtml,
+          updatedAt: draft.updatedAt,
+        },
+      ]),
+    ) as PracticeStageDraftMap,
+    updatedAt: session.updatedAt,
+  });
+};
+
+export const createPracticeSessionSnapshot = (
+  session: PracticeSession,
+): string =>
+  JSON.stringify({
+    activeStageId: session.activeStageId,
+    stages: Object.fromEntries(
+      practiceStages.map((stage) => [
+        stage.id,
+        {
+          isComplete: session.stages[stage.id].isComplete,
+          notes: sanitizeRichTextHtml(session.stages[stage.id].notes),
+        },
+      ]),
+    ),
+  });
 
 export const getReadinessLabel = (
   completionPercent: number,

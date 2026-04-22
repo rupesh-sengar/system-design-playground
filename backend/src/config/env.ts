@@ -6,6 +6,7 @@ const envSchema = z.object({
   AUTH0_DOMAIN: z.string().min(1).optional(),
   AUTH0_REQUIRED_SCOPE: z.string().min(1).optional(),
   CORS_ORIGIN: z.string().min(1).default("http://localhost:5173"),
+  DATABASE_URL: z.string().min(1).optional(),
   GEMINI_API_KEY: z.string().min(1).optional(),
   GEMINI_MODEL: z.string().min(1).default("gemini-2.5-flash"),
   GOOGLE_API_KEY: z.string().min(1).optional(),
@@ -26,6 +27,10 @@ export type AppConfig = z.infer<typeof envSchema> & {
   };
   corsOrigins: string[];
   hasGeminiCredentials: boolean;
+  postgres: {
+    connectionString: string | null;
+    isEnabled: boolean;
+  };
 };
 
 let cachedConfig: AppConfig | null = null;
@@ -66,6 +71,7 @@ export const getEnv = (): AppConfig => {
   const authAudience = parsed.AUTH0_AUDIENCE?.trim() ?? null;
   const authDomain = parsed.AUTH0_DOMAIN?.trim() ?? null;
   const requiredScopes = parseScopeList(parsed.AUTH0_REQUIRED_SCOPE);
+  const databaseUrl = parsed.DATABASE_URL?.trim() ?? null;
 
   cachedConfig = {
     ...parsed,
@@ -80,6 +86,10 @@ export const getEnv = (): AppConfig => {
     hasGeminiCredentials: Boolean(
       parsed.GEMINI_API_KEY ?? parsed.GOOGLE_API_KEY,
     ),
+    postgres: {
+      connectionString: databaseUrl,
+      isEnabled: Boolean(databaseUrl),
+    },
   };
 
   return cachedConfig;

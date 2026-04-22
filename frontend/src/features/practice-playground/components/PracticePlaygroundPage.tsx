@@ -7,9 +7,11 @@ import {
 } from "react";
 import { useAppAuth } from "@/features/auth/app-auth";
 import { getDifficultyClassName } from "@/features/problem-library/lib/catalog";
+import { Loader } from "@/shared/ui/Loader";
 import { RichTextEditor } from "@/shared/ui/RichTextEditor";
 import { PracticeAiReviewPanel } from "./PracticeAiReviewPanel";
 import { usePracticePlayground } from "../hooks/usePracticePlayground";
+import { createDefaultSession } from "../lib/session";
 import type { PracticeProblem } from "../model/types";
 
 interface PracticePlaygroundPageProps {
@@ -35,6 +37,7 @@ export const PracticePlaygroundPage = ({
 }: PracticePlaygroundPageProps) => {
   const {
     canRequestApiToken,
+    isApiAuthReady,
     isAuthenticated,
     isConfigured,
     isLoading,
@@ -48,6 +51,7 @@ export const PracticePlaygroundPage = ({
     drafts,
     metrics,
     session,
+    storage,
     stageContextCards,
     stages,
   } = usePracticePlayground(problem);
@@ -55,8 +59,19 @@ export const PracticePlaygroundPage = ({
     useState<SidebarTab>("overview");
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const canMarkPracticed = metrics.completedCount === metrics.totalCount;
-  const authReady =
-    isConfigured && canRequestApiToken && isAuthenticated && !isLoading;
+  const authReady = isApiAuthReady;
+  const showLoadingOverlay = storage.isRemote && storage.isLoading;
+  const fallbackDrafts = createDefaultSession().stages;
+  const stageDrafts = drafts ?? fallbackDrafts;
+  const storageNotice = storage.errorMessage
+    ? storage.errorMessage
+    : storage.isRemote
+      ? storage.isLoading
+        ? "Loading your saved practice session..."
+        : storage.isSaving
+          ? "Saving your practice session..."
+          : "Progress is saved to your account."
+      : "Progress is stored in this browser.";
 
   useEffect(() => {
     const storedWidth = window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
@@ -150,7 +165,70 @@ export const PracticePlaygroundPage = ({
     void assistant.actions.validateDraft();
   };
 
-  if (!problem || !session || !drafts) {
+  const renderSidebarUtility = () => (
+    <div className="playground-sidebar__utility">
+      <button
+        className="playground-sidebar__link"
+        type="button"
+        onClick={onBack}
+      >
+        Library
+      </button>
+      <button
+        className="playground-sidebar__link"
+        type="button"
+        onClick={actions.resetSession}
+      >
+        Reset
+      </button>
+    </div>
+  );
+
+  const renderSidebarTabs = () => (
+    <div
+      className="playground-sidebar__tabs"
+      role="tablist"
+      aria-label="Playground sections"
+    >
+      <button
+        aria-selected={activeSidebarTab === "overview"}
+        className={`playground-sidebar__tab ${
+          activeSidebarTab === "overview"
+            ? "playground-sidebar__tab--active"
+            : ""
+        }`}
+        role="tab"
+        type="button"
+        onClick={() => setActiveSidebarTab("overview")}
+      >
+        Overview
+      </button>
+      <button
+        aria-selected={activeSidebarTab === "guides"}
+        className={`playground-sidebar__tab ${
+          activeSidebarTab === "guides" ? "playground-sidebar__tab--active" : ""
+        }`}
+        role="tab"
+        type="button"
+        onClick={() => setActiveSidebarTab("guides")}
+      >
+        Guides
+      </button>
+      <button
+        aria-selected={activeSidebarTab === "ai"}
+        className={`playground-sidebar__tab ${
+          activeSidebarTab === "ai" ? "playground-sidebar__tab--active" : ""
+        }`}
+        role="tab"
+        type="button"
+        onClick={() => setActiveSidebarTab("ai")}
+      >
+        AI
+      </button>
+    </div>
+  );
+
+  if (!problem) {
     return (
       <div className="playground-page">
         <section className="playground-page__topbar panel">
@@ -171,6 +249,23 @@ export const PracticePlaygroundPage = ({
     );
   }
 
+  if (!showLoadingOverlay && (!session || !drafts)) {
+    return (
+      <div className="playground-page">
+        <section className="playground-page__topbar panel">
+          <button className="secondary-action" type="button" onClick={onBack}>
+            Back to library
+          </button>
+          <div className="playground-empty">
+            <p className="section-label">Interview Playground</p>
+            <h2>Unable to prepare this practice round.</h2>
+            <p>{storageNotice}</p>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="playground-page">
       <section
@@ -182,68 +277,8 @@ export const PracticePlaygroundPage = ({
         }
       >
         <aside className="playground-sidebar">
-          <div className="playground-sidebar__utility">
-            <button
-              className="playground-sidebar__link"
-              type="button"
-              onClick={onBack}
-            >
-              Library
-            </button>
-            <button
-              className="playground-sidebar__link"
-              type="button"
-              onClick={actions.resetSession}
-            >
-              Reset
-            </button>
-          </div>
-
-          <div
-            className="playground-sidebar__tabs"
-            role="tablist"
-            aria-label="Playground sections"
-          >
-            <button
-              aria-selected={activeSidebarTab === "overview"}
-              className={`playground-sidebar__tab ${
-                activeSidebarTab === "overview"
-                  ? "playground-sidebar__tab--active"
-                  : ""
-              }`}
-              role="tab"
-              type="button"
-              onClick={() => setActiveSidebarTab("overview")}
-            >
-              Overview
-            </button>
-            <button
-              aria-selected={activeSidebarTab === "guides"}
-              className={`playground-sidebar__tab ${
-                activeSidebarTab === "guides"
-                  ? "playground-sidebar__tab--active"
-                  : ""
-              }`}
-              role="tab"
-              type="button"
-              onClick={() => setActiveSidebarTab("guides")}
-            >
-              Guides
-            </button>
-            <button
-              aria-selected={activeSidebarTab === "ai"}
-              className={`playground-sidebar__tab ${
-                activeSidebarTab === "ai"
-                  ? "playground-sidebar__tab--active"
-                  : ""
-              }`}
-              role="tab"
-              type="button"
-              onClick={() => setActiveSidebarTab("ai")}
-            >
-              AI
-            </button>
-          </div>
+          {renderSidebarUtility()}
+          {renderSidebarTabs()}
 
           <div className="playground-sidebar__panel">
             {activeSidebarTab === "overview" ? (
@@ -253,6 +288,15 @@ export const PracticePlaygroundPage = ({
                   <h1>{problem.title}</h1>
                   <p className="playground-sidebar__summary">
                     {problem.summary}
+                  </p>
+                  <p
+                    className={`playground-storage-note ${
+                      storage.errorMessage
+                        ? "playground-storage-note--error"
+                        : ""
+                    }`}
+                  >
+                    {storageNotice}
                   </p>
                   <div className="detail-meta">
                     {"difficulty" in problem ? (
@@ -437,7 +481,7 @@ export const PracticePlaygroundPage = ({
         <section className="playground-stageboard">
           <div className="playground-stage-strip">
             {stages.map((stage) => {
-              const stageDraft = drafts[stage.id];
+              const stageDraft = stageDrafts[stage.id];
               const isActive = activeStage.id === stage.id;
 
               return (
@@ -513,6 +557,19 @@ export const PracticePlaygroundPage = ({
             </div>
           </div>
         </section>
+
+        {showLoadingOverlay ? (
+          <div className="playground-loader-overlay" aria-busy="true">
+            <div className="playground-loader-overlay__surface">
+              <Loader
+                caption={storageNotice}
+                className="playground-loader-overlay__loader"
+                label="Loading your saved practice session"
+                size="lg"
+              />
+            </div>
+          </div>
+        ) : null}
       </section>
     </div>
   );

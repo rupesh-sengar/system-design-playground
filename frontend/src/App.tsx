@@ -20,6 +20,7 @@ export default function App() {
     metrics,
     paginatedProblems,
     pagination,
+    persistence,
     practicedIds,
     visibleProblems,
   } = useProblemLibrary();
@@ -98,6 +99,7 @@ export default function App() {
           metrics={metrics}
           paginatedProblems={paginatedProblems}
           pagination={pagination}
+          persistence={persistence}
           practicedIds={practicedIds}
           onCategoryChange={actions.setCategory}
           onClearFilters={actions.clearFilters}

@@ -6,5 +6,6 @@ export const baseApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: getApiBaseUrl(),
   }),
+  tagTypes: ["ProblemProgress", "PracticeSession"],
   endpoints: () => ({}),
 });

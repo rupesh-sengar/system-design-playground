@@ -7,8 +7,14 @@ Express + TypeScript backend for the System Design Platform. The initial AI stac
 - `GET /healthz`
 - `POST /v1/ai/validate-design`
 - `POST /v1/ai/generate-hints`
+- `GET /v1/persistence/problem-progress`
+- `PUT /v1/persistence/problem-progress/:problemId`
+- `DELETE /v1/persistence/problem-progress`
+- `GET /v1/persistence/practice-sessions/:problemId`
+- `PUT /v1/persistence/practice-sessions/:problemId`
+- `DELETE /v1/persistence/practice-sessions/:problemId`
 
-`/v1/ai/*` expects a valid Auth0 bearer token when `AUTH0_DOMAIN` and `AUTH0_AUDIENCE` are configured.
+`/v1/ai/*` and `/v1/persistence/*` expect a valid Auth0 bearer token when `AUTH0_DOMAIN` and `AUTH0_AUDIENCE` are configured.
 
 ## Run locally
 
@@ -21,6 +27,8 @@ npm run dev
 
 The service can boot without an API key, but AI routes will return `503` until `GEMINI_API_KEY` or `GOOGLE_API_KEY` is configured.
 
+Persistent storage routes also require `DATABASE_URL`.
+
 ## Auth0 JWT validation
 
 Set these env vars to protect the AI routes with Auth0:
@@ -29,6 +37,7 @@ Set these env vars to protect the AI routes with Auth0:
 AUTH0_DOMAIN=your-tenant.us.auth0.com
 AUTH0_AUDIENCE=https://your-api-identifier
 AUTH0_REQUIRED_SCOPE=read:ai
+DATABASE_URL=postgres://...
 ```
 
 If `AUTH0_REQUIRED_SCOPE` is provided, the token must include that scope as well.

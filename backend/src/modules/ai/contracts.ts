@@ -1,13 +1,15 @@
 import { z } from "zod";
 
-export const stageIdSchema = z.enum([
+export const stageIds = [
   "requirements",
   "core-entities",
   "api-interface",
   "data-flow",
   "high-level-design",
   "deep-dives",
-]);
+] as const;
+
+export const stageIdSchema = z.enum(stageIds);
 
 export const problemContextSchema = z.object({
   id: z.string().min(1),

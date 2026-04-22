@@ -1,10 +1,12 @@
 import "dotenv/config";
 import { buildApp } from "./app.js";
 import { getEnv } from "./config/env.js";
+import { PostgresDatabase } from "./database/postgres.js";
 
 const start = async (): Promise<void> => {
   const config = getEnv();
-  const app = buildApp(config);
+  const database = new PostgresDatabase(config);
+  const app = buildApp(config, database);
 
   await new Promise<void>((resolve, reject) => {
     const server = app.listen(config.PORT, config.HOST, () => {

@@ -19,8 +19,9 @@
     "@google/genai": "latest",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
-    "express-oauth2-jwt-bearer": "^1.7.1",
     "express": "^5.1.0",
+    "express-oauth2-jwt-bearer": "^1.7.1",
+    "pg": "^8.20.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -28,6 +29,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.5.2",
+    "@types/pg": "^8.20.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }

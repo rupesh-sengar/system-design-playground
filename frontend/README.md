@@ -7,9 +7,10 @@ A React + TypeScript + Vite practice app for system design interview prep. The p
 - 60+ seeded system design problems with `Easy`, `Medium`, and `Hard` difficulty labels
 - Search, category, difficulty, and status filtering
 - Random drill button for interview practice
-- Bookmark and practiced state persisted in local browser storage
+- Bookmark and practiced state synced to Postgres for signed-in users, with browser fallback for guests
 - Detail panel with scale targets, design focus areas, pitfalls, and follow-up variants
 - A six-stage interview playground for requirements, entities, interfaces, data flow, high-level design, and deep dives
+- Per-problem practice sessions synced to Postgres for signed-in users, with browser fallback for guests
 
 ## Project structure
 

@@ -5,6 +5,8 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
+  useState,
 } from "react";
 import { setApiAccessTokenResolver } from "@/shared/api/http";
 import {
@@ -17,6 +19,7 @@ interface AppAuthContextValue {
   authError: string | null;
   canRequestApiToken: boolean;
   config: Auth0Config;
+  isApiAuthReady: boolean;
   isAuthenticated: boolean;
   isConfigured: boolean;
   isLoading: boolean;
@@ -36,6 +39,7 @@ const unauthenticatedContextValue: AppAuthContextValue = {
   authError: null,
   canRequestApiToken: false,
   config: auth0Config,
+  isApiAuthReady: false,
   isAuthenticated: false,
   isConfigured: auth0Config.isConfigured,
   isLoading: false,
@@ -67,6 +71,14 @@ const Auth0Bridge = ({ children }: PropsWithChildren) => {
     logout,
     user,
   } = useAuth0();
+  const [isApiTokenResolverReady, setIsApiTokenResolverReady] = useState(false);
+  const getAccessTokenSilentlyRef = useRef(getAccessTokenSilently);
+  const isAuthenticatedRef = useRef(isAuthenticated);
+  const isLoadingRef = useRef(isLoading);
+
+  getAccessTokenSilentlyRef.current = getAccessTokenSilently;
+  isAuthenticatedRef.current = isAuthenticated;
+  isLoadingRef.current = isLoading;
 
   useEffect(() => {
     setApiAccessTokenResolver(async () => {
@@ -76,23 +88,25 @@ const Auth0Bridge = ({ children }: PropsWithChildren) => {
         );
       }
 
-      if (isLoading) {
+      if (isLoadingRef.current) {
         throw new Error("Authentication is still initializing.");
       }
 
-      if (!isAuthenticated) {
+      if (!isAuthenticatedRef.current) {
         throw new Error("Login with Auth0 before using protected API routes.");
       }
 
-      return getAccessTokenSilently({
+      return getAccessTokenSilentlyRef.current({
         authorizationParams: buildAuth0AuthorizationParams(auth0Config),
       });
     });
+    setIsApiTokenResolverReady(true);
 
     return () => {
       setApiAccessTokenResolver(null);
+      setIsApiTokenResolverReady(false);
     };
-  }, [getAccessTokenSilently, isAuthenticated, isLoading]);
+  }, []);
 
   const contextValue = useMemo<AppAuthContextValue>(() => {
     const login = async (): Promise<void> => {
@@ -109,6 +123,12 @@ const Auth0Bridge = ({ children }: PropsWithChildren) => {
         : null,
       canRequestApiToken: Boolean(auth0Config.audience),
       config: auth0Config,
+      isApiAuthReady:
+        auth0Config.isConfigured &&
+        Boolean(auth0Config.audience) &&
+        isAuthenticated &&
+        !isLoading &&
+        isApiTokenResolverReady,
       isAuthenticated,
       isConfigured: auth0Config.isConfigured,
       isLoading,
@@ -131,6 +151,7 @@ const Auth0Bridge = ({ children }: PropsWithChildren) => {
   }, [
     error,
     isAuthenticated,
+    isApiTokenResolverReady,
     isLoading,
     loginWithRedirect,
     logout,

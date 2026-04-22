@@ -6,6 +6,7 @@ import type {
   CatalogFilters,
   DifficultyCounts,
   ProblemCatalogPagination,
+  ProblemLibraryPersistenceState,
   ProblemLibraryMetrics,
   SortMode,
   StatusFilter,
@@ -20,6 +21,7 @@ interface ProblemCatalogPanelProps {
   metrics: ProblemLibraryMetrics;
   pagination: ProblemCatalogPagination;
   paginatedProblems: Problem[];
+  persistence: ProblemLibraryPersistenceState;
   practicedIds: Set<string>;
   onCategoryChange: (category: string) => void;
   onClearFilters: () => void;
@@ -83,6 +85,7 @@ export const ProblemCatalogPanel = ({
   metrics,
   pagination,
   paginatedProblems,
+  persistence,
   practicedIds,
   onCategoryChange,
   onClearFilters,
@@ -117,6 +120,21 @@ export const ProblemCatalogPanel = ({
           <h2>Interview prompts by scale, domain, and system depth</h2>
           <p className="catalog-subtitle">
             Browse prompts, filter quickly, and jump straight into practice.
+          </p>
+          <p
+            className={`catalog-sync-note ${
+              persistence.errorMessage ? "catalog-sync-note--error" : ""
+            }`}
+          >
+            {persistence.errorMessage
+              ? persistence.errorMessage
+              : persistence.isRemote
+                ? persistence.isLoading
+                  ? "Loading saved progress from your account..."
+                  : persistence.isSyncing
+                    ? "Syncing progress to your account..."
+                    : "Progress is saved to your account."
+                : "Progress is stored in this browser until you sign in."}
           </p>
         </div>
 

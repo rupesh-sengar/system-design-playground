@@ -3,8 +3,17 @@ import {
   useDeferredValue,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
+import { useAppAuth } from "@/features/auth/app-auth";
+import { getApiErrorMessage } from "@/shared/api/http";
+import { useToast } from "@/shared/toast/toast-provider";
+import {
+  useGetProblemProgressQuery,
+  useResetProblemProgressMutation,
+  useUpdateProblemProgressMutation,
+} from "../api/problemProgressApi";
 import {
   countProblemsByDifficulty,
   filterProblems,
@@ -24,6 +33,7 @@ import {
   type ProblemCatalogPagination,
   type DifficultyCounts,
   type ProblemLibraryMetrics,
+  type ProblemLibraryPersistenceState,
   type ProblemProgress,
   type SortMode,
   type StatusFilter,
@@ -63,6 +73,7 @@ export interface ProblemLibraryViewModel {
   metrics: ProblemLibraryMetrics;
   pagination: ProblemCatalogPagination;
   paginatedProblems: Problem[];
+  persistence: ProblemLibraryPersistenceState;
   practicedIds: Set<string>;
   selectedProblem: Problem | null;
   selectedProblemId: string | null;
@@ -70,6 +81,8 @@ export interface ProblemLibraryViewModel {
 }
 
 export const useProblemLibrary = (): ProblemLibraryViewModel => {
+  const { isApiAuthReady } = useAppAuth();
+  const toast = useToast();
   const [filters, setFilters] = useState<CatalogFilters>({
     ...defaultCatalogFilters,
   });
@@ -80,14 +93,72 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
   const deferredSearch = useDeferredValue(filters.search);
   const bookmarked = usePersistentIdSet(STORAGE_KEYS.bookmarked);
   const practiced = usePersistentIdSet(STORAGE_KEYS.practiced);
+  const {
+    data: remoteProgressEntries = [],
+    error: remoteProgressError,
+    isFetching: isRemoteProgressFetching,
+    isLoading: isRemoteProgressLoading,
+  } = useGetProblemProgressQuery(undefined, {
+    skip: !isApiAuthReady,
+  });
+  const [triggerUpdateProblemProgress, updateProblemProgressState] =
+    useUpdateProblemProgressMutation();
+  const [triggerResetProblemProgress, resetProblemProgressState] =
+    useResetProblemProgressMutation();
+  const lastRemoteProgressErrorRef = useRef<string | null>(null);
 
-  const progress = useMemo<ProblemProgress>(
-    () => ({
+  const remoteProgress = useMemo<ProblemProgress>(() => {
+    const bookmarkedIds = new Set<string>();
+    const practicedIds = new Set<string>();
+
+    for (const entry of remoteProgressEntries) {
+      if (entry.isBookmarked) {
+        bookmarkedIds.add(entry.problemId);
+      }
+
+      if (entry.isPracticed) {
+        practicedIds.add(entry.problemId);
+      }
+    }
+
+    return {
+      bookmarkedIds,
+      practicedIds,
+    };
+  }, [remoteProgressEntries]);
+
+  const progress = useMemo<ProblemProgress>(() => {
+    if (isApiAuthReady) {
+      return remoteProgress;
+    }
+
+    return {
       bookmarkedIds: bookmarked.values,
       practicedIds: practiced.values,
-    }),
-    [bookmarked.values, practiced.values],
-  );
+    };
+  }, [bookmarked.values, isApiAuthReady, practiced.values, remoteProgress]);
+
+  useEffect(() => {
+    if (!isApiAuthReady || !remoteProgressError) {
+      lastRemoteProgressErrorRef.current = null;
+      return;
+    }
+
+    const message = getApiErrorMessage(
+      remoteProgressError,
+      "Unable to load saved progress.",
+    );
+
+    if (message === lastRemoteProgressErrorRef.current) {
+      return;
+    }
+
+    lastRemoteProgressErrorRef.current = message;
+    toast.error(message, {
+      dedupeKey: "problem-progress-load-error",
+      title: "Progress Sync Failed",
+    });
+  }, [isApiAuthReady, remoteProgressError, toast]);
 
   const baseFilteredProblems = useMemo(
     () =>
@@ -179,17 +250,17 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
       totalProblems: problems.length,
       baseFilteredCount: baseFilteredProblems.length,
       visibleCount: visibleProblems.length,
-      practicedCount: practiced.values.size,
-      bookmarkedCount: bookmarked.values.size,
+      practicedCount: progress.practicedIds.size,
+      bookmarkedCount: progress.bookmarkedIds.size,
       visibleCategoryCount: getVisibleCategoryCount(visibleProblems),
       totalDifficultyCounts: TOTAL_DIFFICULTY_COUNTS,
       filteredDifficultyCounts: difficultyCounts,
     }),
     [
       baseFilteredProblems.length,
-      bookmarked.values.size,
       difficultyCounts,
-      practiced.values.size,
+      progress.bookmarkedIds.size,
+      progress.practicedIds.size,
       visibleProblems,
       visibleProblems.length,
     ],
@@ -273,18 +344,133 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
     setSelectedProblemId(visibleProblems[randomIndex].id);
   };
 
-  const resetProgress = (): void => {
+  const toggleRemoteProgress = async (
+    problemId: string,
+    nextProgress: {
+      isBookmarked?: boolean;
+      isPracticed?: boolean;
+    },
+  ): Promise<void> => {
+    try {
+      await triggerUpdateProblemProgress({
+        problemId,
+        ...nextProgress,
+      }).unwrap();
+
+      if (nextProgress.isBookmarked !== undefined) {
+        toast.success(
+          nextProgress.isBookmarked ? "Bookmark saved." : "Bookmark removed.",
+          {
+            title: "Library Updated",
+          },
+        );
+        return;
+      }
+
+      if (nextProgress.isPracticed !== undefined) {
+        toast.success(
+          nextProgress.isPracticed
+            ? "Problem marked as practiced."
+            : "Problem marked as unpracticed.",
+          {
+            title: "Practice Status Updated",
+          },
+        );
+      }
+    } catch (error) {
+      toast.error(
+        getApiErrorMessage(error, "Unable to update saved progress."),
+        {
+          dedupeKey: "problem-progress-update-error",
+          title: "Progress Update Failed",
+        },
+      );
+    }
+  };
+
+  const toggleBookmark = (problemId: string): void => {
+    if (!isApiAuthReady) {
+      bookmarked.toggle(problemId);
+      return;
+    }
+
+    void toggleRemoteProgress(problemId, {
+      isBookmarked: !progress.bookmarkedIds.has(problemId),
+    });
+  };
+
+  const togglePracticed = (problemId: string): void => {
+    if (!isApiAuthReady) {
+      practiced.toggle(problemId);
+      return;
+    }
+
+    void toggleRemoteProgress(problemId, {
+      isPracticed: !progress.practicedIds.has(problemId),
+    });
+  };
+
+  const resetProgress = async (): Promise<void> => {
     const shouldReset = window.confirm(
-      "Clear bookmarked and practiced progress for this browser?",
+      isApiAuthReady
+        ? "Clear bookmarked and practiced progress saved to your account?"
+        : "Clear bookmarked and practiced progress for this browser?",
     );
 
     if (!shouldReset) {
       return;
     }
 
-    bookmarked.clear();
-    practiced.clear();
+    if (!isApiAuthReady) {
+      bookmarked.clear();
+      practiced.clear();
+      return;
+    }
+
+    try {
+      await triggerResetProblemProgress().unwrap();
+      toast.success("Saved progress cleared.", {
+        title: "Progress Reset",
+      });
+    } catch (error) {
+      toast.error(
+        getApiErrorMessage(error, "Unable to reset saved progress."),
+        {
+          dedupeKey: "problem-progress-reset-error",
+          title: "Progress Reset Failed",
+        },
+      );
+    }
   };
+
+  const persistenceErrorSource =
+    updateProblemProgressState.error ??
+    resetProblemProgressState.error ??
+    remoteProgressError;
+  const persistence = useMemo<ProblemLibraryPersistenceState>(
+    () => ({
+      errorMessage: persistenceErrorSource
+        ? getApiErrorMessage(
+            persistenceErrorSource,
+            "Unable to sync saved progress.",
+          )
+        : null,
+      isLoading: isApiAuthReady
+        ? isRemoteProgressLoading || isRemoteProgressFetching
+        : false,
+      isRemote: isApiAuthReady,
+      isSyncing:
+        updateProblemProgressState.isLoading || resetProblemProgressState.isLoading,
+    }),
+    [
+      isApiAuthReady,
+      isRemoteProgressFetching,
+      isRemoteProgressLoading,
+      persistenceErrorSource,
+      resetProblemProgressState.isLoading,
+      updateProblemProgressState.isLoading,
+    ],
+  );
 
   return {
     actions: {
@@ -298,10 +484,10 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
       setSearch,
       setSortBy,
       setStatus,
-      toggleBookmark: bookmarked.toggle,
-      togglePracticed: practiced.toggle,
+      toggleBookmark,
+      togglePracticed,
     },
-    bookmarkedIds: bookmarked.values,
+    bookmarkedIds: progress.bookmarkedIds,
     categories,
     difficultyCounts,
     difficultyLevels,
@@ -309,7 +495,8 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
     metrics,
     pagination,
     paginatedProblems,
-    practicedIds: practiced.values,
+    persistence,
+    practicedIds: progress.practicedIds,
     selectedProblem,
     selectedProblemId,
     visibleProblems,
