@@ -40,7 +40,7 @@ export type PracticeAiRequestErrorKind =
 export interface PracticeAiMeta {
   configured: boolean;
   model: string;
-  orchestration: "google-adk";
+  orchestration: "google-adk" | "google-genai";
   provider: "gemini";
 }
 

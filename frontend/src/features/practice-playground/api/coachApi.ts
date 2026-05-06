@@ -10,7 +10,7 @@ import type {
 export interface AiProviderMeta {
   configured: boolean;
   model: string;
-  orchestration: "google-adk";
+  orchestration: "google-adk" | "google-genai";
   provider: "gemini";
 }
 

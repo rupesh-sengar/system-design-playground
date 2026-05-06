@@ -1,11 +1,4 @@
-import {
-  getFunctionCalls,
-  getFunctionResponses,
-  InMemoryRunner,
-  isFinalResponse,
-  stringifyContent,
-} from "@google/adk";
-import { createUserContent } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import {
   generateHintsResponseSchema,
   validateDesignResponseSchema,
@@ -15,12 +8,10 @@ import {
   type ValidateDesignResponse,
 } from "../../modules/ai/contracts.js";
 import {
-  createFeedbackValidationAgent,
-  createHintGenerationAgent,
-} from "../../modules/ai/agents/system-design-coach.agent.js";
-import {
+  feedbackValidationInstruction,
   buildHintPrompt,
   buildValidationPrompt,
+  hintGenerationInstruction,
 } from "../../modules/ai/prompts.js";
 import { parseStructuredOutput } from "../../shared/utils/json.js";
 import type { LlmProvider, ProviderMetadata } from "../llm/llm-provider.js";
@@ -30,8 +21,6 @@ type GeminiAdkProviderConfig = {
   configured: boolean;
   model: string;
 };
-
-const DEFAULT_USER_ID = "system-design-platform";
 
 class ServiceUnavailableError extends Error {
   statusCode = 503;
@@ -52,29 +41,22 @@ class ProviderResponseError extends Error {
 }
 
 export class GeminiAdkProvider implements LlmProvider {
-  private readonly feedbackRunner: InMemoryRunner;
-  private readonly hintRunner: InMemoryRunner;
+  private readonly client: GoogleGenAI | null;
 
   constructor(private readonly config: GeminiAdkProviderConfig) {
     if (process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
       process.env.GOOGLE_API_KEY = process.env.GEMINI_API_KEY;
     }
 
-    this.feedbackRunner = new InMemoryRunner({
-      agent: createFeedbackValidationAgent(config.model),
-      appName: config.appName,
-    });
-    this.hintRunner = new InMemoryRunner({
-      agent: createHintGenerationAgent(config.model),
-      appName: config.appName,
-    });
+    const apiKey = process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
+    this.client = apiKey ? new GoogleGenAI({ apiKey }) : null;
   }
 
   getMetadata(): ProviderMetadata {
     return {
       configured: this.config.configured,
       model: this.config.model,
-      orchestration: "google-adk",
+      orchestration: "google-genai",
       provider: "gemini",
     };
   }
@@ -85,12 +67,9 @@ export class GeminiAdkProvider implements LlmProvider {
     this.ensureConfigured();
 
     const rawOutput = await this.runPrompt({
+      instruction: feedbackValidationInstruction,
+      operation: "validate-design",
       prompt: buildValidationPrompt(input),
-      runner: this.feedbackRunner,
-      sessionId: `validation-${crypto.randomUUID()}`,
-      state: {
-        requestedStage: input.stageId ?? "overall",
-      },
     });
 
     return parseStructuredOutput(validateDesignResponseSchema, rawOutput);
@@ -102,12 +81,9 @@ export class GeminiAdkProvider implements LlmProvider {
     this.ensureConfigured();
 
     const rawOutput = await this.runPrompt({
+      instruction: hintGenerationInstruction,
+      operation: "generate-hints",
       prompt: buildHintPrompt(input),
-      runner: this.hintRunner,
-      sessionId: `hints-${crypto.randomUUID()}`,
-      state: {
-        requestedStage: input.stageId,
-      },
     });
 
     return parseStructuredOutput(generateHintsResponseSchema, rawOutput);
@@ -122,93 +98,48 @@ export class GeminiAdkProvider implements LlmProvider {
   }
 
   private async runPrompt({
+    instruction,
+    operation,
     prompt,
-    runner,
-    sessionId,
-    state,
   }: {
+    instruction: string;
+    operation: string;
     prompt: string;
-    runner: InMemoryRunner;
-    sessionId: string;
-    state: Record<string, string>;
   }): Promise<string> {
-    await runner.sessionService.createSession({
-      appName: this.config.appName,
-      userId: DEFAULT_USER_ID,
-      sessionId,
-      state,
+    if (!this.client) {
+      throw new ServiceUnavailableError(
+        "Gemini credentials are missing. Set GEMINI_API_KEY or GOOGLE_API_KEY.",
+      );
+    }
+
+    const response = await this.client.models.generateContent({
+      model: this.config.model,
+      contents: prompt,
+      config: {
+        maxOutputTokens: 4096,
+        responseMimeType: "application/json",
+        systemInstruction: instruction,
+        temperature: 0.2,
+      },
     });
 
-    let finalResponse = "";
-    let lastTextResponse = "";
-    const diagnostics = {
-      finalEvents: 0,
-      functionCallEvents: 0,
-      functionResponseEvents: 0,
-      partialEvents: 0,
-      textEvents: 0,
-      totalEvents: 0,
-    };
+    const text = response.text?.trim() ?? "";
 
-    for await (const event of runner.runAsync({
-      userId: DEFAULT_USER_ID,
-      sessionId,
-      newMessage: createUserContent(prompt),
-    })) {
-      diagnostics.totalEvents += 1;
-
-      const functionCallCount = getFunctionCalls(event).length;
-      const functionResponseCount = getFunctionResponses(event).length;
-
-      if (functionCallCount > 0) {
-        diagnostics.functionCallEvents += 1;
-      }
-
-      const text = stringifyContent(event).trim();
-
-      if (functionResponseCount > 0) {
-        diagnostics.functionResponseEvents += 1;
-      }
-
-      if (event.partial) {
-        diagnostics.partialEvents += 1;
-      }
-
-      if (text) {
-        diagnostics.textEvents += 1;
-        lastTextResponse = text;
-      }
-
-      if (!isFinalResponse(event)) {
-        continue;
-      }
-
-      diagnostics.finalEvents += 1;
-
-      if (text) {
-        finalResponse = text;
-      }
+    if (text) {
+      return text;
     }
 
-    const response = finalResponse || lastTextResponse;
+    console.warn("gemini returned an empty text response", {
+      candidates: response.candidates?.map((candidate) => ({
+        finishMessage: candidate.finishMessage,
+        finishReason: candidate.finishReason,
+      })),
+      model: this.config.model,
+      operation,
+      promptFeedback: response.promptFeedback,
+      usageMetadata: response.usageMetadata,
+    });
 
-    if (!response) {
-      console.warn(
-        "gemini adk completed without a text response",
-        diagnostics,
-      );
-      throw new ProviderResponseError(
-        "Gemini did not return a text response.",
-      );
-    }
-
-    if (!finalResponse) {
-      console.warn(
-        "gemini adk returned text without a final response marker",
-        diagnostics,
-      );
-    }
-
-    return response;
+    throw new ProviderResponseError("Gemini returned an empty response.");
   }
 }

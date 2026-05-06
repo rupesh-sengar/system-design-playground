@@ -8,7 +8,7 @@ import type {
 export type ProviderMetadata = {
   configured: boolean;
   model: string;
-  orchestration: "google-adk";
+  orchestration: "google-adk" | "google-genai";
   provider: "gemini";
 };
 

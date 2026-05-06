@@ -183,12 +183,13 @@ export const AppAuthProvider = ({ children }: PropsWithChildren) => {
   return (
     <Auth0Provider
       authorizationParams={buildAuth0AuthorizationParams(auth0Config)}
+      cacheLocation="localstorage"
       clientId={auth0Config.clientId}
       domain={auth0Config.domain}
       onRedirectCallback={(appState) => {
         const redirectState = appState as RedirectAppState | undefined;
         const nextHash = redirectState?.returnToHash ?? "#/";
-        const cleanedUrl = `${window.location.pathname}${nextHash}`;
+        const cleanedUrl = `/${nextHash}`;
 
         window.history.replaceState({}, document.title, cleanedUrl);
       }}

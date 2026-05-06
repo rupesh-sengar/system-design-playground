@@ -1,5 +1,6 @@
 const DEFAULT_API_BASE_URL =
   "https://system-design-playground-oky8.onrender.com";
+const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
 
 type ErrorPayload = {
   error?: string;
@@ -7,6 +8,7 @@ type ErrorPayload = {
 
 interface JsonRequestOptions extends RequestInit {
   requiresAuth?: boolean;
+  timeoutMs?: number;
 }
 
 type AccessTokenResolver = () => Promise<string | null>;
@@ -49,6 +51,13 @@ export class ApiError extends Error {
   ) {
     super(message);
     this.name = "ApiError";
+  }
+}
+
+export class ApiTimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ApiTimeoutError";
   }
 }
 
@@ -236,6 +245,15 @@ export const getApiErrorDetails = (
     };
   }
 
+  if (error instanceof ApiTimeoutError) {
+    return {
+      kind: "network",
+      message: error.message,
+      retryable: true,
+      statusCode: null,
+    };
+  }
+
   if (error instanceof TypeError) {
     return {
       kind: "network",
@@ -267,7 +285,11 @@ export const requestJson = async <T>(
   path: string,
   init: JsonRequestOptions = {},
 ): Promise<T> => {
-  const { requiresAuth = false, ...requestInit } = init;
+  const {
+    requiresAuth = false,
+    timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+    ...requestInit
+  } = init;
   const headers = new Headers(requestInit.headers);
 
   if (requestInit.body && !headers.has("Content-Type")) {
@@ -292,23 +314,50 @@ export const requestJson = async <T>(
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
 
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    ...requestInit,
-    headers,
-  });
+  const abortController = new AbortController();
+  let didTimeout = false;
+  const timeoutId = globalThis.setTimeout(() => {
+    didTimeout = true;
+    abortController.abort();
+  }, timeoutMs);
+  const forwardAbort = (): void => {
+    abortController.abort(requestInit.signal?.reason);
+  };
 
-  const isJsonResponse =
-    response.headers.get("content-type")?.includes("application/json") ?? false;
-  const payload = isJsonResponse ? ((await response.json()) as unknown) : null;
+  requestInit.signal?.addEventListener("abort", forwardAbort, { once: true });
 
-  if (!response.ok) {
-    const errorPayload = payload as ErrorPayload | null;
+  try {
+    const response = await fetch(`${getApiBaseUrl()}${path}`, {
+      ...requestInit,
+      headers,
+      signal: abortController.signal,
+    });
 
-    throw new ApiError(
-      errorPayload?.error ?? `Request failed with status ${response.status}.`,
-      response.status,
-    );
+    const isJsonResponse =
+      response.headers.get("content-type")?.includes("application/json") ??
+      false;
+    const payload = isJsonResponse ? ((await response.json()) as unknown) : null;
+
+    if (!response.ok) {
+      const errorPayload = payload as ErrorPayload | null;
+
+      throw new ApiError(
+        errorPayload?.error ?? `Request failed with status ${response.status}.`,
+        response.status,
+      );
+    }
+
+    return payload as T;
+  } catch (error) {
+    if (didTimeout) {
+      throw new ApiTimeoutError(
+        "The backend request timed out before the service responded.",
+      );
+    }
+
+    throw error;
+  } finally {
+    globalThis.clearTimeout(timeoutId);
+    requestInit.signal?.removeEventListener("abort", forwardAbort);
   }
-
-  return payload as T;
 };
