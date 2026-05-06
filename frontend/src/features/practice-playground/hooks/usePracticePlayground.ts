@@ -291,15 +291,19 @@ export const usePracticePlayground = (
     }
 
     const timeoutId = window.setTimeout(() => {
-      void savePracticeSession({
-        problemId: problem.id,
-        session: toPersistedPracticeSessionInput(remoteSession),
-      })
-        .unwrap()
-        .then(() => {
+      const persistSession = async (): Promise<void> => {
+        try {
+          await savePracticeSession({
+            problemId: problem.id,
+            session: toPersistedPracticeSessionInput(remoteSession),
+          }).unwrap();
           setPersistedRemoteSnapshot(currentSnapshot);
-        })
-        .catch(() => undefined);
+        } catch {
+          return;
+        }
+      };
+
+      void persistSession();
     }, 700);
 
     return () => {
@@ -430,14 +434,14 @@ export const usePracticePlayground = (
       const nextSession = createDefaultSession();
       setRemoteSession(nextSession);
       setPersistedRemoteSnapshot(createPracticeSessionSnapshot(nextSession));
-      void deletePracticeSession(problem.id)
-        .unwrap()
-        .then(() => {
+
+      const resetRemoteSession = async (): Promise<void> => {
+        try {
+          await deletePracticeSession(problem.id).unwrap();
           toast.success("Saved playground notes cleared.", {
             title: "Session Reset",
           });
-        })
-        .catch((error) => {
+        } catch (error) {
           toast.error(
             getApiErrorDetails(
               error,
@@ -448,7 +452,10 @@ export const usePracticePlayground = (
               title: "Session Reset Failed",
             },
           );
-        });
+        }
+      };
+
+      void resetRemoteSession();
     } else {
       setSessions((currentSessions) => {
         const nextSessions = { ...currentSessions };

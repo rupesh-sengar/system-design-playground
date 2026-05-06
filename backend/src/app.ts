@@ -18,8 +18,16 @@ const createAsyncHandler =
   (
     handler: (request: Request, response: Response) => Promise<void>,
   ) =>
-  (request: Request, response: Response, next: (error?: unknown) => void) => {
-    void handler(request, response).catch(next);
+  async (
+    request: Request,
+    response: Response,
+    next: (error?: unknown) => void,
+  ): Promise<void> => {
+    try {
+      await handler(request, response);
+    } catch (error) {
+      next(error);
+    }
   };
 
 export const buildApp = (

@@ -24,8 +24,16 @@ const createAsyncHandler =
       next: NextFunction,
     ) => Promise<void>,
   ) =>
-  (request: Request, response: Response, next: NextFunction): void => {
-    void handler(request, response, next).catch(next);
+  async (
+    request: Request,
+    response: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      await handler(request, response, next);
+    } catch (error) {
+      next(error);
+    }
   };
 
 export const createAiRouter = ({ llmProvider }: AiRoutesOptions): Router => {

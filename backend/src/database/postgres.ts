@@ -168,7 +168,11 @@ export class PostgresDatabase {
         const shouldRecyclePool = isRetryableConnectionError(error);
 
         if (client && transactionStarted) {
-          await client.query("ROLLBACK").catch(() => undefined);
+          try {
+            await client.query("ROLLBACK");
+          } catch {
+            // Preserve the original transaction failure if rollback also fails.
+          }
         }
 
         releaseClient(shouldRecyclePool);
@@ -258,17 +262,18 @@ export class PostgresDatabase {
 
     if (!this.poolResetPromise) {
       this.pool = null;
-      this.poolResetPromise = pool
-        .end()
-        .catch((closeError) => {
+      this.poolResetPromise = (async () => {
+        try {
+          await pool.end();
+        } catch (closeError) {
           console.error("failed to close postgres pool", {
             closeError,
             triggerError: error,
           });
-        })
-        .finally(() => {
+        } finally {
           this.poolResetPromise = null;
-        });
+        }
+      })();
     }
 
     await this.poolResetPromise;
