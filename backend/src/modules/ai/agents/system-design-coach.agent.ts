@@ -3,7 +3,6 @@ import {
   feedbackValidationInstruction,
   hintGenerationInstruction,
 } from "../prompts.js";
-import { createStageRubricTool } from "../tools/stage-rubric.tool.js";
 
 export const createFeedbackValidationAgent = (
   model: string,
@@ -14,7 +13,6 @@ export const createFeedbackValidationAgent = (
     description:
       "Evaluates system design submissions and returns structured validation feedback.",
     instruction: feedbackValidationInstruction,
-    tools: [createStageRubricTool()],
   });
 
 export const createHintGenerationAgent = (model: string): LlmAgent =>
@@ -24,5 +22,4 @@ export const createHintGenerationAgent = (model: string): LlmAgent =>
     description:
       "Provides stage-specific coaching hints for a system design draft.",
     instruction: hintGenerationInstruction,
-    tools: [createStageRubricTool()],
   });

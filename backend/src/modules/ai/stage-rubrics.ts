@@ -1,8 +1,6 @@
-import { FunctionTool } from "@google/adk";
-import { z } from "zod";
-import { stageIdSchema, type StageId } from "../contracts.js";
+import type { StageId } from "./contracts.js";
 
-type StageRubric = {
+export type StageRubric = {
   criteria: string[];
   redFlags: string[];
   deliverable: string;
@@ -10,7 +8,8 @@ type StageRubric = {
 
 const stageRubrics: Record<StageId, StageRubric> = {
   requirements: {
-    deliverable: "A clearly scoped problem definition with functional and non-functional requirements.",
+    deliverable:
+      "A clearly scoped problem definition with functional and non-functional requirements.",
     criteria: [
       "Identifies the primary user flow and the most important action.",
       "Separates in-scope and out-of-scope functionality early.",
@@ -23,7 +22,8 @@ const stageRubrics: Record<StageId, StageRubric> = {
     ],
   },
   "core-entities": {
-    deliverable: "A clean domain model with key entities, ownership, and high-value relationships.",
+    deliverable:
+      "A clean domain model with key entities, ownership, and high-value relationships.",
     criteria: [
       "Defines core entities and their identifiers.",
       "Explains cardinality and ownership boundaries.",
@@ -36,7 +36,8 @@ const stageRubrics: Record<StageId, StageRubric> = {
     ],
   },
   "api-interface": {
-    deliverable: "A coherent API contract with the right writes, reads, and async boundaries.",
+    deliverable:
+      "A coherent API contract with the right writes, reads, and async boundaries.",
     criteria: [
       "Defines the main APIs or events that power the user flows.",
       "Calls out idempotency, pagination, and validation where necessary.",
@@ -49,7 +50,8 @@ const stageRubrics: Record<StageId, StageRubric> = {
     ],
   },
   "data-flow": {
-    deliverable: "A traceable read/write path that shows how requests move through the system.",
+    deliverable:
+      "A traceable read/write path that shows how requests move through the system.",
     criteria: [
       "Explains the hot write path end-to-end.",
       "Explains the hot read path end-to-end.",
@@ -62,7 +64,8 @@ const stageRubrics: Record<StageId, StageRubric> = {
     ],
   },
   "high-level-design": {
-    deliverable: "A scalable architecture with justified component choices and tradeoffs.",
+    deliverable:
+      "A scalable architecture with justified component choices and tradeoffs.",
     criteria: [
       "Names the critical services and storage systems.",
       "Connects design choices to scale and SLO requirements.",
@@ -75,7 +78,8 @@ const stageRubrics: Record<StageId, StageRubric> = {
     ],
   },
   "deep-dives": {
-    deliverable: "Focused discussion of failure modes, tradeoffs, and hard scaling edges.",
+    deliverable:
+      "Focused discussion of failure modes, tradeoffs, and hard scaling edges.",
     criteria: [
       "Identifies the most likely bottlenecks or hot keys.",
       "Explains one or two deep technical tradeoffs clearly.",
@@ -89,18 +93,5 @@ const stageRubrics: Record<StageId, StageRubric> = {
   },
 };
 
-export const createStageRubricTool = (): FunctionTool =>
-  new FunctionTool({
-    name: "get_stage_rubric",
-    description:
-      "Returns the review rubric, expected deliverable, and common red flags for a system design interview stage.",
-    parameters: z.object({
-      stageId: stageIdSchema.describe(
-        "The system design interview stage to evaluate.",
-      ),
-    }),
-    execute: async ({ stageId }: { stageId: StageId }) => ({
-      stageId,
-      ...stageRubrics[stageId],
-    }),
-  });
+export const getStageRubric = (stageId: StageId): StageRubric =>
+  stageRubrics[stageId];

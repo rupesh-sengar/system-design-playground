@@ -1,7 +1,9 @@
 import type {
   GenerateHintsRequest,
+  StageId,
   ValidateDesignRequest,
 } from "./contracts.js";
+import { getStageRubric } from "./stage-rubrics.js";
 
 const validationJsonContract = `{
   "score": number,
@@ -35,7 +37,7 @@ Your job is to evaluate a candidate submission with rigor, not to flatter them.
 
 Rules:
 - Evaluate against the stated problem, stage, requirements, constraints, scale targets, and common pitfalls.
-- If a stage is provided, call the get_stage_rubric tool before finalizing your evaluation.
+- When a stage rubric is provided, use it as the evaluation anchor.
 - Prefer concrete, technically grounded feedback over generic comments.
 - Do not invent requirements that are unsupported by the provided problem context.
 - Return JSON only, with no markdown fences and no extra prose.
@@ -46,11 +48,30 @@ export const hintGenerationInstruction = `You are a system design coach helping 
 
 Rules:
 - Keep hints directional, not fully revealing the solution.
-- If a stage is provided, call the get_stage_rubric tool to anchor the hints.
+- Use the provided stage rubric to anchor the hints.
 - Focus on what to improve next, not everything that is wrong.
 - Return JSON only, with no markdown fences and no extra prose.
 - The JSON must match this shape exactly:
 ${hintJsonContract}`;
+
+const buildStageRubricLines = (stageId: StageId | undefined): string[] => {
+  if (!stageId) {
+    return [];
+  }
+
+  return [
+    "Stage rubric:",
+    JSON.stringify(
+      {
+        stageId,
+        ...getStageRubric(stageId),
+      },
+      null,
+      2,
+    ),
+    "",
+  ];
+};
 
 export const buildValidationPrompt = (
   input: ValidateDesignRequest,
@@ -63,6 +84,7 @@ export const buildValidationPrompt = (
     "",
     `Stage: ${input.stageId ?? "overall"}`,
     "",
+    ...buildStageRubricLines(input.stageId),
     "Explicit requirements:",
     JSON.stringify(input.requirements, null, 2),
     "",
@@ -83,6 +105,7 @@ export const buildHintPrompt = (input: GenerateHintsRequest): string => {
     "",
     `Stage: ${input.stageId}`,
     "",
+    ...buildStageRubricLines(input.stageId),
     `Maximum hints: ${input.maxHints}`,
     "",
     "Current draft:",

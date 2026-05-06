@@ -1,4 +1,10 @@
-import { InMemoryRunner, isFinalResponse, stringifyContent } from "@google/adk";
+import {
+  getFunctionCalls,
+  getFunctionResponses,
+  InMemoryRunner,
+  isFinalResponse,
+  stringifyContent,
+} from "@google/adk";
 import { createUserContent } from "@google/genai";
 import {
   generateHintsResponseSchema,
@@ -33,6 +39,15 @@ class ServiceUnavailableError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "ServiceUnavailableError";
+  }
+}
+
+class ProviderResponseError extends Error {
+  statusCode = 502;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "ProviderResponseError";
   }
 }
 
@@ -125,29 +140,75 @@ export class GeminiAdkProvider implements LlmProvider {
     });
 
     let finalResponse = "";
+    let lastTextResponse = "";
+    const diagnostics = {
+      finalEvents: 0,
+      functionCallEvents: 0,
+      functionResponseEvents: 0,
+      partialEvents: 0,
+      textEvents: 0,
+      totalEvents: 0,
+    };
 
     for await (const event of runner.runAsync({
       userId: DEFAULT_USER_ID,
       sessionId,
       newMessage: createUserContent(prompt),
     })) {
+      diagnostics.totalEvents += 1;
+
+      const functionCallCount = getFunctionCalls(event).length;
+      const functionResponseCount = getFunctionResponses(event).length;
+
+      if (functionCallCount > 0) {
+        diagnostics.functionCallEvents += 1;
+      }
+
+      const text = stringifyContent(event).trim();
+
+      if (functionResponseCount > 0) {
+        diagnostics.functionResponseEvents += 1;
+      }
+
+      if (event.partial) {
+        diagnostics.partialEvents += 1;
+      }
+
+      if (text) {
+        diagnostics.textEvents += 1;
+        lastTextResponse = text;
+      }
+
       if (!isFinalResponse(event)) {
         continue;
       }
 
-      const text = stringifyContent(event).trim();
+      diagnostics.finalEvents += 1;
 
       if (text) {
         finalResponse = text;
       }
     }
 
-    if (!finalResponse) {
-      throw new Error(
-        "Gemini ADK completed without returning a final response.",
+    const response = finalResponse || lastTextResponse;
+
+    if (!response) {
+      console.warn(
+        "gemini adk completed without a text response",
+        diagnostics,
+      );
+      throw new ProviderResponseError(
+        "Gemini did not return a text response.",
       );
     }
 
-    return finalResponse;
+    if (!finalResponse) {
+      console.warn(
+        "gemini adk returned text without a final response marker",
+        diagnostics,
+      );
+    }
+
+    return response;
   }
 }
