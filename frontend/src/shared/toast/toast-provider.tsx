@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import "./toast-provider.css";
 
 type ToastTone = "success" | "error" | "info";
 

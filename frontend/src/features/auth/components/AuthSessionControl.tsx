@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppAuth } from "../app-auth";
 import { useBackendHealth } from "../hooks/useBackendHealth";
+import "./auth-session-control.css";
 
 const buildInitials = (value: string | null): string => {
   if (!value) {

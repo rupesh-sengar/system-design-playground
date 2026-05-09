@@ -5,7 +5,7 @@ import App from "@/App";
 import { store } from "@/app/store";
 import { AppAuthProvider } from "@/features/auth/app-auth";
 import { ToastProvider } from "@/shared/toast/toast-provider";
-import "@/styles/app.css";
+import "@/styles/base.css";
 
 ReactDOM.createRoot(document.getElementById("app") as HTMLElement).render(
   <React.StrictMode>

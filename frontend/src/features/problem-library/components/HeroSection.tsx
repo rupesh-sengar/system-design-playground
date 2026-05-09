@@ -1,4 +1,6 @@
 import type { ProblemLibraryMetrics } from "../model/types";
+import "@/shared/ui/shared-ui.css";
+import "./HeroSection.css";
 
 interface HeroSectionProps {
   metrics: ProblemLibraryMetrics;

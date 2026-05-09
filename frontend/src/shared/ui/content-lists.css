@@ -1,0 +1,34 @@
+.token-list,
+.variant-list,
+.interview-flow {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text);
+}
+
+.token-list,
+.variant-list {
+    display: grid;
+    gap: 10px;
+}
+
+.token-list li,
+.variant-list li,
+.interview-flow li {
+    line-height: 1.6;
+}
+
+.token-list--warning li::marker {
+    color: var(--accent-warm);
+}
+
+.interview-flow {
+    display: grid;
+    gap: 10px;
+}
+
+:root[data-theme="dark"] .token-list,
+:root[data-theme="dark"] .variant-list,
+:root[data-theme="dark"] .interview-flow {
+    color: var(--text);
+}

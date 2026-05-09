@@ -1,5 +1,8 @@
 import { useAppAuth } from "@/features/auth/app-auth";
+import "@/shared/ui/shared-ui.css";
+import "./PracticeAiReviewPanel.css";
 import type {
+  PracticeAiMeta,
   PracticeAiRequestError,
   PracticePlaygroundViewModel,
 } from "../model/types";
@@ -21,6 +24,14 @@ const formatTimestamp = (value: string): string => {
     hour: "numeric",
     minute: "2-digit",
   });
+};
+
+const formatProviderLabel = (meta: PracticeAiMeta): string => {
+  if (meta.provider === "rule-engine") {
+    return `rule-engine / ${meta.rubricVersion ?? "rubric"}`;
+  }
+
+  return `${meta.provider} / ${meta.model ?? "model"}`;
 };
 
 const FeedbackList = ({ items, title }: { items: string[]; title: string }) => {
@@ -245,8 +256,10 @@ export const PracticeAiReviewPanel = ({
       </div>
 
       <div className="playground-ai__meta">
-        <span>{draftWordCount} words in current draft</span>
-        <span>{helperText}</span>
+        <span className="playground-ai__info">
+          {draftWordCount} words in current draft
+        </span>
+        <span className="playground-ai__info">{helperText}</span>
       </div>
 
       {authError ? (
@@ -299,7 +312,7 @@ export const PracticeAiReviewPanel = ({
               </div>
               <div className="playground-ai__card-meta">
                 <span className="playground-ai__chip">
-                  {hintResult.meta.provider} / {hintResult.meta.model}
+                  {formatProviderLabel(hintResult.meta)}
                 </span>
                 <span className="playground-ai__chip">
                   {formatTimestamp(hintResult.receivedAt)}
@@ -358,7 +371,7 @@ export const PracticeAiReviewPanel = ({
                   Confidence {validationResult.confidence}
                 </span>
                 <span className="playground-ai__chip">
-                  {validationResult.meta.model}
+                  {formatProviderLabel(validationResult.meta)}
                 </span>
                 <span className="playground-ai__chip">
                   {formatTimestamp(validationResult.receivedAt)}

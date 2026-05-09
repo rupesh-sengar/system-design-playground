@@ -133,6 +133,17 @@ export class PostgresDatabase {
     return this.runQueryWithReconnect<Row>(text, values);
   }
 
+  async close(): Promise<void> {
+    const pool = this.pool;
+    this.pool = null;
+
+    if (!pool) {
+      return;
+    }
+
+    await pool.end();
+  }
+
   async withTransaction<T>(
     callback: (client: PoolClient) => Promise<T>,
   ): Promise<T> {

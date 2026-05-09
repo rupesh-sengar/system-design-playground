@@ -1,5 +1,7 @@
 import { getDifficultyClassName } from "../lib/catalog";
 import type { Problem } from "../model/problem-library";
+import "@/shared/ui/status-chips.css";
+import "./ProblemCard.css";
 
 interface ProblemCardProps {
   isBookmarked: boolean;

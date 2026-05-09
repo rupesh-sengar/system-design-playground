@@ -1,0 +1,203 @@
+.toast-viewport {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 1200;
+    display: grid;
+    gap: 14px;
+    width: min(380px, calc(100vw - 32px));
+    pointer-events: none;
+}
+
+.toast {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: start;
+    overflow: hidden;
+    padding: 16px 16px 16px 22px;
+    border-radius: 22px;
+    border: 1px solid var(--border);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 55%),
+        var(--surface-strong);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(20px);
+    pointer-events: auto;
+    animation: toast-enter 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.toast::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    left: 8px;
+    width: 4px;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+.toast::after {
+    content: "";
+    position: absolute;
+    top: -42px;
+    right: -28px;
+    width: 120px;
+    height: 120px;
+    border-radius: 999px;
+    background: radial-gradient(
+        circle,
+        rgba(15, 122, 115, 0.12) 0%,
+        transparent 68%
+    );
+    pointer-events: none;
+}
+
+.toast--success {
+    border-color: rgba(45, 132, 88, 0.16);
+}
+
+.toast--error {
+    border-color: rgba(180, 69, 69, 0.16);
+}
+
+.toast--info {
+    border-color: rgba(15, 122, 115, 0.16);
+}
+
+.toast--success::before {
+    background: linear-gradient(180deg, var(--easy) 0%, rgba(71, 176, 122, 0.64) 100%);
+}
+
+.toast--success::after {
+    background: radial-gradient(
+        circle,
+        rgba(45, 132, 88, 0.14) 0%,
+        transparent 70%
+    );
+}
+
+.toast--error::before {
+    background: linear-gradient(180deg, var(--hard) 0%, rgba(180, 69, 69, 0.64) 100%);
+}
+
+.toast--error::after {
+    background: radial-gradient(
+        circle,
+        rgba(180, 69, 69, 0.14) 0%,
+        transparent 70%
+    );
+}
+
+.toast--info::before {
+    background: linear-gradient(180deg, var(--accent) 0%, rgba(15, 122, 115, 0.6) 100%);
+}
+
+.toast__body {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
+.toast__body strong {
+    color: var(--accent-deep);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.toast__body p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.86rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.toast--success .toast__body strong {
+    color: var(--easy);
+}
+
+.toast--error .toast__body strong {
+    color: var(--hard);
+}
+
+.toast__dismiss {
+    align-self: center;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(41, 58, 61, 0.08);
+    background: rgba(255, 255, 255, 0.68);
+    color: var(--muted);
+    font-size: 0.74rem;
+    font-weight: 700;
+    transition:
+        transform 160ms ease,
+        border-color 160ms ease,
+        background-color 160ms ease,
+        color 160ms ease;
+}
+
+.toast__dismiss:hover {
+    transform: translateY(-1px);
+    border-color: rgba(15, 122, 115, 0.18);
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--text);
+}
+
+@keyframes toast-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+:root[data-theme="dark"] .toast {
+    border-color: rgba(143, 170, 176, 0.16);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 56%),
+        rgba(15, 22, 28, 0.88);
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
+}
+
+:root[data-theme="dark"] .toast__dismiss {
+    border-color: rgba(143, 170, 176, 0.14);
+    background: rgba(19, 29, 37, 0.9);
+    color: var(--muted);
+}
+
+:root[data-theme="dark"] .toast__dismiss:hover {
+    border-color: rgba(66, 184, 174, 0.22);
+    background: rgba(29, 42, 51, 0.96);
+    color: var(--text);
+}
+
+:root[data-theme="dark"] .toast--success .toast__body strong {
+    color: #8fe0b2;
+}
+
+:root[data-theme="dark"] .toast--error .toast__body strong {
+    color: #ffb2b2;
+}
+
+:root[data-theme="dark"] .toast--info .toast__body strong {
+    color: var(--accent-deep);
+}
+
+@media (max-width: 760px) {
+    .toast-viewport {
+        top: 12px;
+        right: 12px;
+        left: 12px;
+        width: auto;
+    }
+}

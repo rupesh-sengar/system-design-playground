@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { sanitizeRichTextHtml } from "@/shared/lib/richText";
 import Editor from "@/shared/ui/Editor";
+import "./rich-text-editor.css";
 
 interface RichTextEditorProps {
   placeholder: string;

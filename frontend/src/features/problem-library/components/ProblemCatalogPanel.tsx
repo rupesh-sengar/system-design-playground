@@ -1,6 +1,8 @@
 import type { ChangeEvent } from "react";
 import { FilterPill } from "@/shared/ui/FilterPill";
 import { ProblemCard } from "./ProblemCard";
+import "@/shared/ui/shared-ui.css";
+import "./ProblemCatalogPanel.css";
 import type { DifficultyFilter, Problem } from "../model/problem-library";
 import type {
   CatalogFilters,

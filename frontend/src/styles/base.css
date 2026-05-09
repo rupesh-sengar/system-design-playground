@@ -1,0 +1,97 @@
+:root {
+    font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+    color: #1f2a2f;
+    background:
+        radial-gradient(
+            circle at top left,
+            rgba(238, 142, 88, 0.25),
+            transparent 34%
+        ),
+        radial-gradient(
+            circle at top right,
+            rgba(16, 122, 114, 0.18),
+            transparent 28%
+        ),
+        linear-gradient(160deg, #f8f1e6 0%, #f4e7d4 42%, #efe3d0 100%);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    --surface: rgba(255, 250, 242, 0.78);
+    --surface-strong: rgba(255, 252, 247, 0.94);
+    --surface-muted: rgba(246, 238, 225, 0.88);
+    --border: rgba(41, 58, 61, 0.1);
+    --text: #1f2a2f;
+    --muted: #5e6c6d;
+    --accent: #0f7a73;
+    --accent-deep: #0a5e59;
+    --accent-warm: #d76b3f;
+    --accent-gold: #ab7e16;
+    --easy: #2d8458;
+    --medium: #b2740d;
+    --hard: #b44545;
+    --shadow: 0 24px 60px rgba(65, 54, 36, 0.12);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    color: var(--text);
+    background: inherit;
+}
+
+button,
+input,
+select {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+    transform: none;
+    box-shadow: none;
+}
+
+:root[data-theme="dark"] {
+    color: #e6edf2;
+    background:
+        radial-gradient(
+            circle at top left,
+            rgba(67, 187, 177, 0.18),
+            transparent 34%
+        ),
+        radial-gradient(
+            circle at top right,
+            rgba(243, 138, 93, 0.14),
+            transparent 28%
+        ),
+        linear-gradient(160deg, #081015 0%, #10181d 42%, #141d22 100%);
+    --surface: rgba(10, 16, 22, 0.78);
+    --surface-strong: rgba(14, 22, 29, 0.94);
+    --surface-muted: rgba(16, 25, 33, 0.9);
+    --border: rgba(143, 170, 176, 0.16);
+    --text: #e6edf2;
+    --muted: #98aaae;
+    --accent: #42b8ae;
+    --accent-deep: #8ad8d2;
+    --accent-warm: #f38a5d;
+    --accent-gold: #d5a445;
+    --easy: #47b07a;
+    --medium: #d2a03a;
+    --hard: #d76a6a;
+    --shadow: 0 30px 70px rgba(0, 0, 0, 0.38);
+}

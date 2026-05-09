@@ -38,19 +38,16 @@ const createAsyncHandler =
 
 export const createAiRouter = ({ llmProvider }: AiRoutesOptions): Router => {
   const router = Router();
-  const validationWorkflow = new FeedbackValidationWorkflow(llmProvider);
+  const validationWorkflow = new FeedbackValidationWorkflow();
   const hintWorkflow = new HintGenerationWorkflow(llmProvider);
 
   router.post(
     "/validate-design",
     createAsyncHandler(async (request, response) => {
       const payload = validateDesignRequestSchema.parse(request.body);
-      const data = await validationWorkflow.run(payload);
+      const result = await validationWorkflow.run(payload);
 
-      response.json({
-        data,
-        meta: llmProvider.getMetadata(),
-      });
+      response.json(result);
     }),
   );
 

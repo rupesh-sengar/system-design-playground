@@ -1,0 +1,69 @@
+.detail-meta,
+.state-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
+.badge,
+.category-chip,
+.state-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.badge {
+    color: #fff;
+}
+
+.badge--easy {
+    background: var(--easy);
+}
+
+.badge--medium {
+    background: var(--medium);
+}
+
+.badge--hard {
+    background: var(--hard);
+}
+
+.category-chip {
+    background: rgba(15, 122, 115, 0.08);
+    color: var(--accent-deep);
+}
+
+.state-row {
+    margin-top: 10px;
+}
+
+.state-chip {
+    background: rgba(215, 107, 63, 0.1);
+    color: var(--accent-warm);
+}
+
+.state-chip--done {
+    background: rgba(45, 132, 88, 0.12);
+    color: var(--easy);
+}
+
+:root[data-theme="dark"] .category-chip {
+    background: rgba(66, 184, 174, 0.14);
+    color: var(--accent-deep);
+}
+
+:root[data-theme="dark"] .state-chip {
+    background: rgba(243, 138, 93, 0.14);
+    color: #ffb287;
+}
+
+:root[data-theme="dark"] .state-chip--done {
+    background: rgba(71, 176, 122, 0.16);
+    color: #8fe0b2;
+}

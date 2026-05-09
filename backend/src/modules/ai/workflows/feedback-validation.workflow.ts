@@ -1,13 +1,11 @@
 import type {
   ValidateDesignRequest,
-  ValidateDesignResponse,
 } from "../contracts.js";
-import type { LlmProvider } from "../../../providers/llm/llm-provider.js";
+import { judgeSubmission } from "../../judge/judge.service.js";
+import type { JudgeResponseEnvelope } from "../../judge/types.js";
 
 export class FeedbackValidationWorkflow {
-  constructor(private readonly llmProvider: LlmProvider) {}
-
-  run(input: ValidateDesignRequest): Promise<ValidateDesignResponse> {
-    return this.llmProvider.validateDesign(input);
+  run(input: ValidateDesignRequest): Promise<JudgeResponseEnvelope> {
+    return judgeSubmission(input);
   }
 }

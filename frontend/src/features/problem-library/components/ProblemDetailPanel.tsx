@@ -1,5 +1,9 @@
 import { difficultyGuidance, getDifficultyClassName } from "../lib/catalog";
 import type { Problem } from "../model/problem-library";
+import "@/shared/ui/content-lists.css";
+import "@/shared/ui/shared-ui.css";
+import "@/shared/ui/status-chips.css";
+import "./ProblemDetailPanel.css";
 
 interface ProblemDetailPanelProps {
   isBookmarked: boolean;

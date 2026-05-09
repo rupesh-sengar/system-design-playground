@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import "./theme-mode-control.css";
 
 type ThemePreference = "system" | "light" | "dark";
 type ResolvedTheme = "light" | "dark";

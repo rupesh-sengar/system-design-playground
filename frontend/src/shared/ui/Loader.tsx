@@ -1,3 +1,5 @@
+import "./brand-loader.css";
+
 interface LoaderProps {
   caption?: string;
   className?: string;

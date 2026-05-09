@@ -1,3 +1,5 @@
+import "./filter-pill.css";
+
 interface FilterPillProps {
   active: boolean;
   label: string;

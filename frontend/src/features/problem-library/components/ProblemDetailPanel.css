@@ -1,0 +1,120 @@
+.detail {
+    padding: 22px;
+    position: sticky;
+    top: 20px;
+}
+
+.detail h2 {
+    margin: 10px 0 0;
+    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    font-size: clamp(1.8rem, 2.2vw, 2.6rem);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 0.96;
+}
+
+.detail-section p,
+.detail-empty p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.65;
+}
+
+.detail-card,
+.detail-empty {
+    display: grid;
+    gap: 14px;
+}
+
+.detail-card__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: start;
+}
+
+.detail-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.detail-section {
+    display: grid;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid rgba(41, 58, 61, 0.08);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.68);
+}
+
+.detail-section--accent {
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.88),
+            rgba(244, 250, 249, 0.86)
+        ),
+        rgba(255, 255, 255, 0.8);
+}
+
+.detail-section h3 {
+    margin: 0;
+    font-size: 0.96rem;
+}
+
+.scale-note {
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(246, 238, 225, 0.92);
+}
+
+.guidance {
+    color: var(--text);
+    font-weight: 600;
+}
+
+:root[data-theme="dark"] .detail-section,
+:root[data-theme="dark"] .scale-note {
+    border-color: rgba(143, 170, 176, 0.16);
+    background: rgba(15, 22, 28, 0.82);
+    box-shadow: none;
+}
+
+:root[data-theme="dark"] .detail-section--accent {
+    background: linear-gradient(
+        180deg,
+        rgba(14, 22, 29, 0.96),
+        rgba(19, 28, 35, 0.86)
+    );
+}
+
+:root[data-theme="dark"] .detail-section,
+:root[data-theme="dark"] .detail-section p,
+:root[data-theme="dark"] .guidance,
+:root[data-theme="dark"] .scale-note {
+    color: var(--muted);
+}
+
+@media (max-width: 1120px) {
+    .detail {
+        position: static;
+    }
+}
+
+@media (max-width: 760px) {
+    .detail {
+        padding: 22px;
+        border-radius: 24px;
+    }
+
+    .detail-card__header {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .detail-actions {
+        justify-content: start;
+    }
+}

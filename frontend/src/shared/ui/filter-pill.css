@@ -1,0 +1,60 @@
+.pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 0;
+}
+
+.pill {
+    border: 1px solid rgba(41, 58, 61, 0.08);
+    background: rgba(255, 255, 255, 0.74);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 8px 12px;
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    font-weight: 700;
+    font-size: 0.84rem;
+}
+
+.pill strong {
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.pill--muted {
+    background: rgba(246, 238, 225, 0.9);
+}
+
+.pill--active {
+    background: linear-gradient(
+        135deg,
+        rgba(15, 122, 115, 0.12),
+        rgba(215, 107, 63, 0.12)
+    );
+    border-color: rgba(15, 122, 115, 0.28);
+}
+
+:root[data-theme="dark"] .pill {
+    border-color: rgba(143, 170, 176, 0.14);
+    background: rgba(19, 29, 37, 0.9);
+    color: var(--text);
+}
+
+:root[data-theme="dark"] .pill strong {
+    color: #8fa2a7;
+}
+
+:root[data-theme="dark"] .pill--muted {
+    background: rgba(28, 39, 48, 0.92);
+}
+
+:root[data-theme="dark"] .pill--active {
+    border-color: rgba(66, 184, 174, 0.28);
+    background: linear-gradient(
+        180deg,
+        rgba(18, 29, 36, 0.96),
+        rgba(16, 39, 40, 0.88)
+    );
+}

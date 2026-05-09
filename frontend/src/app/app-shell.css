@@ -1,0 +1,77 @@
+.shell {
+    width: min(1380px, calc(100vw - 32px));
+    margin: 0 auto;
+    padding: 24px 0 36px;
+}
+
+.shell--playground {
+    width: min(1520px, calc(100vw - 32px));
+}
+
+.app-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.app-toolbar__controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    min-width: 0;
+}
+
+.app-toolbar__brand {
+    display: grid;
+    gap: 4px;
+}
+
+.app-toolbar__brand span {
+    color: var(--muted);
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
+.workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.9fr);
+    gap: 16px;
+    margin-top: 14px;
+    align-items: start;
+}
+
+.workspace--library-only {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+:root[data-theme="dark"] .app-toolbar__controls {
+    min-width: 0;
+}
+
+@media (max-width: 1120px) {
+    .workspace {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    .shell {
+        width: min(100vw - 20px, 100%);
+        padding-top: 18px;
+    }
+
+    .app-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .app-toolbar__controls {
+        width: 100%;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: stretch;
+    }
+}

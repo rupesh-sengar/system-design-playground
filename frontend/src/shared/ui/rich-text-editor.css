@@ -1,0 +1,211 @@
+.rich-text-editor {
+    display: grid;
+    gap: 10px;
+    height: 100%;
+    min-height: 0;
+}
+
+.rich-text-editor__frame {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 0;
+    height: 100%;
+    border: 1px solid rgba(41, 58, 61, 0.12);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.84);
+    overflow: hidden;
+}
+
+.rich-text-editor__frame:focus-within {
+    border-color: rgba(15, 122, 115, 0.42);
+    box-shadow: 0 0 0 4px rgba(15, 122, 115, 0.12);
+}
+
+.rich-text-editor__source {
+    min-height: 0;
+    height: 100%;
+}
+
+.rich-text-editor .jodit-container:not(.jodit_inline) {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    border: 0;
+    border-radius: 20px;
+    overflow: hidden;
+    background: transparent;
+    box-shadow: none;
+    height: 100%;
+    min-height: 0;
+}
+
+.rich-text-editor .jodit-toolbar__box:not(:empty),
+.rich-text-editor .jodit-status-bar {
+    background: rgba(245, 243, 236, 0.96);
+}
+
+.rich-text-editor .jodit-toolbar__box {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    border-bottom: 1px solid rgba(41, 58, 61, 0.08);
+    padding: 6px;
+}
+
+.rich-text-editor .jodit-ui-group {
+    gap: 4px;
+}
+
+.rich-text-editor .jodit-toolbar-button {
+    border-radius: 12px;
+}
+
+.rich-text-editor .jodit-workplace {
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(41, 58, 61, 0.24) transparent;
+}
+
+.rich-text-editor .jodit-wysiwyg,
+.rich-text-editor .jodit-wysiwyg_iframe {
+    min-height: 100% !important;
+    padding: 18px 20px;
+    line-height: 1.7;
+    color: var(--text);
+}
+
+.rich-text-editor .jodit-wysiwyg h1,
+.rich-text-editor .jodit-wysiwyg h2,
+.rich-text-editor .jodit-wysiwyg h3,
+.rich-text-editor .jodit-wysiwyg h4,
+.rich-text-editor .jodit-wysiwyg p,
+.rich-text-editor .jodit-wysiwyg blockquote,
+.rich-text-editor .jodit-wysiwyg ul,
+.rich-text-editor .jodit-wysiwyg ol,
+.rich-text-editor .jodit-wysiwyg table {
+    margin: 0 0 12px;
+}
+
+.rich-text-editor .jodit-wysiwyg h1,
+.rich-text-editor .jodit-wysiwyg h2,
+.rich-text-editor .jodit-wysiwyg h3,
+.rich-text-editor .jodit-wysiwyg h4 {
+    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    font-weight: 700;
+}
+
+.rich-text-editor .jodit-wysiwyg blockquote {
+    margin-left: 0;
+    padding-left: 14px;
+    border-left: 3px solid rgba(15, 122, 115, 0.2);
+    color: var(--muted);
+}
+
+.rich-text-editor .jodit-wysiwyg ul,
+.rich-text-editor .jodit-wysiwyg ol {
+    padding-left: 22px;
+}
+
+.rich-text-editor .jodit-status-bar {
+    padding-inline: 14px;
+}
+
+.rich-text-editor .jodit-workplace::-webkit-scrollbar {
+    width: 10px;
+}
+
+.rich-text-editor .jodit-workplace::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: rgba(41, 58, 61, 0.2);
+    background-clip: content-box;
+}
+
+.rich-text-editor .jodit-workplace::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+:root[data-theme="dark"] .rich-text-editor__frame {
+    border-color: rgba(143, 170, 176, 0.16);
+    background: rgba(15, 22, 28, 0.82);
+    box-shadow: none;
+}
+
+:root[data-theme="dark"] .rich-text-editor .jodit-container:not(.jodit_inline),
+:root[data-theme="dark"] .rich-text-editor .jodit-workplace {
+    background: rgba(12, 18, 24, 0.96);
+}
+
+:root[data-theme="dark"] .rich-text-editor .jodit,
+:root[data-theme="dark"] .rich-text-editor .jodit-container:not(.jodit_inline) {
+    --jd-color-border: rgba(143, 170, 176, 0.14);
+    --jd-color-border-selected: rgba(66, 184, 174, 0.3);
+    --jd-color-panel: rgba(18, 27, 34, 0.98);
+    --jd-color-separator: rgba(143, 170, 176, 0.14);
+    --jd-color-icon: #d7e0e4;
+    --jd-color-text: #e6edf2;
+    --jd-color-text-icons: #d7e0e4;
+    --jd-color-placeholder: rgba(152, 170, 174, 0.72);
+    --jd-color-background-default: rgba(12, 18, 24, 0.96);
+    --jd-color-background-light-gray: rgba(18, 27, 34, 0.98);
+    --jd-color-background-gray: rgba(18, 27, 34, 0.98);
+    --jd-color-background-active: rgba(29, 57, 60, 0.94);
+    --jd-color-button-background-hover: rgba(39, 55, 64, 0.94);
+    --jd-color-button-background-hover-opacity40: rgba(39, 55, 64, 0.74);
+    --jd-color-button-background-hover-opacity60: rgba(39, 55, 64, 0.88);
+    color-scheme: dark;
+}
+
+:root[data-theme="dark"] .rich-text-editor .jodit-toolbar__box:not(:empty),
+:root[data-theme="dark"] .rich-text-editor .jodit-status-bar {
+    background: rgba(18, 27, 34, 0.98);
+    border-color: rgba(143, 170, 176, 0.14);
+}
+
+:root[data-theme="dark"] .rich-text-editor .jodit-toolbar__box {
+    border-bottom-color: rgba(143, 170, 176, 0.14);
+}
+
+:root[data-theme="dark"] .rich-text-editor .jodit-status-bar {
+    border-top-color: rgba(143, 170, 176, 0.12);
+}
+
+:root[data-theme="dark"] .rich-text-editor .jodit-toolbar-button {
+    color: var(--text);
+}
+
+:root[data-theme="dark"] .rich-text-editor .jodit-toolbar-button svg,
+:root[data-theme="dark"] .rich-text-editor .jodit-toolbar-button .jodit-icon,
+:root[data-theme="dark"] .rich-text-editor .jodit-toolbar-button__trigger,
+:root[data-theme="dark"] .rich-text-editor .jodit-toolbar-select__trigger {
+    fill: #d7e0e4;
+    stroke: #d7e0e4;
+}
+
+:root[data-theme="dark"]
+    .rich-text-editor
+    .jodit-ui-group_separated_true:not(:last-child):after {
+    border-right-color: rgba(143, 170, 176, 0.14);
+}
+
+:root[data-theme="dark"]
+    .rich-text-editor
+    .jodit-toolbar-collection_mode_horizontal:after,
+:root[data-theme="dark"]
+    .rich-text-editor
+    .jodit-toolbar-editor-collection:after {
+    background-color: rgba(143, 170, 176, 0.14);
+}
+
+:root[data-theme="dark"] .rich-text-editor .jodit-wysiwyg,
+:root[data-theme="dark"] .rich-text-editor .jodit-wysiwyg_iframe {
+    background: transparent;
+    color: var(--text);
+}
+
+:root[data-theme="dark"] .rich-text-editor__frame:focus-within {
+    border-color: rgba(66, 184, 174, 0.34);
+    box-shadow: 0 0 0 4px rgba(66, 184, 174, 0.12);
+}

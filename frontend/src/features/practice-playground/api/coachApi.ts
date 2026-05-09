@@ -9,9 +9,10 @@ import type {
 
 export interface AiProviderMeta {
   configured: boolean;
-  model: string;
-  orchestration: "google-adk" | "google-genai";
-  provider: "gemini";
+  model?: string;
+  orchestration: "google-adk" | "google-genai" | "rule-engine";
+  provider: "gemini" | "rule-engine";
+  rubricVersion?: string;
 }
 
 type ProblemPayload = {

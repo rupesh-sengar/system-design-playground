@@ -7,6 +7,8 @@ import { AuthSessionControl } from "@/features/auth/components/AuthSessionContro
 import { ThemeModeControl } from "@/features/theme/components/ThemeModeControl";
 import { useAppRoute } from "@/app/router";
 import { PracticePlaygroundPage } from "@/features/practice-playground";
+import "@/app/app-shell.css";
+import "@/shared/ui/shared-ui.css";
 
 export default function App() {
   const { goToLibrary, goToPlayground, route } = useAppRoute();
