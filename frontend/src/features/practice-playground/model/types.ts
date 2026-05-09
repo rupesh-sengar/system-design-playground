@@ -125,6 +125,8 @@ export interface PracticeSessionStorageState {
   isLoading: boolean;
   isRemote: boolean;
   isSaving: boolean;
+  statusLabel: string;
+  statusTone: "error" | "loading" | "local" | "saved" | "saving";
 }
 
 export interface PracticePlaygroundViewModel {

@@ -105,6 +105,7 @@
 }
 
 .playground-sidebar {
+    position: relative;
     display: grid;
     grid-template-rows: auto auto minmax(0, 1fr);
     gap: 20px;
@@ -117,6 +118,49 @@
     );
     min-height: 0;
     overflow: hidden;
+}
+
+.playground-sidebar--expanded {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 18px;
+    width: auto;
+    min-width: 0;
+    min-height: 0;
+    padding: clamp(14px, 2vw, 28px);
+    border: 0;
+    border-radius: 0;
+    background: var(--surface);
+}
+
+.playground-sidebar--expanded .playground-sidebar__utility,
+.playground-sidebar--expanded .playground-sidebar__tabs,
+.playground-sidebar--expanded .playground-sidebar__panel {
+    width: min(100%, 900px);
+    justify-self: center;
+}
+
+.playground-sidebar--expanded .playground-sidebar__panel {
+    padding: clamp(18px, 2.4vw, 32px);
+    border: 1px solid rgba(41, 58, 61, 0.08);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.62);
+}
+
+.playground-sidebar--expanded .playground-sidebar__problem h1 {
+    max-width: 22ch;
+    font-size: clamp(2rem, 3.6vw, 3.8rem);
+}
+
+.playground-sidebar--expanded .playground-sidebar__problem p,
+.playground-sidebar--expanded .playground-sidebar__stage p,
+.playground-sidebar--expanded .playground-sidebar__fact dd,
+.playground-sidebar--expanded .playground-sidebar__anchor-card p,
+.playground-sidebar--expanded .playground-sidebar__ai-copy {
+    font-size: 1rem;
+    line-height: 1.7;
 }
 
 .playground-sidebar__utility,
@@ -165,8 +209,7 @@
 }
 
 .playground-sidebar__problem h1,
-.playground-sidebar__stage h2,
-.playground-stageboard__header h2 {
+.playground-sidebar__stage h2 {
     margin: 0;
     font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
     font-weight: 700;
@@ -185,8 +228,7 @@
 }
 
 .playground-sidebar__problem p,
-.playground-sidebar__stage p,
-.playground-stageboard__header p {
+.playground-sidebar__stage p {
     margin: 0;
     color: var(--muted);
     line-height: 1.6;
@@ -204,6 +246,12 @@
     padding-bottom: 2px;
 }
 
+.playground-sidebar__utility-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .playground-sidebar__link {
     border: 0;
     padding: 0;
@@ -216,6 +264,37 @@
 .playground-sidebar__link:hover {
     color: var(--text);
     transform: none;
+}
+
+.playground-sidebar__expand-toggle {
+    display: inline-grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border: 1px solid rgba(41, 58, 61, 0.1);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.62);
+    color: var(--muted);
+}
+
+.playground-sidebar__expand-toggle:hover,
+.playground-sidebar__expand-toggle:focus-visible {
+    color: var(--accent-deep);
+    border-color: rgba(15, 122, 115, 0.3);
+    background: rgba(255, 255, 255, 0.88);
+    transform: none;
+}
+
+.playground-sidebar__expand-toggle:focus-visible {
+    outline: 2px solid rgba(15, 122, 115, 0.18);
+    outline-offset: 2px;
+}
+
+.playground-sidebar__expand-toggle svg {
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .playground-sidebar__status,
@@ -389,6 +468,29 @@
     gap: 14px;
 }
 
+.playground-stageboard--expanded {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+    background: var(--surface);
+}
+
+.playground-stageboard--expanded .playground-stageboard__body {
+    width: 100%;
+    height: 100%;
+}
+
+.playground-stageboard--expanded .playground-stage-strip,
+.playground-stageboard--expanded .playground-stageboard__actions {
+    display: none;
+}
+
 .playground-stage-strip {
     display: grid;
     grid-auto-flow: column;
@@ -487,6 +589,7 @@
 }
 
 .playground-stageboard__canvas {
+    position: relative;
     display: grid;
     grid-template-rows: minmax(0, 1fr);
     gap: 16px;
@@ -497,6 +600,42 @@
     overflow: hidden;
 }
 
+.playground-stageboard__expand-toggle {
+    position: absolute;
+    top: 26px;
+    right: 26px;
+    z-index: 6;
+    display: inline-grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border: 1px solid rgba(41, 58, 61, 0.1);
+    border-radius: 9px;
+    background: rgba(245, 243, 236, 0.96);
+    color: var(--muted);
+    box-shadow: none;
+}
+
+.playground-stageboard__expand-toggle:hover,
+.playground-stageboard__expand-toggle:focus-visible {
+    color: var(--accent-deep);
+    border-color: rgba(15, 122, 115, 0.3);
+    background: rgba(255, 255, 255, 0.96);
+    transform: none;
+}
+
+.playground-stageboard__expand-toggle:focus-visible {
+    outline: 2px solid rgba(15, 122, 115, 0.18);
+    outline-offset: 2px;
+}
+
+.playground-stageboard__expand-toggle svg {
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 .playground-stageboard__body {
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
@@ -505,11 +644,29 @@
     overflow: hidden;
 }
 
-.playground-stageboard__header {
-    display: flex;
-    justify-content: space-between;
-    gap: 14px;
-    align-items: start;
+.playground-stageboard--expanded .playground-stageboard__body {
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+}
+
+.playground-stageboard--expanded .playground-stageboard__canvas {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--surface);
+    box-shadow: none;
+}
+
+.playground-stageboard--expanded .playground-stageboard__expand-toggle {
+    top: 8px;
+    right: 8px;
+}
+
+.playground-stageboard--expanded .rich-text-editor__frame {
+    border: 0;
+    border-radius: 0;
 }
 
 .playground-stageboard__support {
@@ -1156,17 +1313,6 @@
     min-height: 280px;
 }
 
-.playground-storage-note {
-    margin: 10px 0 0;
-    color: var(--muted);
-    font-size: 0.84rem;
-    line-height: 1.5;
-}
-
-.playground-storage-note--error {
-    color: #8b3131;
-}
-
 :root[data-theme="dark"] .playground-sidebar,
 :root[data-theme="dark"] .playground-stage-strip,
 :root[data-theme="dark"] .playground-stageboard__canvas,
@@ -1175,6 +1321,51 @@
     border-color: rgba(143, 170, 176, 0.16);
     background: rgba(15, 22, 28, 0.82);
     box-shadow: none;
+}
+
+:root[data-theme="dark"] .playground-sidebar--expanded {
+    background: var(--surface);
+}
+
+:root[data-theme="dark"] .playground-sidebar--expanded .playground-sidebar__panel {
+    border-color: rgba(143, 170, 176, 0.16);
+    background: rgba(15, 22, 28, 0.82);
+}
+
+:root[data-theme="dark"] .playground-sidebar__expand-toggle {
+    border-color: rgba(143, 170, 176, 0.18);
+    background: rgba(19, 29, 37, 0.72);
+    color: var(--muted);
+}
+
+:root[data-theme="dark"] .playground-sidebar__expand-toggle:hover,
+:root[data-theme="dark"] .playground-sidebar__expand-toggle:focus-visible {
+    border-color: rgba(66, 184, 174, 0.34);
+    background: rgba(24, 36, 44, 0.98);
+    color: var(--text);
+}
+
+:root[data-theme="dark"] .playground-stageboard--expanded {
+    background: var(--surface);
+}
+
+:root[data-theme="dark"] .playground-stageboard--expanded .playground-stageboard__canvas {
+    background: var(--surface);
+    box-shadow: none;
+}
+
+:root[data-theme="dark"] .playground-stageboard__expand-toggle {
+    border-color: rgba(143, 170, 176, 0.18);
+    background: rgba(19, 29, 37, 0.9);
+    color: var(--muted);
+    box-shadow: none;
+}
+
+:root[data-theme="dark"] .playground-stageboard__expand-toggle:hover,
+:root[data-theme="dark"] .playground-stageboard__expand-toggle:focus-visible {
+    border-color: rgba(66, 184, 174, 0.34);
+    background: rgba(24, 36, 44, 0.98);
+    color: var(--text);
 }
 
 :root[data-theme="dark"] .playground-loader-overlay {
@@ -1271,6 +1462,10 @@
         overflow: visible;
     }
 
+    .playground-stageboard--expanded .playground-stageboard__body {
+        overflow: hidden;
+    }
+
     .playground-stageboard__actions {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -1340,7 +1535,6 @@
         grid-template-columns: 1fr;
     }
 
-    .playground-stageboard__header,
     .playground-editor__footer,
     .playground-nav,
     .playground-page__topbar-row,

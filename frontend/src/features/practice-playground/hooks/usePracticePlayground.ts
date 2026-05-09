@@ -35,6 +35,7 @@ import type {
   PracticeAiRequestError,
   PracticeProblem,
   PracticeSession,
+  PracticeSessionStorageState,
   PracticeSessionStore,
   PracticeStageId,
 } from "../model/types";
@@ -151,15 +152,24 @@ export const usePracticePlayground = (
       fromPersistedPracticeSession(persistedSession ?? null) ??
         createDefaultSession(),
     );
+    const nextSnapshot = createPracticeSessionSnapshot(nextSession);
+
+    if (remoteSession) {
+      setPersistedRemoteSnapshot((currentSnapshot) =>
+        currentSnapshot ?? nextSnapshot,
+      );
+      return;
+    }
 
     setRemoteSession(nextSession);
-    setPersistedRemoteSnapshot(createPracticeSessionSnapshot(nextSession));
+    setPersistedRemoteSnapshot(nextSnapshot);
   }, [
     isApiAuthReady,
     isPersistedSessionFetching,
     isPersistedSessionLoading,
     persistedSession,
     problem,
+    remoteSession,
   ]);
 
   useEffect(() => {
@@ -471,28 +481,54 @@ export const usePracticePlayground = (
     });
   };
 
-  const storage = useMemo(() => {
+  const storage = useMemo<PracticeSessionStorageState>(() => {
     const errorSource =
       savePracticeSessionState.error ??
       deletePracticeSessionState.error ??
       persistedSessionError;
+    const errorMessage = errorSource
+      ? getApiErrorDetails(
+          errorSource,
+          "Unable to sync saved playground notes.",
+        ).message
+      : null;
+    const hasPendingRemoteChanges =
+      isApiAuthReady &&
+      remoteSession !== null &&
+      persistedRemoteSnapshot !== null &&
+      createPracticeSessionSnapshot(remoteSession) !== persistedRemoteSnapshot;
+    const isLoading =
+      isApiAuthReady &&
+      Boolean(problem) &&
+      remoteSession === null &&
+      (isPersistedSessionLoading || isPersistedSessionFetching);
+    const isSaving =
+      isApiAuthReady &&
+      (savePracticeSessionState.isLoading ||
+        deletePracticeSessionState.isLoading ||
+        hasPendingRemoteChanges);
 
     return {
-      errorMessage: errorSource
-        ? getApiErrorDetails(
-            errorSource,
-            "Unable to sync saved playground notes.",
-          ).message
-        : null,
-      isLoading: isApiAuthReady
-        ? Boolean(problem) &&
-          remoteSession === null &&
-          (isPersistedSessionLoading || isPersistedSessionFetching)
-        : false,
+      errorMessage,
+      isLoading,
       isRemote: isApiAuthReady,
-      isSaving:
-        isApiAuthReady &&
-        (savePracticeSessionState.isLoading || deletePracticeSessionState.isLoading),
+      isSaving,
+      statusLabel: errorMessage
+        ? "Save failed"
+        : isLoading
+          ? "Loading..."
+          : isSaving
+            ? "Saving..."
+            : "Saved",
+      statusTone: errorMessage
+        ? "error"
+        : isLoading
+          ? "loading"
+          : isSaving
+            ? "saving"
+            : isApiAuthReady
+              ? "saved"
+              : "local",
     };
   }, [
     deletePracticeSessionState.error,
@@ -501,6 +537,7 @@ export const usePracticePlayground = (
     isPersistedSessionFetching,
     isPersistedSessionLoading,
     persistedSessionError,
+    persistedRemoteSnapshot,
     problem,
     remoteSession,
     savePracticeSessionState.error,

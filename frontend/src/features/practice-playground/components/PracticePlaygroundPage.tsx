@@ -16,12 +16,21 @@ import "@/shared/ui/status-chips.css";
 import "./PracticePlaygroundPage.css";
 import { usePracticePlayground } from "../hooks/usePracticePlayground";
 import { createDefaultSession } from "../lib/session";
-import type { PracticeProblem } from "../model/types";
+import type {
+  PracticeProblem,
+  PracticeSessionStorageState,
+} from "../model/types";
+
+export type PlaygroundSaveStatus = Pick<
+  PracticeSessionStorageState,
+  "statusLabel" | "statusTone"
+>;
 
 interface PracticePlaygroundPageProps {
   isPracticed: boolean;
   onBack: () => void;
   onMarkPracticed: () => void;
+  onSaveStatusChange?: (status: PlaygroundSaveStatus) => void;
   problem: PracticeProblem | null;
 }
 
@@ -37,6 +46,7 @@ export const PracticePlaygroundPage = ({
   isPracticed,
   onBack,
   onMarkPracticed,
+  onSaveStatusChange,
   problem,
 }: PracticePlaygroundPageProps) => {
   const {
@@ -62,6 +72,8 @@ export const PracticePlaygroundPage = ({
   const [activeSidebarTab, setActiveSidebarTab] =
     useState<SidebarTab>("overview");
   const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
+  const [isStageboardExpanded, setIsStageboardExpanded] = useState(false);
   const canMarkPracticed = metrics.completedCount === metrics.totalCount;
   const authReady = isApiAuthReady;
   const showLoadingOverlay = storage.isRemote && storage.isLoading;
@@ -99,6 +111,40 @@ export const PracticePlaygroundPage = ({
       String(sidebarWidth),
     );
   }, [sidebarWidth]);
+
+  useEffect(() => {
+    setIsStageboardExpanded(false);
+    setIsSidebarExpanded(false);
+  }, [problem?.id]);
+
+  useEffect(() => {
+    onSaveStatusChange?.({
+      statusLabel: storage.statusLabel,
+      statusTone: storage.statusTone,
+    });
+  }, [onSaveStatusChange, storage.statusLabel, storage.statusTone]);
+
+  useEffect(() => {
+    if (!isSidebarExpanded && !isStageboardExpanded) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: globalThis.KeyboardEvent): void => {
+      if (event.key === "Escape") {
+        setIsSidebarExpanded(false);
+        setIsStageboardExpanded(false);
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isSidebarExpanded, isStageboardExpanded]);
 
   const adjustSidebarWidth = (delta: number): void => {
     setSidebarWidth((currentWidth) => clampSidebarWidth(currentWidth + delta));
@@ -171,19 +217,52 @@ export const PracticePlaygroundPage = ({
 
   const renderSidebarUtility = () => (
     <div className="playground-sidebar__utility">
+      <div className="playground-sidebar__utility-links">
+        <button
+          className="playground-sidebar__link"
+          type="button"
+          onClick={onBack}
+        >
+          Library
+        </button>
+        <button
+          className="playground-sidebar__link"
+          type="button"
+          onClick={actions.resetSession}
+        >
+          Reset
+        </button>
+      </div>
       <button
-        className="playground-sidebar__link"
+        aria-label={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+        aria-pressed={isSidebarExpanded}
+        className="playground-sidebar__expand-toggle"
         type="button"
-        onClick={onBack}
+        onClick={() => setIsSidebarExpanded((isExpanded) => !isExpanded)}
       >
-        Library
-      </button>
-      <button
-        className="playground-sidebar__link"
-        type="button"
-        onClick={actions.resetSession}
-      >
-        Reset
+        <svg
+          aria-hidden="true"
+          fill="none"
+          height="18"
+          viewBox="0 0 24 24"
+          width="18"
+        >
+          {isSidebarExpanded ? (
+            <>
+              <path d="M9 4v5H4" />
+              <path d="M15 4v5h5" />
+              <path d="M9 20v-5H4" />
+              <path d="M15 20v-5h5" />
+            </>
+          ) : (
+            <>
+              <path d="M4 9V4h5" />
+              <path d="M20 9V4h-5" />
+              <path d="M4 15v5h5" />
+              <path d="M20 15v5h-5" />
+            </>
+          )}
+        </svg>
       </button>
     </div>
   );
@@ -280,7 +359,11 @@ export const PracticePlaygroundPage = ({
           } as CSSProperties
         }
       >
-        <aside className="playground-sidebar">
+        <aside
+          className={`playground-sidebar ${
+            isSidebarExpanded ? "playground-sidebar--expanded" : ""
+          }`}
+        >
           {renderSidebarUtility()}
           {renderSidebarTabs()}
 
@@ -292,15 +375,6 @@ export const PracticePlaygroundPage = ({
                   <h1>{problem.title}</h1>
                   <p className="playground-sidebar__summary">
                     {problem.summary}
-                  </p>
-                  <p
-                    className={`playground-storage-note ${
-                      storage.errorMessage
-                        ? "playground-storage-note--error"
-                        : ""
-                    }`}
-                  >
-                    {storageNotice}
                   </p>
                   <div className="detail-meta">
                     {"difficulty" in problem ? (
@@ -482,7 +556,11 @@ export const PracticePlaygroundPage = ({
           onPointerDown={handleSidebarResizeStart}
         />
 
-        <section className="playground-stageboard">
+        <section
+          className={`playground-stageboard ${
+            isStageboardExpanded ? "playground-stageboard--expanded" : ""
+          }`}
+        >
           <div className="playground-stage-strip">
             {stages.map((stage) => {
               const stageDraft = stageDrafts[stage.id];
@@ -514,6 +592,43 @@ export const PracticePlaygroundPage = ({
 
           <div className="playground-stageboard__body">
             <section className="playground-stageboard__canvas">
+              <button
+                aria-label={
+                  isStageboardExpanded
+                    ? "Collapse editor"
+                    : "Expand editor"
+                }
+                aria-pressed={isStageboardExpanded}
+                className="playground-stageboard__expand-toggle"
+                type="button"
+                onClick={() =>
+                  setIsStageboardExpanded((isExpanded) => !isExpanded)
+                }
+              >
+                <svg
+                  aria-hidden="true"
+                  fill="none"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  width="18"
+                >
+                  {isStageboardExpanded ? (
+                    <>
+                      <path d="M9 4v5H4" />
+                      <path d="M15 4v5h5" />
+                      <path d="M9 20v-5H4" />
+                      <path d="M15 20v-5h5" />
+                    </>
+                  ) : (
+                    <>
+                      <path d="M4 9V4h5" />
+                      <path d="M20 9V4h-5" />
+                      <path d="M4 15v5h5" />
+                      <path d="M20 15v5h-5" />
+                    </>
+                  )}
+                </svg>
+              </button>
               <label className="playground-workbench__notes">
                 <RichTextEditor
                   value={activeStageDraft.notes}

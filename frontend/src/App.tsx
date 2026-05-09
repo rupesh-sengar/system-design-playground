@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   findProblemById,
   ProblemCatalogPanel,
@@ -6,12 +7,17 @@ import {
 import { AuthSessionControl } from "@/features/auth/components/AuthSessionControl";
 import { ThemeModeControl } from "@/features/theme/components/ThemeModeControl";
 import { useAppRoute } from "@/app/router";
-import { PracticePlaygroundPage } from "@/features/practice-playground";
+import {
+  PracticePlaygroundPage,
+  type PlaygroundSaveStatus,
+} from "@/features/practice-playground";
 import "@/app/app-shell.css";
 import "@/shared/ui/shared-ui.css";
 
 export default function App() {
   const { goToLibrary, goToPlayground, route } = useAppRoute();
+  const [playgroundSaveStatus, setPlaygroundSaveStatus] =
+    useState<PlaygroundSaveStatus | null>(null);
   const {
     actions,
     bookmarkedIds,
@@ -48,6 +54,12 @@ export default function App() {
   const toolbarContext =
     route.name === "playground" ? "Practice Playground" : "Problem Library";
 
+  useEffect(() => {
+    if (route.name !== "playground") {
+      setPlaygroundSaveStatus(null);
+    }
+  }, [route.name]);
+
   if (route.name === "playground") {
     return (
       <div className="shell shell--playground">
@@ -57,6 +69,13 @@ export default function App() {
             <span>{toolbarContext}</span>
           </div>
           <div className="app-toolbar__controls">
+            {playgroundSaveStatus ? (
+              <span
+                className={`app-toolbar__save-status app-toolbar__save-status--${playgroundSaveStatus.statusTone}`}
+              >
+                {playgroundSaveStatus.statusLabel}
+              </span>
+            ) : null}
             <ThemeModeControl />
             <AuthSessionControl />
           </div>
@@ -73,6 +92,7 @@ export default function App() {
 
             actions.togglePracticed(routeProblem.id);
           }}
+          onSaveStatusChange={setPlaygroundSaveStatus}
         />
       </div>
     );

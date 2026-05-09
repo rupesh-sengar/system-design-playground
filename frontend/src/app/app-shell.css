@@ -35,6 +35,43 @@
     font-weight: 600;
 }
 
+.app-toolbar__save-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 10px;
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.app-toolbar__save-status::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    margin-right: 7px;
+    border-radius: 999px;
+    background: currentColor;
+}
+
+.app-toolbar__save-status--saved,
+.app-toolbar__save-status--local {
+    color: #2d8458;
+}
+
+.app-toolbar__save-status--saving,
+.app-toolbar__save-status--loading {
+    color: #c47418;
+}
+
+.app-toolbar__save-status--error {
+    color: #a53f3f;
+}
+
 .workspace {
     display: grid;
     grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.9fr);
@@ -49,6 +86,20 @@
 
 :root[data-theme="dark"] .app-toolbar__controls {
     min-width: 0;
+}
+
+:root[data-theme="dark"] .app-toolbar__save-status--saved,
+:root[data-theme="dark"] .app-toolbar__save-status--local {
+    color: #8fe0b2;
+}
+
+:root[data-theme="dark"] .app-toolbar__save-status--saving,
+:root[data-theme="dark"] .app-toolbar__save-status--loading {
+    color: #f1c37a;
+}
+
+:root[data-theme="dark"] .app-toolbar__save-status--error {
+    color: #f0a0a0;
 }
 
 @media (max-width: 1120px) {
@@ -70,8 +121,9 @@
 
     .app-toolbar__controls {
         width: 100%;
-        flex-direction: column;
+        flex-direction: row;
         justify-content: space-between;
-        align-items: stretch;
+        align-items: center;
+        flex-wrap: wrap;
     }
 }
