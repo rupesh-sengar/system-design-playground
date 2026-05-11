@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import {
   findProblemById,
   ProblemCatalogPanel,
@@ -13,6 +14,7 @@ import {
 } from "@/features/practice-playground";
 import "@/app/app-shell.css";
 import "@/shared/ui/shared-ui.css";
+import "@/styles/theme-overhaul.css";
 
 export default function App() {
   const { goToLibrary, goToPlayground, route } = useAppRoute();
@@ -106,6 +108,17 @@ export default function App() {
           <span>{toolbarContext}</span>
         </div>
         <div className="app-toolbar__controls">
+          {persistence.errorMessage ? (
+            <span
+              aria-label={persistence.errorMessage}
+              className="app-toolbar__sync-status"
+              role="status"
+              title={persistence.errorMessage}
+            >
+              <AlertTriangle aria-hidden="true" size={14} strokeWidth={2} />
+              Sync issue
+            </span>
+          ) : null}
           <ThemeModeControl />
           <AuthSessionControl />
         </div>

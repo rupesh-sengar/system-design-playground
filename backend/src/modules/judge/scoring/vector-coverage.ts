@@ -151,7 +151,8 @@ const vectorSimilarity = (left: Vector, right: Vector): number => {
     return 0;
   }
 
-  const cosine = dotProduct / Math.sqrt(leftMagnitudeSquared * rightMagnitudeSquared);
+  const cosine =
+    dotProduct / Math.sqrt(leftMagnitudeSquared * rightMagnitudeSquared);
   const referenceCoverage = dotProduct / leftMagnitudeSquared;
 
   return Math.max(cosine, referenceCoverage);

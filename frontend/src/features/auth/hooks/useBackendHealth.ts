@@ -5,7 +5,7 @@ import {
   useLazyGetBackendHealthQuery,
 } from "../api/backendHealthApi";
 
-const HEALTH_CHECK_SUCCESS_INTERVAL_MS = 30_000;
+const HEALTH_CHECK_SUCCESS_INTERVAL_MS = 300000;
 const HEALTH_CHECK_RETRY_INTERVAL_MS = 4_000;
 const MAX_HEALTH_RETRIES = 15;
 

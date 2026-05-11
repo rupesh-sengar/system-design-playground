@@ -1,4 +1,11 @@
 import type { ChangeEvent } from "react";
+import {
+  BookOpenCheck,
+  ListFilter,
+  RotateCcw,
+  Search,
+  Shuffle,
+} from "lucide-react";
 import { FilterPill } from "@/shared/ui/FilterPill";
 import { ProblemCard } from "./ProblemCard";
 import "@/shared/ui/shared-ui.css";
@@ -39,9 +46,9 @@ interface ProblemCatalogPanelProps {
 
 const statusOptions: Array<{ id: StatusFilter; label: string }> = [
   { id: "all", label: "All" },
-  { id: "bookmarked", label: "Bookmarked" },
-  { id: "practiced", label: "Practiced" },
-  { id: "unpracticed", label: "Unpracticed" },
+  { id: "bookmarked", label: "Saved" },
+  { id: "practiced", label: "Done" },
+  { id: "unpracticed", label: "Open" },
 ];
 
 const buildPaginationItems = (
@@ -100,6 +107,11 @@ export const ProblemCatalogPanel = ({
   onSortChange,
   onStatusChange,
 }: ProblemCatalogPanelProps) => {
+  const completionPercent =
+    metrics.totalProblems === 0
+      ? 0
+      : Math.round((metrics.practicedCount / metrics.totalProblems) * 100);
+
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>): void => {
     onSearchChange(event.target.value);
   };
@@ -118,26 +130,27 @@ export const ProblemCatalogPanel = ({
     <section className="catalog panel">
       <div className="catalog-head">
         <div className="catalog-head__copy">
-          <p className="section-label">Problem Library</p>
-          <h2>Interview prompts by scale, domain, and system depth</h2>
-          <p className="catalog-subtitle">
-            Browse prompts, filter quickly, and jump straight into practice.
-          </p>
-          <p
-            className={`catalog-sync-note ${
-              persistence.errorMessage ? "catalog-sync-note--error" : ""
-            }`}
-          >
-            {persistence.errorMessage
-              ? persistence.errorMessage
-              : persistence.isRemote
-                ? persistence.isLoading
-                  ? "Loading saved progress from your account..."
-                  : persistence.isSyncing
-                    ? "Syncing progress to your account..."
-                    : "Progress is saved to your account."
-                : "Progress is stored in this browser until you sign in."}
-          </p>
+          <div className="catalog-title">
+            <BookOpenCheck aria-hidden="true" size={18} strokeWidth={1.9} />
+            <div className="catalog-title__text">
+              <h2>Problems</h2>
+              <div className="catalog-summary" aria-label="Library summary">
+                <span>{metrics.visibleCount} shown</span>
+                <span>{metrics.practicedCount} done</span>
+                <span>{metrics.bookmarkedCount} saved</span>
+                <div
+                  aria-label={`${completionPercent}% complete`}
+                  aria-valuemax={100}
+                  aria-valuemin={0}
+                  aria-valuenow={completionPercent}
+                  className="catalog-summary__meter"
+                  role="meter"
+                >
+                  <span style={{ width: `${completionPercent}%` }} />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="catalog-head__side">
@@ -147,37 +160,43 @@ export const ProblemCatalogPanel = ({
               type="button"
               onClick={onPickRandomProblem}
             >
-              Random Drill
+              <Shuffle aria-hidden="true" size={15} strokeWidth={2} />
+              Random
             </button>
             <button
               className="secondary-action"
               type="button"
               onClick={onResetProgress}
             >
-              Reset Progress
+              <RotateCcw aria-hidden="true" size={15} strokeWidth={2} />
+              Reset
             </button>
-          </div>
-
-          <div className="catalog-meta">
-            <span>{metrics.visibleCount} visible</span>
-            <span>{metrics.practicedCount} practiced</span>
-            <span>{metrics.bookmarkedCount} bookmarked</span>
           </div>
         </div>
       </div>
 
       <section className="catalog-filters" aria-label="Problem filters">
+        <div className="catalog-filters__head">
+          <span>
+            <ListFilter aria-hidden="true" size={15} strokeWidth={2} />
+            Filters
+          </span>
+        </div>
+
         <div className="catalog-filters__top">
           <div className="filter-grid">
             <label className="field">
               <span>Search</span>
-              <input
-                type="search"
-                placeholder="Search by title, category, or focus area"
-                autoComplete="off"
-                value={filters.search}
-                onChange={handleSearchChange}
-              />
+              <div className="field__control">
+                <Search aria-hidden="true" size={15} strokeWidth={2} />
+                <input
+                  type="search"
+                  placeholder="Search"
+                  autoComplete="off"
+                  value={filters.search}
+                  onChange={handleSearchChange}
+                />
+              </div>
             </label>
 
             <label className="field">
@@ -207,7 +226,7 @@ export const ProblemCatalogPanel = ({
             type="button"
             onClick={onClearFilters}
           >
-            Clear Filters
+            Clear
           </button>
         </div>
 
@@ -261,17 +280,13 @@ export const ProblemCatalogPanel = ({
           ))
         ) : (
           <article className="empty-state">
-            <h3>No prompts match the current filters.</h3>
-            <p>
-              Try clearing the search term, switching the status, or broadening
-              the difficulty range.
-            </p>
+            <h3>No matches.</h3>
             <button
               className="secondary-action"
               type="button"
               onClick={onClearFilters}
             >
-              Clear Filters
+              Clear
             </button>
           </article>
         )}
@@ -280,7 +295,7 @@ export const ProblemCatalogPanel = ({
       {pagination.totalItems > 0 ? (
         <div className="catalog-pagination">
           <p className="catalog-pagination__summary">
-            Showing {pagination.pageStart}-{pagination.pageEnd} of{" "}
+            {pagination.pageStart}-{pagination.pageEnd} /{" "}
             {pagination.totalItems}
           </p>
 

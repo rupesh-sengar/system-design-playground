@@ -5,6 +5,28 @@ import {
   useEffect,
   useState,
 } from "react";
+import {
+  Activity,
+  ArrowLeft,
+  BookOpen,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  CircleDashed,
+  ClipboardCheck,
+  FileText,
+  Gauge,
+  LayoutDashboard,
+  Lightbulb,
+  ListChecks,
+  LogIn,
+  Maximize2,
+  Minimize2,
+  RotateCcw,
+  ShieldCheck,
+  Sparkles,
+  Target,
+} from "lucide-react";
 import { useAppAuth } from "@/features/auth/app-auth";
 import { getDifficultyClassName } from "@/features/problem-library/lib/catalog";
 import { Loader } from "@/shared/ui/Loader";
@@ -34,7 +56,8 @@ interface PracticePlaygroundPageProps {
   problem: PracticeProblem | null;
 }
 
-const SIDEBAR_WIDTH_STORAGE_KEY = "system-design-lab.playground-sidebar-width";
+const SIDEBAR_WIDTH_STORAGE_KEY =
+  "system-design-lab.playground-sidebar-width.v2";
 const MIN_SIDEBAR_WIDTH = 248;
 const MAX_SIDEBAR_WIDTH = 420;
 type SidebarTab = "overview" | "guides" | "ai";
@@ -71,7 +94,7 @@ export const PracticePlaygroundPage = ({
   } = usePracticePlayground(problem);
   const [activeSidebarTab, setActiveSidebarTab] =
     useState<SidebarTab>("overview");
-  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [sidebarWidth, setSidebarWidth] = useState(MAX_SIDEBAR_WIDTH);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [isStageboardExpanded, setIsStageboardExpanded] = useState(false);
   const canMarkPracticed = metrics.completedCount === metrics.totalCount;
@@ -223,6 +246,7 @@ export const PracticePlaygroundPage = ({
           type="button"
           onClick={onBack}
         >
+          <ArrowLeft aria-hidden="true" size={14} strokeWidth={2} />
           Library
         </button>
         <button
@@ -230,6 +254,7 @@ export const PracticePlaygroundPage = ({
           type="button"
           onClick={actions.resetSession}
         >
+          <RotateCcw aria-hidden="true" size={14} strokeWidth={2} />
           Reset
         </button>
       </div>
@@ -240,29 +265,11 @@ export const PracticePlaygroundPage = ({
         type="button"
         onClick={() => setIsSidebarExpanded((isExpanded) => !isExpanded)}
       >
-        <svg
-          aria-hidden="true"
-          fill="none"
-          height="18"
-          viewBox="0 0 24 24"
-          width="18"
-        >
-          {isSidebarExpanded ? (
-            <>
-              <path d="M9 4v5H4" />
-              <path d="M15 4v5h5" />
-              <path d="M9 20v-5H4" />
-              <path d="M15 20v-5h5" />
-            </>
-          ) : (
-            <>
-              <path d="M4 9V4h5" />
-              <path d="M20 9V4h-5" />
-              <path d="M4 15v5h5" />
-              <path d="M20 15v5h-5" />
-            </>
-          )}
-        </svg>
+        {isSidebarExpanded ? (
+          <Minimize2 aria-hidden="true" size={16} strokeWidth={2} />
+        ) : (
+          <Maximize2 aria-hidden="true" size={16} strokeWidth={2} />
+        )}
       </button>
     </div>
   );
@@ -284,6 +291,7 @@ export const PracticePlaygroundPage = ({
         type="button"
         onClick={() => setActiveSidebarTab("overview")}
       >
+        <LayoutDashboard aria-hidden="true" size={14} strokeWidth={2} />
         Overview
       </button>
       <button
@@ -295,6 +303,7 @@ export const PracticePlaygroundPage = ({
         type="button"
         onClick={() => setActiveSidebarTab("guides")}
       >
+        <ListChecks aria-hidden="true" size={14} strokeWidth={2} />
         Guides
       </button>
       <button
@@ -306,6 +315,7 @@ export const PracticePlaygroundPage = ({
         type="button"
         onClick={() => setActiveSidebarTab("ai")}
       >
+        <Sparkles aria-hidden="true" size={14} strokeWidth={2} />
         AI
       </button>
     </div>
@@ -389,6 +399,11 @@ export const PracticePlaygroundPage = ({
                     <span className="category-chip">{problem.category}</span>
                     {isPracticed ? (
                       <span className="playground-sidebar__status">
+                        <CheckCircle2
+                          aria-hidden="true"
+                          size={12}
+                          strokeWidth={2}
+                        />
                         Practiced
                       </span>
                     ) : null}
@@ -401,6 +416,19 @@ export const PracticePlaygroundPage = ({
                       Step {activeStage.step} of {metrics.totalCount}
                     </span>
                     <span className="playground-sidebar__stage-state">
+                      {activeStageDraft.isComplete ? (
+                        <CheckCircle2
+                          aria-hidden="true"
+                          size={12}
+                          strokeWidth={2}
+                        />
+                      ) : (
+                        <CircleDashed
+                          aria-hidden="true"
+                          size={12}
+                          strokeWidth={2}
+                        />
+                      )}
                       {activeStageDraft.isComplete ? "Complete" : "In progress"}
                     </span>
                   </div>
@@ -410,21 +438,37 @@ export const PracticePlaygroundPage = ({
 
                   <dl className="playground-sidebar__facts">
                     <div className="playground-sidebar__fact">
-                      <dt>Deliverable</dt>
+                      <dt>
+                        <ClipboardCheck
+                          aria-hidden="true"
+                          size={12}
+                          strokeWidth={2}
+                        />
+                        Deliverable
+                      </dt>
                       <dd>{activeStage.deliverable}</dd>
                     </div>
                     <div className="playground-sidebar__fact">
-                      <dt>Progress</dt>
+                      <dt>
+                        <Activity aria-hidden="true" size={12} strokeWidth={2} />
+                        Progress
+                      </dt>
                       <dd>
                         {metrics.completedCount}/{metrics.totalCount} complete
                       </dd>
                     </div>
                     <div className="playground-sidebar__fact">
-                      <dt>Draft size</dt>
+                      <dt>
+                        <FileText aria-hidden="true" size={12} strokeWidth={2} />
+                        Draft size
+                      </dt>
                       <dd>{metrics.notesWordCount} words</dd>
                     </div>
                     <div className="playground-sidebar__fact">
-                      <dt>Readiness</dt>
+                      <dt>
+                        <Gauge aria-hidden="true" size={12} strokeWidth={2} />
+                        Readiness
+                      </dt>
                       <dd>{metrics.readinessLabel}</dd>
                     </div>
                   </dl>
@@ -436,6 +480,11 @@ export const PracticePlaygroundPage = ({
                     type="button"
                     onClick={() => actions.toggleStageComplete(activeStage.id)}
                   >
+                    {activeStageDraft.isComplete ? (
+                      <CircleDashed aria-hidden="true" size={15} strokeWidth={2} />
+                    ) : (
+                      <CheckCircle2 aria-hidden="true" size={15} strokeWidth={2} />
+                    )}
                     {activeStageDraft.isComplete
                       ? "Mark stage incomplete"
                       : "Mark stage complete"}
@@ -448,6 +497,7 @@ export const PracticePlaygroundPage = ({
                       disabled={!canMarkPracticed}
                       onClick={onMarkPracticed}
                     >
+                      <CheckCircle2 aria-hidden="true" size={15} strokeWidth={2} />
                       Mark practiced
                     </button>
                   ) : null}
@@ -459,7 +509,10 @@ export const PracticePlaygroundPage = ({
               <div className="playground-sidebar__tab-sections">
                 <section className="playground-sidebar__section">
                   <div className="playground-sidebar__section-head">
-                    <p className="section-label">Prompt Yourself</p>
+                    <p className="section-label">
+                      <BookOpen aria-hidden="true" size={12} strokeWidth={2} />
+                      Prompt Yourself
+                    </p>
                     <span>{activeStage.prompts.length}</span>
                   </div>
                   <ul className="token-list">
@@ -471,7 +524,10 @@ export const PracticePlaygroundPage = ({
 
                 <section className="playground-sidebar__section">
                   <div className="playground-sidebar__section-head">
-                    <p className="section-label">Review Checks</p>
+                    <p className="section-label">
+                      <ListChecks aria-hidden="true" size={12} strokeWidth={2} />
+                      Review Checks
+                    </p>
                     <span>{activeStage.reviewChecks.length}</span>
                   </div>
                   <ul className="token-list token-list--warning">
@@ -483,7 +539,10 @@ export const PracticePlaygroundPage = ({
 
                 <section className="playground-sidebar__section">
                   <div className="playground-sidebar__section-head">
-                    <p className="section-label">Problem Anchors</p>
+                    <p className="section-label">
+                      <Target aria-hidden="true" size={12} strokeWidth={2} />
+                      Problem Anchors
+                    </p>
                     <span>{stageContextCards.length + 1}</span>
                   </div>
                   <div className="playground-sidebar__anchor-list">
@@ -515,7 +574,10 @@ export const PracticePlaygroundPage = ({
                 {!authReady ? (
                   <section className="playground-sidebar__section playground-sidebar__section--ai">
                     <div className="playground-sidebar__section-head">
-                      <p className="section-label">AI Setup</p>
+                      <p className="section-label">
+                        <Sparkles aria-hidden="true" size={12} strokeWidth={2} />
+                        AI Setup
+                      </p>
                     </div>
                     <p className="playground-sidebar__ai-copy">
                       Sign in to unlock hinting and draft validation for the
@@ -528,6 +590,7 @@ export const PracticePlaygroundPage = ({
                         disabled={isLoading}
                         onClick={() => void login()}
                       >
+                        <LogIn aria-hidden="true" size={15} strokeWidth={2} />
                         {isLoading
                           ? "Checking session..."
                           : "Sign in to use AI"}
@@ -605,29 +668,11 @@ export const PracticePlaygroundPage = ({
                   setIsStageboardExpanded((isExpanded) => !isExpanded)
                 }
               >
-                <svg
-                  aria-hidden="true"
-                  fill="none"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  width="18"
-                >
-                  {isStageboardExpanded ? (
-                    <>
-                      <path d="M9 4v5H4" />
-                      <path d="M15 4v5h5" />
-                      <path d="M9 20v-5H4" />
-                      <path d="M15 20v-5h5" />
-                    </>
-                  ) : (
-                    <>
-                      <path d="M4 9V4h5" />
-                      <path d="M20 9V4h-5" />
-                      <path d="M4 15v5h5" />
-                      <path d="M20 15v5h-5" />
-                    </>
-                  )}
-                </svg>
+                {isStageboardExpanded ? (
+                  <Minimize2 aria-hidden="true" size={16} strokeWidth={2} />
+                ) : (
+                  <Maximize2 aria-hidden="true" size={16} strokeWidth={2} />
+                )}
               </button>
               <label className="playground-workbench__notes">
                 <RichTextEditor
@@ -644,6 +689,7 @@ export const PracticePlaygroundPage = ({
                 type="button"
                 onClick={actions.goToPreviousStage}
               >
+                <ChevronLeft aria-hidden="true" size={15} strokeWidth={2} />
                 Previous
               </button>
               <button
@@ -652,6 +698,7 @@ export const PracticePlaygroundPage = ({
                 disabled={authReady ? !assistant.canRequestHints : false}
                 onClick={handleRequestHints}
               >
+                <Lightbulb aria-hidden="true" size={15} strokeWidth={2} />
                 {assistant.activeStageState.hintStatus === "loading"
                   ? "Generating hints..."
                   : "Get hints"}
@@ -662,6 +709,7 @@ export const PracticePlaygroundPage = ({
                 disabled={authReady ? !assistant.canValidateDraft : false}
                 onClick={handleValidateDraft}
               >
+                <ShieldCheck aria-hidden="true" size={15} strokeWidth={2} />
                 {assistant.activeStageState.validationStatus === "loading"
                   ? "Validating..."
                   : "Validate draft"}
@@ -672,6 +720,7 @@ export const PracticePlaygroundPage = ({
                 onClick={actions.goToNextStage}
               >
                 Next
+                <ChevronRight aria-hidden="true" size={15} strokeWidth={2} />
               </button>
             </div>
           </div>
