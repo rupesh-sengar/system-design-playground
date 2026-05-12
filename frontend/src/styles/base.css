@@ -45,18 +45,28 @@ html,
 body,
 #app {
     min-height: 100%;
+    width: 100%;
 }
 
 body {
     margin: 0;
     color: var(--text);
     background: var(--page);
+    overflow-x: clip;
 }
 
 button,
 input,
 select {
     font: inherit;
+}
+
+@media (max-width: 760px) {
+    input,
+    select,
+    textarea {
+        font-size: 16px;
+    }
 }
 
 button {

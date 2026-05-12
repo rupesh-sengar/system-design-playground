@@ -72,7 +72,19 @@
 
 @media (max-width: 760px) {
     .theme-control {
-        width: 100%;
-        justify-content: space-between;
+        width: auto;
+        height: 42px;
+        justify-content: flex-start;
+        flex: 0 0 auto;
+    }
+
+    .theme-control__button {
+        width: 32px;
+        height: 32px;
+    }
+
+    .theme-control__button svg {
+        width: 16px;
+        height: 16px;
     }
 }

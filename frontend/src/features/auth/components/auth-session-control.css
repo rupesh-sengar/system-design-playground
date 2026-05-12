@@ -366,7 +366,24 @@
 
 @media (max-width: 760px) {
     .session-nav {
-        align-self: flex-end;
+        align-self: auto;
+        gap: 8px;
+    }
+
+    .session-nav__trigger {
+        width: 42px;
+        height: 42px;
+    }
+
+    .session-nav__avatar {
+        width: 30px;
+        height: 30px;
+    }
+
+    .session-nav__signin {
+        min-height: 42px;
+        padding: 9px 12px;
+        white-space: nowrap;
     }
 
     .session-nav__menu {

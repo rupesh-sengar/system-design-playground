@@ -69,3 +69,51 @@
 :root[data-theme="dark"] .problem-card__footer {
     color: var(--text);
 }
+
+@media (max-width: 560px) {
+    .problem-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 7px 10px;
+        min-height: 0;
+        padding: 12px;
+        border-radius: 12px;
+    }
+
+    .problem-card__icon {
+        display: none;
+    }
+
+    .problem-card h3 {
+        grid-column: 1;
+        grid-row: 1;
+        align-self: center;
+        margin: 0;
+        font-size: 0.98rem;
+        line-height: 1.25;
+    }
+
+    .problem-card__action {
+        grid-column: 2;
+        grid-row: 1;
+        align-self: center;
+    }
+
+    .problem-card p {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        line-height: 1.45;
+        -webkit-line-clamp: 2;
+    }
+
+    .problem-card__topline {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        margin-top: 0;
+    }
+
+    .problem-card .state-row {
+        grid-column: 1 / -1;
+        grid-row: 4;
+    }
+}

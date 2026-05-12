@@ -209,3 +209,26 @@
     border-color: rgba(66, 184, 174, 0.34);
     box-shadow: 0 0 0 4px rgba(66, 184, 174, 0.12);
 }
+
+@media (max-width: 760px) {
+    .rich-text-editor__frame,
+    .rich-text-editor .jodit-container:not(.jodit_inline) {
+        border-radius: 12px;
+    }
+
+    .rich-text-editor .jodit-toolbar__box {
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+    }
+
+    .rich-text-editor .jodit-toolbar__box::-webkit-scrollbar {
+        display: none;
+    }
+
+    .rich-text-editor .jodit-wysiwyg,
+    .rich-text-editor .jodit-wysiwyg_iframe {
+        padding: 14px;
+        line-height: 1.6;
+    }
+}

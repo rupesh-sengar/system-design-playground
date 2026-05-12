@@ -412,9 +412,12 @@ export const PracticePlaygroundPage = ({
 
                 <div className="playground-sidebar__stage">
                   <div className="playground-sidebar__stage-head">
-                    <span className="playground-sidebar__stage-kicker">
-                      Step {activeStage.step} of {metrics.totalCount}
-                    </span>
+                    <div>
+                      <span className="playground-sidebar__stage-kicker">
+                        Step {activeStage.step} of {metrics.totalCount}
+                      </span>
+                      <h2>{activeStage.title}</h2>
+                    </div>
                     <span className="playground-sidebar__stage-state">
                       {activeStageDraft.isComplete ? (
                         <CheckCircle2
@@ -433,46 +436,49 @@ export const PracticePlaygroundPage = ({
                     </span>
                   </div>
 
-                  <h2>{activeStage.title}</h2>
                   <p>{activeStage.objective}</p>
 
-                  <dl className="playground-sidebar__facts">
-                    <div className="playground-sidebar__fact">
-                      <dt>
-                        <ClipboardCheck
-                          aria-hidden="true"
-                          size={12}
-                          strokeWidth={2}
-                        />
-                        Deliverable
-                      </dt>
-                      <dd>{activeStage.deliverable}</dd>
-                    </div>
-                    <div className="playground-sidebar__fact">
-                      <dt>
-                        <Activity aria-hidden="true" size={12} strokeWidth={2} />
-                        Progress
-                      </dt>
-                      <dd>
-                        {metrics.completedCount}/{metrics.totalCount} complete
-                      </dd>
-                    </div>
-                    <div className="playground-sidebar__fact">
-                      <dt>
-                        <FileText aria-hidden="true" size={12} strokeWidth={2} />
-                        Draft size
-                      </dt>
-                      <dd>{metrics.notesWordCount} words</dd>
-                    </div>
-                    <div className="playground-sidebar__fact">
-                      <dt>
-                        <Gauge aria-hidden="true" size={12} strokeWidth={2} />
-                        Readiness
-                      </dt>
-                      <dd>{metrics.readinessLabel}</dd>
-                    </div>
-                  </dl>
+                  <div className="playground-sidebar__deliverable">
+                    <span>
+                      <ClipboardCheck
+                        aria-hidden="true"
+                        size={12}
+                        strokeWidth={2}
+                      />
+                      Deliverable
+                    </span>
+                    <p>{activeStage.deliverable}</p>
+                  </div>
                 </div>
+
+                <dl
+                  aria-label="Practice progress"
+                  className="playground-sidebar__metrics"
+                >
+                  <div className="playground-sidebar__metric">
+                    <dt>
+                      <Activity aria-hidden="true" size={12} strokeWidth={2} />
+                      Progress
+                    </dt>
+                    <dd>
+                      {metrics.completedCount}/{metrics.totalCount}
+                    </dd>
+                  </div>
+                  <div className="playground-sidebar__metric">
+                    <dt>
+                      <FileText aria-hidden="true" size={12} strokeWidth={2} />
+                      Draft
+                    </dt>
+                    <dd>{metrics.notesWordCount} words</dd>
+                  </div>
+                  <div className="playground-sidebar__metric">
+                    <dt>
+                      <Gauge aria-hidden="true" size={12} strokeWidth={2} />
+                      Ready
+                    </dt>
+                    <dd>{metrics.readinessLabel}</dd>
+                  </div>
+                </dl>
 
                 <div className="playground-sidebar__actions">
                   <button
@@ -481,9 +487,17 @@ export const PracticePlaygroundPage = ({
                     onClick={() => actions.toggleStageComplete(activeStage.id)}
                   >
                     {activeStageDraft.isComplete ? (
-                      <CircleDashed aria-hidden="true" size={15} strokeWidth={2} />
+                      <CircleDashed
+                        aria-hidden="true"
+                        size={15}
+                        strokeWidth={2}
+                      />
                     ) : (
-                      <CheckCircle2 aria-hidden="true" size={15} strokeWidth={2} />
+                      <CheckCircle2
+                        aria-hidden="true"
+                        size={15}
+                        strokeWidth={2}
+                      />
                     )}
                     {activeStageDraft.isComplete
                       ? "Mark stage incomplete"
@@ -497,7 +511,11 @@ export const PracticePlaygroundPage = ({
                       disabled={!canMarkPracticed}
                       onClick={onMarkPracticed}
                     >
-                      <CheckCircle2 aria-hidden="true" size={15} strokeWidth={2} />
+                      <CheckCircle2
+                        aria-hidden="true"
+                        size={15}
+                        strokeWidth={2}
+                      />
                       Mark practiced
                     </button>
                   ) : null}
@@ -506,51 +524,53 @@ export const PracticePlaygroundPage = ({
             ) : null}
 
             {activeSidebarTab === "guides" ? (
-              <div className="playground-sidebar__tab-sections">
-                <section className="playground-sidebar__section">
-                  <div className="playground-sidebar__section-head">
-                    <p className="section-label">
+              <div className="playground-sidebar__tab-sections playground-sidebar__tab-sections--guides">
+                <details
+                  className="playground-sidebar__section playground-sidebar__section--compact"
+                  open
+                >
+                  <summary className="playground-sidebar__section-summary">
+                    <span className="section-label">
                       <BookOpen aria-hidden="true" size={12} strokeWidth={2} />
                       Prompt Yourself
-                    </p>
+                    </span>
                     <span>{activeStage.prompts.length}</span>
-                  </div>
+                  </summary>
                   <ul className="token-list">
                     {activeStage.prompts.map((prompt) => (
                       <li key={prompt}>{prompt}</li>
                     ))}
                   </ul>
-                </section>
+                </details>
 
-                <section className="playground-sidebar__section">
-                  <div className="playground-sidebar__section-head">
-                    <p className="section-label">
-                      <ListChecks aria-hidden="true" size={12} strokeWidth={2} />
+                <details className="playground-sidebar__section playground-sidebar__section--compact">
+                  <summary className="playground-sidebar__section-summary">
+                    <span className="section-label">
+                      <ListChecks
+                        aria-hidden="true"
+                        size={12}
+                        strokeWidth={2}
+                      />
                       Review Checks
-                    </p>
+                    </span>
                     <span>{activeStage.reviewChecks.length}</span>
-                  </div>
+                  </summary>
                   <ul className="token-list token-list--warning">
                     {activeStage.reviewChecks.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
-                </section>
+                </details>
 
-                <section className="playground-sidebar__section">
-                  <div className="playground-sidebar__section-head">
-                    <p className="section-label">
+                <details className="playground-sidebar__section playground-sidebar__section--compact">
+                  <summary className="playground-sidebar__section-summary">
+                    <span className="section-label">
                       <Target aria-hidden="true" size={12} strokeWidth={2} />
                       Problem Anchors
-                    </p>
-                    <span>{stageContextCards.length + 1}</span>
-                  </div>
+                    </span>
+                    <span>{stageContextCards.length}</span>
+                  </summary>
                   <div className="playground-sidebar__anchor-list">
-                    <article className="playground-sidebar__anchor-card">
-                      <h3>Scale target</h3>
-                      <p>{problem.scale}</p>
-                    </article>
-
                     {stageContextCards.map((card) => (
                       <article
                         key={card.label}
@@ -565,7 +585,7 @@ export const PracticePlaygroundPage = ({
                       </article>
                     ))}
                   </div>
-                </section>
+                </details>
               </div>
             ) : null}
 
@@ -575,7 +595,11 @@ export const PracticePlaygroundPage = ({
                   <section className="playground-sidebar__section playground-sidebar__section--ai">
                     <div className="playground-sidebar__section-head">
                       <p className="section-label">
-                        <Sparkles aria-hidden="true" size={12} strokeWidth={2} />
+                        <Sparkles
+                          aria-hidden="true"
+                          size={12}
+                          strokeWidth={2}
+                        />
                         AI Setup
                       </p>
                     </div>
@@ -657,9 +681,7 @@ export const PracticePlaygroundPage = ({
             <section className="playground-stageboard__canvas">
               <button
                 aria-label={
-                  isStageboardExpanded
-                    ? "Collapse editor"
-                    : "Expand editor"
+                  isStageboardExpanded ? "Collapse editor" : "Expand editor"
                 }
                 aria-pressed={isStageboardExpanded}
                 className="playground-stageboard__expand-toggle"

@@ -105,16 +105,35 @@
 
 @media (max-width: 760px) {
     .detail {
-        padding: 22px;
-        border-radius: 24px;
+        padding: 12px;
+        border-radius: 14px;
     }
 
     .detail-card__header {
         display: grid;
         grid-template-columns: 1fr;
+        gap: 12px;
     }
 
     .detail-actions {
-        justify-content: start;
+        display: grid;
+        grid-template-columns: 1fr;
+        justify-content: stretch;
+    }
+
+    .detail-actions .primary-action,
+    .detail-actions .secondary-action {
+        width: 100%;
+        min-height: 40px;
+    }
+
+    .detail-section {
+        padding: 12px;
+        border-radius: 12px;
+    }
+
+    .detail h2 {
+        font-size: 1.45rem;
+        line-height: 1.08;
     }
 }

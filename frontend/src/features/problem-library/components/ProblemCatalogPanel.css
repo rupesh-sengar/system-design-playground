@@ -262,8 +262,41 @@
 
 @media (max-width: 760px) {
     .catalog {
-        padding: 22px;
-        border-radius: 24px;
+        padding: 12px;
+        border-radius: 14px;
+    }
+
+    .catalog-head {
+        gap: 14px;
+    }
+
+    .catalog-title {
+        grid-template-columns: 30px minmax(0, 1fr);
+        width: 100%;
+    }
+
+    .catalog-summary {
+        display: flex;
+        gap: 6px 10px;
+        flex-wrap: wrap;
+    }
+
+    .catalog-summary__meter {
+        flex: 1 0 100%;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .catalog-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    .catalog-actions .primary-action,
+    .catalog-actions .secondary-action {
+        width: 100%;
+        min-height: 40px;
     }
 
     .filter-grid {
@@ -278,5 +311,70 @@
     .catalog-actions,
     .catalog-meta {
         justify-content: start;
+    }
+
+    .catalog-filters {
+        margin-top: 14px;
+        padding: 10px;
+        border-radius: 12px;
+    }
+
+    .catalog-filters__top {
+        gap: 10px;
+    }
+
+    .catalog-filters__clear {
+        width: 100%;
+    }
+
+    .field {
+        gap: 6px;
+    }
+
+    .pill-row {
+        flex-wrap: nowrap;
+        margin-inline: -2px;
+        padding: 2px 2px 6px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+    }
+
+    .pill-row::-webkit-scrollbar {
+        display: none;
+    }
+
+    .pill {
+        flex: 0 0 auto;
+    }
+
+    .catalog-pagination {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .catalog-pagination__controls {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .catalog-pagination__button {
+        width: 100%;
+    }
+
+    .catalog-pagination__pages {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+    }
+
+    .catalog-pagination__pages::-webkit-scrollbar {
+        display: none;
     }
 }

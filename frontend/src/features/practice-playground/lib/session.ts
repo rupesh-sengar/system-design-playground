@@ -198,10 +198,6 @@ const getStageSpecificContext = (
   if (stageId === "requirements") {
     return [
       {
-        label: "Scope anchors",
-        items: [problem.summary, problem.scale],
-      },
-      {
         label: "Clarify early",
         items: [
           "What is the single most important user action?",
@@ -248,7 +244,7 @@ const getStageSpecificContext = (
     return [
       {
         label: "Flow pressure points",
-        items: [problem.scale, ...problem.pitfalls.slice(0, 2)],
+        items: [...problem.pitfalls.slice(0, 2)],
       },
       {
         label: "Trace these paths",
@@ -264,7 +260,7 @@ const getStageSpecificContext = (
     return [
       {
         label: "Architecture drivers",
-        items: [problem.scale, ...problem.focusAreas.slice(0, 3)],
+        items: [...problem.focusAreas.slice(0, 3)],
       },
       {
         label: "Decision lens",
@@ -292,12 +288,18 @@ export const buildStageContextCards = (
   problem: PracticeProblem,
   stageId: PracticeStageId,
 ): StageContextCard[] => {
-  const commonCard: StageContextCard = {
-    label: "Problem briefing",
-    items: [`Category: ${problem.category}`, problem.summary],
-  };
+  const commonCards: StageContextCard[] = [
+    {
+      label: "Problem briefing",
+      items: [`Category: ${problem.category}`, problem.summary],
+    },
+    {
+      label: "Scale target",
+      items: [problem.scale],
+    },
+  ];
 
-  return [commonCard, ...getStageSpecificContext(problem, stageId)];
+  return [...commonCards, ...getStageSpecificContext(problem, stageId)];
 };
 
 export const getAdjacentStageId = (
