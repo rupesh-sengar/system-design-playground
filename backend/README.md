@@ -57,12 +57,15 @@ Postgres migrations live in `db/migrations`.
 
 `002_judge_reference_vectors.sql` creates `judge_reference_chunks` for preferred-solution embeddings and enables `pgvector`.
 
+`003_practice_stage_diagrams.sql` adds `diagram_json` for saved drawpad diagrams.
+
 Apply them with:
 
 ```bash
 cd backend
 psql "$DATABASE_URL" -f db/migrations/001_initial_postgres_schema.sql
 psql "$DATABASE_URL" -f db/migrations/002_judge_reference_vectors.sql
+psql "$DATABASE_URL" -f db/migrations/003_practice_stage_diagrams.sql
 ```
 
 ## Judge embeddings

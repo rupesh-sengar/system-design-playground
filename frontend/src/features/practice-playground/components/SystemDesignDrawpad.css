@@ -1,0 +1,443 @@
+.system-drawpad {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 10px;
+    min-height: 0;
+    height: 100%;
+}
+
+.system-drawpad__toolbar,
+.system-drawpad__mode-group,
+.system-drawpad__palette,
+.system-drawpad__zoom-controls,
+.system-drawpad__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.system-drawpad__toolbar {
+    justify-content: space-between;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-strong);
+}
+
+.system-drawpad__mode-group,
+.system-drawpad__zoom-controls,
+.system-drawpad__actions {
+    flex: 0 0 auto;
+}
+
+.system-drawpad__palette {
+    flex: 1 1 auto;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+
+.system-drawpad__palette::-webkit-scrollbar {
+    display: none;
+}
+
+.system-drawpad__icon-button,
+.system-drawpad__palette-button,
+.system-drawpad__action-button {
+    display: inline-flex;
+    min-height: 34px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-soft);
+    color: var(--text);
+    font-size: 0.78rem;
+    font-weight: 720;
+    white-space: nowrap;
+}
+
+.system-drawpad__zoom-label {
+    display: inline-flex;
+    min-width: 48px;
+    min-height: 34px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-soft);
+    color: var(--muted-strong);
+    font-size: 0.76rem;
+    font-weight: 780;
+}
+
+.system-drawpad__icon-button {
+    width: 34px;
+    padding: 0;
+}
+
+.system-drawpad__palette-button,
+.system-drawpad__action-button {
+    padding: 7px 9px;
+}
+
+.system-drawpad__icon-button:hover,
+.system-drawpad__palette-button:hover,
+.system-drawpad__action-button:hover,
+.system-drawpad__icon-button:focus-visible,
+.system-drawpad__palette-button:focus-visible,
+.system-drawpad__action-button:focus-visible {
+    border-color: var(--border-strong);
+    background: var(--surface-muted);
+    outline: none;
+    transform: none;
+}
+
+.system-drawpad__icon-button--active {
+    border-color: var(--border-strong);
+    background: var(--accent-soft);
+}
+
+.system-drawpad__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(176px, 220px);
+    gap: 10px;
+    min-height: 0;
+}
+
+.system-drawpad__surface,
+.system-drawpad__inspector {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-strong);
+    overflow: hidden;
+}
+
+.system-drawpad__surface {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+}
+
+.system-drawpad__canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    touch-action: none;
+}
+
+.system-drawpad__canvas--select {
+    cursor: grab;
+}
+
+.system-drawpad__canvas--connector {
+    cursor: crosshair;
+}
+
+.system-drawpad__canvas--panning {
+    cursor: grabbing;
+}
+
+.system-drawpad__canvas:focus {
+    outline: none;
+}
+
+.system-drawpad__grid {
+    fill: url("#system-drawpad-grid");
+}
+
+#system-drawpad-grid path {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 1;
+}
+
+.system-drawpad__connector-hit {
+    fill: none;
+    pointer-events: stroke;
+    stroke: transparent;
+    stroke-width: 22;
+}
+
+.system-drawpad__connector-line {
+    fill: none;
+    marker-end: url("#system-drawpad-arrow");
+    stroke: var(--muted);
+    stroke-linecap: round;
+    stroke-width: 2.4;
+}
+
+.system-drawpad__connector--selected .system-drawpad__connector-line {
+    stroke: var(--accent-deep);
+    stroke-width: 3.2;
+}
+
+#system-drawpad-arrow path {
+    fill: var(--muted);
+}
+
+.system-drawpad__connector--selected #system-drawpad-arrow path {
+    fill: var(--accent-deep);
+}
+
+.system-drawpad__connector-label rect {
+    fill: var(--surface-strong);
+    stroke: var(--border);
+}
+
+.system-drawpad__connector-label text {
+    fill: var(--muted-strong);
+    font-size: 13px;
+    font-weight: 720;
+}
+
+.system-drawpad__node {
+    cursor: grab;
+}
+
+.system-drawpad__canvas--connector .system-drawpad__node {
+    cursor: crosshair;
+}
+
+.system-drawpad__node:active {
+    cursor: grabbing;
+}
+
+.system-drawpad__node-shape {
+    fill: var(--surface-soft);
+    stroke: var(--border-strong);
+    stroke-width: 2;
+}
+
+.system-drawpad__node-cap {
+    fill: var(--surface-muted);
+    stroke: var(--border-strong);
+    stroke-width: 2;
+}
+
+.system-drawpad__node-cap-line,
+.system-drawpad__queue-line {
+    fill: none;
+    stroke: var(--border-strong);
+    stroke-width: 1.6;
+}
+
+.system-drawpad__node-shape--client,
+.system-drawpad__node-shape--cdn {
+    fill: rgba(82, 145, 212, 0.12);
+    stroke: rgba(82, 145, 212, 0.38);
+}
+
+.system-drawpad__node-shape--load-balancer,
+.system-drawpad__node-shape--api-gateway {
+    fill: rgba(126, 102, 204, 0.12);
+    stroke: rgba(126, 102, 204, 0.36);
+}
+
+.system-drawpad__node-shape--service,
+.system-drawpad__node-shape--worker {
+    fill: rgba(38, 126, 83, 0.12);
+    stroke: rgba(38, 126, 83, 0.34);
+}
+
+.system-drawpad__node-shape--database,
+.system-drawpad__node-shape--cache,
+.system-drawpad__node-shape--storage {
+    fill: rgba(216, 188, 115, 0.18);
+    stroke: rgba(154, 107, 22, 0.34);
+}
+
+.system-drawpad__node-shape--queue,
+.system-drawpad__node-shape--stream {
+    fill: rgba(176, 111, 47, 0.13);
+    stroke: rgba(176, 111, 47, 0.34);
+}
+
+.system-drawpad__node-shape--external {
+    fill: rgba(173, 64, 64, 0.1);
+    stroke: rgba(173, 64, 64, 0.32);
+}
+
+.system-drawpad__node--selected .system-drawpad__node-shape,
+.system-drawpad__node--connector-source .system-drawpad__node-shape {
+    stroke: var(--accent-deep);
+    stroke-width: 3;
+}
+
+.system-drawpad__node--selected .system-drawpad__node-cap,
+.system-drawpad__node--connector-source .system-drawpad__node-cap {
+    stroke: var(--accent-deep);
+    stroke-width: 3;
+}
+
+.system-drawpad__node-label {
+    fill: var(--text);
+    font-size: 15px;
+    font-weight: 760;
+    pointer-events: none;
+}
+
+.system-drawpad__node-kind {
+    fill: var(--muted);
+    font-size: 10px;
+    font-weight: 780;
+    pointer-events: none;
+    text-transform: uppercase;
+}
+
+.system-drawpad__inspector {
+    display: grid;
+    align-content: start;
+    gap: 12px;
+    min-height: 0;
+    padding: 12px;
+    overflow-y: auto;
+}
+
+.system-drawpad__inspector-head,
+.system-drawpad__meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.system-drawpad__inspector-head strong,
+.system-drawpad__meta-row strong {
+    min-width: 0;
+    color: var(--text);
+    font-size: 0.82rem;
+    line-height: 1.3;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.system-drawpad__inspector-fields {
+    display: grid;
+    gap: 10px;
+}
+
+.system-drawpad__field {
+    display: grid;
+    gap: 6px;
+}
+
+.system-drawpad__field span,
+.system-drawpad__meta-row span,
+.system-drawpad__stats dt {
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 780;
+    text-transform: uppercase;
+}
+
+.system-drawpad__field input {
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: var(--surface-soft);
+    color: var(--text);
+    outline: none;
+}
+
+.system-drawpad__field input:focus {
+    border-color: var(--border-strong);
+    box-shadow: 0 0 0 3px var(--focus);
+}
+
+.system-drawpad__stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+}
+
+.system-drawpad__stats div {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+    padding: 10px;
+    border-radius: 8px;
+    background: var(--surface-soft);
+}
+
+.system-drawpad__stats dd {
+    margin: 0;
+    color: var(--text);
+    font-size: 0.92rem;
+    font-weight: 780;
+    overflow-wrap: anywhere;
+}
+
+:root[data-theme="dark"] .system-drawpad__toolbar,
+:root[data-theme="dark"] .system-drawpad__surface,
+:root[data-theme="dark"] .system-drawpad__inspector {
+    background: var(--surface-strong);
+}
+
+:root[data-theme="dark"] .system-drawpad__node-shape--client,
+:root[data-theme="dark"] .system-drawpad__node-shape--cdn {
+    fill: rgba(82, 145, 212, 0.16);
+    stroke: rgba(116, 168, 225, 0.44);
+}
+
+:root[data-theme="dark"] .system-drawpad__node-shape--load-balancer,
+:root[data-theme="dark"] .system-drawpad__node-shape--api-gateway {
+    fill: rgba(126, 102, 204, 0.18);
+    stroke: rgba(166, 148, 232, 0.46);
+}
+
+:root[data-theme="dark"] .system-drawpad__node-shape--service,
+:root[data-theme="dark"] .system-drawpad__node-shape--worker {
+    fill: rgba(82, 190, 126, 0.14);
+    stroke: rgba(82, 190, 126, 0.4);
+}
+
+:root[data-theme="dark"] .system-drawpad__node-shape--database,
+:root[data-theme="dark"] .system-drawpad__node-shape--cache,
+:root[data-theme="dark"] .system-drawpad__node-shape--storage {
+    fill: rgba(216, 188, 115, 0.16);
+    stroke: rgba(216, 188, 115, 0.4);
+}
+
+@media (max-width: 1240px) {
+    .system-drawpad__body {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(420px, 1fr) auto;
+    }
+
+    .system-drawpad__inspector {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 760px) {
+    .system-drawpad__toolbar {
+        display: grid;
+        grid-template-columns: 1fr;
+        align-items: stretch;
+        padding: 6px;
+    }
+
+    .system-drawpad__mode-group,
+    .system-drawpad__zoom-controls,
+    .system-drawpad__actions {
+        justify-content: flex-start;
+        overflow-x: auto;
+    }
+
+    .system-drawpad__palette-button span,
+    .system-drawpad__action-button {
+        font-size: 0.72rem;
+    }
+
+    .system-drawpad__body {
+        grid-template-rows: minmax(360px, 58dvh) auto;
+    }
+}

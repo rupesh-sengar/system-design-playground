@@ -32,6 +32,7 @@ import { getDifficultyClassName } from "@/features/problem-library/lib/catalog";
 import { Loader } from "@/shared/ui/Loader";
 import { RichTextEditor } from "@/shared/ui/RichTextEditor";
 import { PracticeAiReviewPanel } from "./PracticeAiReviewPanel";
+import { SystemDesignDrawpad } from "./SystemDesignDrawpad";
 import "@/shared/ui/content-lists.css";
 import "@/shared/ui/shared-ui.css";
 import "@/shared/ui/status-chips.css";
@@ -61,6 +62,7 @@ const SIDEBAR_WIDTH_STORAGE_KEY =
 const MIN_SIDEBAR_WIDTH = 248;
 const MAX_SIDEBAR_WIDTH = 420;
 type SidebarTab = "overview" | "guides" | "ai";
+type HighLevelDesignSurface = "diagram" | "notes";
 
 const clampSidebarWidth = (value: number): number =>
   Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, value));
@@ -97,6 +99,8 @@ export const PracticePlaygroundPage = ({
   const [sidebarWidth, setSidebarWidth] = useState(MAX_SIDEBAR_WIDTH);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [isStageboardExpanded, setIsStageboardExpanded] = useState(false);
+  const [activeDesignSurface, setActiveDesignSurface] =
+    useState<HighLevelDesignSurface>("diagram");
   const canMarkPracticed = metrics.completedCount === metrics.totalCount;
   const authReady = isApiAuthReady;
   const showLoadingOverlay = storage.isRemote && storage.isLoading;
@@ -696,13 +700,75 @@ export const PracticePlaygroundPage = ({
                   <Maximize2 aria-hidden="true" size={16} strokeWidth={2} />
                 )}
               </button>
-              <label className="playground-workbench__notes">
-                <RichTextEditor
-                  value={activeStageDraft.notes}
-                  onChange={actions.updateActiveStageNotes}
-                  placeholder={`Write your ${activeStage.title.toLowerCase()} notes here...`}
-                />
-              </label>
+              <div className="playground-workbench__notes">
+                {activeStage.id === "high-level-design" ? (
+                  <div className="playground-workbench__system-design">
+                    <div
+                      aria-label="High-level design workspace"
+                      className="playground-workbench__surface-switch"
+                      role="tablist"
+                    >
+                      <button
+                        aria-selected={activeDesignSurface === "diagram"}
+                        className={`playground-workbench__surface-tab ${
+                          activeDesignSurface === "diagram"
+                            ? "playground-workbench__surface-tab--active"
+                            : ""
+                        }`}
+                        role="tab"
+                        type="button"
+                        onClick={() => setActiveDesignSurface("diagram")}
+                      >
+                        <LayoutDashboard
+                          aria-hidden="true"
+                          size={14}
+                          strokeWidth={2}
+                        />
+                        Drawpad
+                      </button>
+                      <button
+                        aria-selected={activeDesignSurface === "notes"}
+                        className={`playground-workbench__surface-tab ${
+                          activeDesignSurface === "notes"
+                            ? "playground-workbench__surface-tab--active"
+                            : ""
+                        }`}
+                        role="tab"
+                        type="button"
+                        onClick={() => setActiveDesignSurface("notes")}
+                      >
+                        <FileText
+                          aria-hidden="true"
+                          size={14}
+                          strokeWidth={2}
+                        />
+                        Notes
+                      </button>
+                    </div>
+
+                    <div className="playground-workbench__surface-panel">
+                      {activeDesignSurface === "diagram" ? (
+                        <SystemDesignDrawpad
+                          value={activeStageDraft.diagram}
+                          onChange={actions.updateActiveStageDiagram}
+                        />
+                      ) : (
+                        <RichTextEditor
+                          value={activeStageDraft.notes}
+                          onChange={actions.updateActiveStageNotes}
+                          placeholder="Write responsibilities, bottlenecks, and tradeoffs here..."
+                        />
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <RichTextEditor
+                    value={activeStageDraft.notes}
+                    onChange={actions.updateActiveStageNotes}
+                    placeholder={`Write your ${activeStage.title.toLowerCase()} notes here...`}
+                  />
+                )}
+              </div>
             </section>
 
             <div className="playground-stageboard__actions">

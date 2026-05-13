@@ -1,4 +1,5 @@
 import type { Problem } from "@/data/problemLibrary";
+import type { SystemDesignDiagram } from "./systemDesignDiagram";
 
 export type PracticeStageId =
   | "requirements"
@@ -20,6 +21,7 @@ export interface PracticeStageDefinition {
 
 export interface PracticeStageDraft {
   notes: string;
+  diagram: SystemDesignDiagram | null;
   isComplete: boolean;
   updatedAt: string | null;
 }
@@ -136,6 +138,7 @@ export interface PracticePlaygroundViewModel {
     resetSession: () => void;
     setActiveStage: (stageId: PracticeStageId) => void;
     toggleStageComplete: (stageId: PracticeStageId) => void;
+    updateActiveStageDiagram: (diagram: SystemDesignDiagram | null) => void;
     updateActiveStageNotes: (notes: string) => void;
   };
   activeStage: PracticeStageDefinition;

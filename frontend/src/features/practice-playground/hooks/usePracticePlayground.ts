@@ -28,6 +28,11 @@ import {
   toPersistedPracticeSessionInput,
 } from "../lib/session";
 import { practiceStages } from "../model/stages";
+import {
+  normalizeSystemDesignDiagram,
+  summarizeSystemDesignDiagram,
+  type SystemDesignDiagram,
+} from "../model/systemDesignDiagram";
 import type {
   PracticePlaygroundViewModel,
   PracticeCoachStageState,
@@ -255,8 +260,16 @@ export const usePracticePlayground = (
   );
 
   const activeStagePlainText = useMemo(
-    () => richTextToPlainText(activeStageDraft.notes),
-    [activeStageDraft.notes],
+    () =>
+      [
+        richTextToPlainText(activeStageDraft.notes),
+        activeStage.id === "high-level-design"
+          ? summarizeSystemDesignDiagram(activeStageDraft.diagram)
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    [activeStage.id, activeStageDraft.diagram, activeStageDraft.notes],
   );
   const draftWordCount = useMemo(
     () => countWords(activeStagePlainText),
@@ -388,6 +401,23 @@ export const usePracticePlayground = (
         [current.activeStageId]: {
           ...current.stages[current.activeStageId],
           notes: sanitizeRichTextHtml(notes),
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    }));
+  };
+
+  const updateActiveStageDiagram = (
+    diagram: SystemDesignDiagram | null,
+  ): void => {
+    updateSession((current) => ({
+      ...current,
+      updatedAt: new Date().toISOString(),
+      stages: {
+        ...current.stages,
+        [current.activeStageId]: {
+          ...current.stages[current.activeStageId],
+          diagram: normalizeSystemDesignDiagram(diagram),
           updatedAt: new Date().toISOString(),
         },
       },
@@ -552,6 +582,7 @@ export const usePracticePlayground = (
         resetSession: () => undefined,
         setActiveStage: () => undefined,
         toggleStageComplete: () => undefined,
+        updateActiveStageDiagram: () => undefined,
         updateActiveStageNotes: () => undefined,
       },
       activeStage: practiceStages[0],
@@ -726,6 +757,7 @@ export const usePracticePlayground = (
       resetSession,
       setActiveStage,
       toggleStageComplete,
+      updateActiveStageDiagram,
       updateActiveStageNotes,
     },
     activeStage,

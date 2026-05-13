@@ -51,6 +51,7 @@ export interface ProblemProgressRecord {
 }
 
 export interface PracticeStageDraftRecord {
+  diagramJson: unknown | null;
   isComplete: boolean;
   notesHtml: string;
   updatedAt: string | null;
@@ -71,6 +72,7 @@ export interface PracticeSessionRecord {
 const createEmptyPracticeStageDrafts = (): PracticeStageDraftRecordMap =>
   stageIds.reduce<PracticeStageDraftRecordMap>((drafts, stageId) => {
     drafts[stageId] = {
+      diagramJson: null,
       isComplete: false,
       notesHtml: "",
       updatedAt: null,
@@ -269,6 +271,7 @@ type PracticeSessionQueryRow = QueryResultRow & {
   problem_id: string;
   session_updated_at: IsoDateValue;
   stage_id: StageId | null;
+  stage_diagram_json: unknown | null;
   stage_is_complete: boolean | null;
   stage_notes_html: string | null;
   stage_updated_at: IsoDateValue;
@@ -291,6 +294,7 @@ const mapPracticeSessionRecord = (
     }
 
     stages[row.stage_id] = {
+      diagramJson: row.stage_diagram_json ?? null,
       isComplete: row.stage_is_complete ?? false,
       notesHtml: row.stage_notes_html ?? "",
       updatedAt: toNullableIsoString(row.stage_updated_at),
@@ -319,6 +323,7 @@ export class PracticeSessionRepository {
           ps.active_stage_id,
           ps.updated_at as session_updated_at,
           psd.stage_id,
+          psd.diagram_json as stage_diagram_json,
           psd.notes_html as stage_notes_html,
           psd.is_complete as stage_is_complete,
           psd.updated_at as stage_updated_at
@@ -379,13 +384,15 @@ export class PracticeSessionRepository {
             insert into practice_stage_drafts (
               session_id,
               stage_id,
+              diagram_json,
               notes_html,
               is_complete,
               updated_at
             )
-            values ($1, $2, $3, $4, $5)
+            values ($1, $2, $3, $4, $5, $6)
             on conflict (session_id, stage_id)
             do update set
+              diagram_json = excluded.diagram_json,
               notes_html = excluded.notes_html,
               is_complete = excluded.is_complete,
               updated_at = excluded.updated_at
@@ -393,6 +400,7 @@ export class PracticeSessionRepository {
           [
             sessionRow.id,
             stageId,
+            stageDraft.diagramJson ?? null,
             stageDraft.notesHtml,
             stageDraft.isComplete,
             stageDraft.updatedAt ?? null,
@@ -437,6 +445,7 @@ export class PracticeSessionRepository {
           ps.active_stage_id,
           ps.updated_at as session_updated_at,
           psd.stage_id,
+          psd.diagram_json as stage_diagram_json,
           psd.notes_html as stage_notes_html,
           psd.is_complete as stage_is_complete,
           psd.updated_at as stage_updated_at

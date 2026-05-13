@@ -3,6 +3,11 @@ import {
   richTextToPlainText,
   sanitizeRichTextHtml,
 } from "@/shared/lib/richText";
+import {
+  normalizeSystemDesignDiagram,
+  summarizeSystemDesignDiagram,
+  type SystemDesignDiagram,
+} from "../model/systemDesignDiagram";
 import type {
   PracticeMetrics,
   PracticeProblem,
@@ -14,6 +19,7 @@ import type {
 } from "../model/types";
 
 export interface PersistedPracticeStageDraft {
+  diagramJson: SystemDesignDiagram | null;
   isComplete: boolean;
   notesHtml: string;
   updatedAt: string | null;
@@ -43,6 +49,7 @@ export const createEmptyDrafts = (): PracticeStageDraftMap =>
   practiceStages.reduce<PracticeStageDraftMap>((drafts, stage) => {
     drafts[stage.id] = {
       notes: "",
+      diagram: null,
       isComplete: false,
       updatedAt: null,
     };
@@ -57,18 +64,35 @@ export const createDefaultSession = (): PracticeSession => ({
 
 export const normalizePracticeSession = (
   session: PracticeSession,
-): PracticeSession => ({
-  ...session,
-  stages: Object.fromEntries(
-    Object.entries(session.stages).map(([stageId, draft]) => [
-      stageId,
-      {
-        ...draft,
-        notes: sanitizeRichTextHtml(draft.notes),
-      },
-    ]),
-  ) as PracticeStageDraftMap,
-});
+): PracticeSession => {
+  const defaultDrafts = createEmptyDrafts();
+  const normalizedStages = practiceStages.reduce<PracticeStageDraftMap>(
+    (drafts, stage) => {
+      const draft = session.stages?.[stage.id] ?? defaultDrafts[stage.id];
+      const notes = typeof draft.notes === "string" ? draft.notes : "";
+      const updatedAt =
+        typeof draft.updatedAt === "string" ? draft.updatedAt : null;
+
+      drafts[stage.id] = {
+        diagram: normalizeSystemDesignDiagram(draft.diagram),
+        isComplete: Boolean(draft.isComplete),
+        notes: sanitizeRichTextHtml(notes),
+        updatedAt,
+      };
+
+      return drafts;
+    },
+    {} as PracticeStageDraftMap,
+  );
+
+  return {
+    activeStageId:
+      practiceStages.find((stage) => stage.id === session.activeStageId)?.id ??
+      practiceStages[0].id,
+    stages: normalizedStages,
+    updatedAt: session.updatedAt,
+  };
+};
 
 export const parseStoredSessions = (
   rawValue: string | null,
@@ -103,6 +127,7 @@ export const toPersistedPracticeSessionInput = (
     Object.entries(session.stages).map(([stageId, draft]) => [
       stageId,
       {
+        diagramJson: draft.diagram,
         isComplete: draft.isComplete,
         notesHtml: sanitizeRichTextHtml(draft.notes),
         updatedAt: draft.updatedAt,
@@ -124,6 +149,7 @@ export const fromPersistedPracticeSession = (
       Object.entries(session.stages).map(([stageId, draft]) => [
         stageId,
         {
+          diagram: normalizeSystemDesignDiagram(draft.diagramJson),
           isComplete: draft.isComplete,
           notes: draft.notesHtml,
           updatedAt: draft.updatedAt,
@@ -144,6 +170,7 @@ export const createPracticeSessionSnapshot = (
         stage.id,
         {
           isComplete: session.stages[stage.id].isComplete,
+          diagram: normalizeSystemDesignDiagram(session.stages[stage.id].diagram),
           notes: sanitizeRichTextHtml(session.stages[stage.id].notes),
         },
       ]),
@@ -177,7 +204,10 @@ export const buildPracticeMetrics = (
   ).length;
   const totalCount = practiceStages.length;
   const notesWordCount = practiceStages.reduce(
-    (count, stage) => count + countWords(session.stages[stage.id].notes),
+    (count, stage) =>
+      count +
+      countWords(session.stages[stage.id].notes) +
+      countWords(summarizeSystemDesignDiagram(session.stages[stage.id].diagram)),
     0,
   );
   const completionPercent = Math.round((completedCount / totalCount) * 100);
