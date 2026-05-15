@@ -8,6 +8,7 @@
 
 .system-drawpad__toolbar,
 .system-drawpad__mode-group,
+.system-drawpad__line-tools,
 .system-drawpad__palette,
 .system-drawpad__zoom-controls,
 .system-drawpad__actions {
@@ -81,6 +82,12 @@
 .system-drawpad__palette-button,
 .system-drawpad__action-button {
     padding: 7px 9px;
+}
+
+.system-drawpad__palette-button span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .system-drawpad__icon-button:hover,
@@ -164,10 +171,17 @@
 
 .system-drawpad__connector-line {
     fill: none;
-    marker-end: url("#system-drawpad-arrow");
     stroke: var(--muted);
     stroke-linecap: round;
     stroke-width: 2.4;
+}
+
+.system-drawpad__connector-line--async {
+    stroke-dasharray: 8 9;
+}
+
+.system-drawpad__connector-line--dependency {
+    stroke-dasharray: 11 7;
 }
 
 .system-drawpad__connector--selected .system-drawpad__connector-line {
@@ -175,12 +189,28 @@
     stroke-width: 3.2;
 }
 
-#system-drawpad-arrow path {
+.system-drawpad__marker-path {
     fill: var(--muted);
 }
 
-.system-drawpad__connector--selected #system-drawpad-arrow path {
+.system-drawpad__marker-path--selected {
     fill: var(--accent-deep);
+}
+
+.system-drawpad__marker-path--open,
+.system-drawpad__marker-path--open-selected {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+}
+
+.system-drawpad__marker-path--open {
+    stroke: var(--muted);
+}
+
+.system-drawpad__marker-path--open-selected {
+    stroke: var(--accent-deep);
 }
 
 .system-drawpad__connector-label rect {
@@ -226,17 +256,23 @@
 }
 
 .system-drawpad__node-shape--client,
-.system-drawpad__node-shape--cdn {
+.system-drawpad__node-shape--cdn,
+.system-drawpad__node-shape--dns,
+.system-drawpad__node-shape--service-discovery {
     fill: rgba(82, 145, 212, 0.12);
     stroke: rgba(82, 145, 212, 0.38);
 }
 
 .system-drawpad__node-shape--load-balancer,
-.system-drawpad__node-shape--api-gateway {
+.system-drawpad__node-shape--api-gateway,
+.system-drawpad__node-shape--rate-limiter {
     fill: rgba(126, 102, 204, 0.12);
     stroke: rgba(126, 102, 204, 0.36);
 }
 
+.system-drawpad__node-shape--auth,
+.system-drawpad__node-shape--monitoring,
+.system-drawpad__node-shape--scheduler,
 .system-drawpad__node-shape--service,
 .system-drawpad__node-shape--worker {
     fill: rgba(38, 126, 83, 0.12);
@@ -245,6 +281,7 @@
 
 .system-drawpad__node-shape--database,
 .system-drawpad__node-shape--cache,
+.system-drawpad__node-shape--search,
 .system-drawpad__node-shape--storage {
     fill: rgba(216, 188, 115, 0.18);
     stroke: rgba(154, 107, 22, 0.34);
@@ -256,7 +293,8 @@
     stroke: rgba(176, 111, 47, 0.34);
 }
 
-.system-drawpad__node-shape--external {
+.system-drawpad__node-shape--external,
+.system-drawpad__node-shape--firewall {
     fill: rgba(173, 64, 64, 0.1);
     stroke: rgba(173, 64, 64, 0.32);
 }
@@ -351,6 +389,51 @@
     box-shadow: 0 0 0 3px var(--focus);
 }
 
+.system-drawpad__segmented-control {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.system-drawpad__segment-button {
+    display: inline-flex;
+    min-width: 0;
+    min-height: 34px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 7px;
+    background: var(--surface-soft);
+    color: var(--text);
+    font-size: 0.72rem;
+    font-weight: 760;
+}
+
+.system-drawpad__segment-button:hover,
+.system-drawpad__segment-button:focus-visible {
+    border-color: var(--border-strong);
+    background: var(--surface-muted);
+    outline: none;
+}
+
+.system-drawpad__segment-button--active {
+    border-color: var(--border-strong);
+    background: var(--accent-soft);
+}
+
+.system-drawpad__segment-button span {
+    min-width: 0;
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: none;
+    white-space: nowrap;
+}
+
 .system-drawpad__stats {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -382,17 +465,23 @@
 }
 
 :root[data-theme="dark"] .system-drawpad__node-shape--client,
-:root[data-theme="dark"] .system-drawpad__node-shape--cdn {
+:root[data-theme="dark"] .system-drawpad__node-shape--cdn,
+:root[data-theme="dark"] .system-drawpad__node-shape--dns,
+:root[data-theme="dark"] .system-drawpad__node-shape--service-discovery {
     fill: rgba(82, 145, 212, 0.16);
     stroke: rgba(116, 168, 225, 0.44);
 }
 
 :root[data-theme="dark"] .system-drawpad__node-shape--load-balancer,
-:root[data-theme="dark"] .system-drawpad__node-shape--api-gateway {
+:root[data-theme="dark"] .system-drawpad__node-shape--api-gateway,
+:root[data-theme="dark"] .system-drawpad__node-shape--rate-limiter {
     fill: rgba(126, 102, 204, 0.18);
     stroke: rgba(166, 148, 232, 0.46);
 }
 
+:root[data-theme="dark"] .system-drawpad__node-shape--auth,
+:root[data-theme="dark"] .system-drawpad__node-shape--monitoring,
+:root[data-theme="dark"] .system-drawpad__node-shape--scheduler,
 :root[data-theme="dark"] .system-drawpad__node-shape--service,
 :root[data-theme="dark"] .system-drawpad__node-shape--worker {
     fill: rgba(82, 190, 126, 0.14);
@@ -401,9 +490,16 @@
 
 :root[data-theme="dark"] .system-drawpad__node-shape--database,
 :root[data-theme="dark"] .system-drawpad__node-shape--cache,
+:root[data-theme="dark"] .system-drawpad__node-shape--search,
 :root[data-theme="dark"] .system-drawpad__node-shape--storage {
     fill: rgba(216, 188, 115, 0.16);
     stroke: rgba(216, 188, 115, 0.4);
+}
+
+:root[data-theme="dark"] .system-drawpad__node-shape--external,
+:root[data-theme="dark"] .system-drawpad__node-shape--firewall {
+    fill: rgba(216, 98, 98, 0.14);
+    stroke: rgba(230, 126, 126, 0.4);
 }
 
 @media (max-width: 1240px) {
@@ -419,9 +515,7 @@
 
 @media (max-width: 760px) {
     .system-drawpad__toolbar {
-        display: grid;
-        grid-template-columns: 1fr;
-        align-items: stretch;
+        align-items: center;
         padding: 6px;
     }
 
@@ -430,6 +524,10 @@
     .system-drawpad__actions {
         justify-content: flex-start;
         overflow-x: auto;
+    }
+
+    .system-drawpad__palette {
+        gap: 6px;
     }
 
     .system-drawpad__palette-button span,

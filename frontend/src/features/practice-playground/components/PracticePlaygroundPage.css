@@ -150,7 +150,7 @@
 }
 
 .playground-sidebar--expanded .playground-sidebar__problem h1 {
-    max-width: 22ch;
+    max-width: none;
     font-size: clamp(2rem, 3.6vw, 3.8rem);
 }
 
@@ -219,7 +219,11 @@
 
 .playground-sidebar__problem h1 {
     font-size: clamp(1.45rem, 1.65vw, 1.85rem);
-    max-width: 14ch;
+    max-width: none;
+    width: 100%;
+    max-inline-size: none;
+    text-wrap: wrap;
+    white-space: normal;
 }
 
 .playground-sidebar__problem {

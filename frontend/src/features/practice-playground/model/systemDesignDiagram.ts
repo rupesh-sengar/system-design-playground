@@ -1,19 +1,38 @@
 export const systemDesignNodeKinds = [
+  "dns",
   "client",
   "cdn",
+  "firewall",
   "load-balancer",
   "api-gateway",
+  "auth",
+  "rate-limiter",
   "service",
+  "service-discovery",
   "database",
   "cache",
   "queue",
   "stream",
   "worker",
+  "scheduler",
+  "search",
   "storage",
+  "monitoring",
   "external",
 ] as const;
 
 export type SystemDesignNodeKind = (typeof systemDesignNodeKinds)[number];
+
+export const systemDesignConnectorKinds = [
+  "one-way",
+  "async",
+  "bidirectional",
+  "dependency",
+  "plain",
+] as const;
+
+export type SystemDesignConnectorKind =
+  (typeof systemDesignConnectorKinds)[number];
 
 export interface SystemDesignDiagramNode {
   height: number;
@@ -28,6 +47,7 @@ export interface SystemDesignDiagramNode {
 export interface SystemDesignDiagramConnector {
   fromNodeId: string;
   id: string;
+  kind: SystemDesignConnectorKind;
   label: string;
   toNodeId: string;
 }
@@ -39,20 +59,29 @@ export interface SystemDesignDiagram {
 
 const DEFAULT_NODE_WIDTH = 152;
 const DEFAULT_NODE_HEIGHT = 76;
+const DEFAULT_CONNECTOR_KIND: SystemDesignConnectorKind = "one-way";
 const MAX_LABEL_LENGTH = 80;
 const MIN_COORDINATE = -100000;
 const MAX_COORDINATE = 100000;
 
 const defaultLabelByKind: Record<SystemDesignNodeKind, string> = {
   "api-gateway": "API Gateway",
+  auth: "Auth Service",
   cache: "Cache",
   cdn: "CDN",
   client: "Client",
   database: "Primary DB",
+  dns: "DNS",
   external: "External API",
+  firewall: "Firewall / WAF",
   "load-balancer": "Load Balancer",
+  monitoring: "Monitoring",
   queue: "Queue",
+  "rate-limiter": "Rate Limiter",
+  scheduler: "Scheduler",
+  search: "Search Index",
   service: "Service",
+  "service-discovery": "Service Discovery",
   storage: "Object Store",
   stream: "Event Stream",
   worker: "Worker",
@@ -64,6 +93,10 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isNodeKind = (value: unknown): value is SystemDesignNodeKind =>
   typeof value === "string" &&
   systemDesignNodeKinds.includes(value as SystemDesignNodeKind);
+
+const isConnectorKind = (value: unknown): value is SystemDesignConnectorKind =>
+  typeof value === "string" &&
+  systemDesignConnectorKinds.includes(value as SystemDesignConnectorKind);
 
 const clampNumber = (
   value: unknown,
@@ -167,6 +200,9 @@ export const normalizeSystemDesignDiagram = (
       return {
         fromNodeId: connector.fromNodeId,
         id: connector.id,
+        kind: isConnectorKind(connector.kind)
+          ? connector.kind
+          : DEFAULT_CONNECTOR_KIND,
         label: normalizeLabel(connector.label, ""),
         toNodeId: connector.toNodeId,
       };
@@ -253,54 +289,63 @@ export const createSystemArchitectureTemplate = (): SystemDesignDiagram => {
       {
         fromNodeId: "template-client",
         id: "template-edge-client-cdn",
+        kind: "one-way",
         label: "static",
         toNodeId: "template-cdn",
       },
       {
         fromNodeId: "template-client",
         id: "template-edge-client-lb",
+        kind: "one-way",
         label: "request",
         toNodeId: "template-lb",
       },
       {
         fromNodeId: "template-lb",
         id: "template-edge-lb-api",
+        kind: "one-way",
         label: "",
         toNodeId: "template-api",
       },
       {
         fromNodeId: "template-api",
         id: "template-edge-api-service",
+        kind: "one-way",
         label: "",
         toNodeId: "template-service",
       },
       {
         fromNodeId: "template-service",
         id: "template-edge-service-cache",
+        kind: "bidirectional",
         label: "hot reads",
         toNodeId: "template-cache",
       },
       {
         fromNodeId: "template-service",
         id: "template-edge-service-db",
+        kind: "one-way",
         label: "writes",
         toNodeId: "template-db",
       },
       {
         fromNodeId: "template-service",
         id: "template-edge-service-queue",
+        kind: "async",
         label: "async jobs",
         toNodeId: "template-queue",
       },
       {
         fromNodeId: "template-queue",
         id: "template-edge-queue-worker",
+        kind: "async",
         label: "",
         toNodeId: "template-worker",
       },
       {
         fromNodeId: "template-worker",
         id: "template-edge-worker-storage",
+        kind: "one-way",
         label: "assets",
         toNodeId: "template-storage",
       },
@@ -334,8 +379,15 @@ export const summarizeSystemDesignDiagram = (
       }
 
       const label = connector.label ? ` [${connector.label}]` : "";
+      const arrowByKind: Record<SystemDesignConnectorKind, string> = {
+        async: "~>",
+        bidirectional: "<->",
+        dependency: "- depends on ->",
+        "one-way": "->",
+        plain: "--",
+      };
 
-      return `${fromNode.label} -> ${toNode.label}${label}`;
+      return `${fromNode.label} ${arrowByKind[connector.kind]} ${toNode.label}${label}`;
     })
     .filter((connection): connection is string => connection !== null)
     .join("; ");

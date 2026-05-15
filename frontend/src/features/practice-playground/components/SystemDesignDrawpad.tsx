@@ -8,22 +8,34 @@ import {
   useState,
 } from "react";
 import {
+  Activity,
   AppWindow,
+  ArrowLeftRight,
+  ArrowRight,
   Box,
   Boxes,
   Cable,
+  Clock3,
   Cloud,
   Copy,
   Cpu,
   Database,
+  Gauge,
+  Globe2,
   HardDrive,
+  KeyRound,
   Link2,
+  Minus,
   Maximize2,
   MousePointer2,
   Network,
+  Radar,
   RotateCcw,
+  Route,
+  Search,
   Router,
   Server,
+  ShieldCheck,
   Trash2,
   Workflow,
   ZoomIn,
@@ -38,6 +50,7 @@ import {
   type SystemDesignDiagram,
   type SystemDesignDiagramConnector,
   type SystemDesignDiagramNode,
+  type SystemDesignConnectorKind,
   type SystemDesignNodeKind,
 } from "../model/systemDesignDiagram";
 import "./SystemDesignDrawpad.css";
@@ -92,6 +105,12 @@ interface NodeKindMeta {
   shape: "cylinder" | "queue" | "rect";
 }
 
+interface ConnectorKindMeta {
+  icon: LucideIcon;
+  label: string;
+  title: string;
+}
+
 const BASE_CANVAS_WIDTH = 1400;
 const BASE_CANVAS_HEIGHT = 860;
 const DEFAULT_VIEWPORT: Viewport = {
@@ -107,6 +126,11 @@ const NODE_KIND_META: Record<SystemDesignNodeKind, NodeKindMeta> = {
   "api-gateway": {
     icon: Router,
     label: "API",
+    shape: "rect",
+  },
+  auth: {
+    icon: KeyRound,
+    label: "Auth",
     shape: "rect",
   },
   cache: {
@@ -129,9 +153,19 @@ const NODE_KIND_META: Record<SystemDesignNodeKind, NodeKindMeta> = {
     label: "DB",
     shape: "cylinder",
   },
+  dns: {
+    icon: Globe2,
+    label: "DNS",
+    shape: "rect",
+  },
   external: {
     icon: Cable,
     label: "External",
+    shape: "rect",
+  },
+  firewall: {
+    icon: ShieldCheck,
+    label: "WAF",
     shape: "rect",
   },
   "load-balancer": {
@@ -139,14 +173,39 @@ const NODE_KIND_META: Record<SystemDesignNodeKind, NodeKindMeta> = {
     label: "LB",
     shape: "rect",
   },
+  monitoring: {
+    icon: Activity,
+    label: "Monitor",
+    shape: "rect",
+  },
   queue: {
     icon: Boxes,
     label: "Queue",
     shape: "queue",
   },
+  "rate-limiter": {
+    icon: Gauge,
+    label: "Rate Limit",
+    shape: "rect",
+  },
+  scheduler: {
+    icon: Clock3,
+    label: "Cron",
+    shape: "rect",
+  },
+  search: {
+    icon: Search,
+    label: "Search",
+    shape: "cylinder",
+  },
   service: {
     icon: Server,
     label: "Service",
+    shape: "rect",
+  },
+  "service-discovery": {
+    icon: Radar,
+    label: "Discovery",
     shape: "rect",
   },
   storage: {
@@ -179,6 +238,53 @@ const PALETTE: SystemDesignNodeKind[] = [
   "worker",
   "storage",
   "external",
+  "dns",
+  "firewall",
+  "rate-limiter",
+  "auth",
+  "service-discovery",
+  "search",
+  "scheduler",
+  "monitoring",
+];
+
+const CONNECTOR_KIND_META: Record<
+  SystemDesignConnectorKind,
+  ConnectorKindMeta
+> = {
+  async: {
+    icon: Workflow,
+    label: "Async",
+    title: "Async dashed arrow",
+  },
+  bidirectional: {
+    icon: ArrowLeftRight,
+    label: "Both",
+    title: "Bidirectional arrow",
+  },
+  dependency: {
+    icon: Route,
+    label: "Depends",
+    title: "Dependency arrow",
+  },
+  "one-way": {
+    icon: ArrowRight,
+    label: "Arrow",
+    title: "One-way arrow",
+  },
+  plain: {
+    icon: Minus,
+    label: "Line",
+    title: "Plain line",
+  },
+};
+
+const CONNECTOR_KIND_OPTIONS: SystemDesignConnectorKind[] = [
+  "one-way",
+  "async",
+  "bidirectional",
+  "dependency",
+  "plain",
 ];
 
 const createConnectorId = (): string => `edge-${Date.now()}`;
@@ -293,6 +399,42 @@ const getConnectorPath = (
   };
 };
 
+const getConnectorMarker = (
+  connectorKind: SystemDesignConnectorKind,
+  isSelected: boolean,
+): {
+  markerEnd?: string;
+  markerStart?: string;
+} => {
+  const filledMarker = isSelected
+    ? "url(#system-drawpad-arrow-selected)"
+    : "url(#system-drawpad-arrow)";
+  const openMarker = isSelected
+    ? "url(#system-drawpad-open-arrow-selected)"
+    : "url(#system-drawpad-open-arrow)";
+
+  if (connectorKind === "plain") {
+    return {};
+  }
+
+  if (connectorKind === "bidirectional") {
+    return {
+      markerEnd: filledMarker,
+      markerStart: filledMarker,
+    };
+  }
+
+  if (connectorKind === "dependency") {
+    return {
+      markerEnd: openMarker,
+    };
+  }
+
+  return {
+    markerEnd: filledMarker,
+  };
+};
+
 const wrapLabel = (label: string): string[] => {
   const words = label.trim().split(/\s+/).filter(Boolean);
 
@@ -333,6 +475,8 @@ export const SystemDesignDrawpad = ({
 }: SystemDesignDrawpadProps) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [mode, setMode] = useState<DrawpadMode>("select");
+  const [connectorKind, setConnectorKind] =
+    useState<SystemDesignConnectorKind>("one-way");
   const [selection, setSelection] = useState<Selection>(null);
   const [connectorSourceId, setConnectorSourceId] = useState<string | null>(
     null,
@@ -441,6 +585,7 @@ export const SystemDesignDrawpad = ({
     const nextConnector: SystemDesignDiagramConnector = {
       fromNodeId,
       id: createConnectorId(),
+      kind: connectorKind,
       label: "",
       toNodeId,
     };
@@ -464,6 +609,7 @@ export const SystemDesignDrawpad = ({
 
     if (selection.type === "node") {
       commitDiagram({
+        ...diagram,
         connectors: diagram.connectors.filter(
           (connector) =>
             connector.fromNodeId !== selection.id &&
@@ -535,7 +681,31 @@ export const SystemDesignDrawpad = ({
             : connector,
         ),
       });
+      return;
     }
+
+  };
+
+  const updateSelectedConnectorKind = (
+    nextConnectorKind: SystemDesignConnectorKind,
+  ): void => {
+    setConnectorKind(nextConnectorKind);
+
+    if (!selectedConnector) {
+      return;
+    }
+
+    commitDiagram({
+      ...diagram,
+      connectors: diagram.connectors.map((connector) =>
+        connector.id === selectedConnector.id
+          ? {
+              ...connector,
+              kind: nextConnectorKind,
+            }
+          : connector,
+      ),
+    });
   };
 
   const handleTemplateClick = (): void => {
@@ -848,6 +1018,37 @@ export const SystemDesignDrawpad = ({
           >
             <Link2 aria-hidden="true" size={16} strokeWidth={2} />
           </button>
+          <div
+            aria-label="Line style"
+            className="system-drawpad__line-tools"
+            role="group"
+          >
+            {CONNECTOR_KIND_OPTIONS.map((kind) => {
+              const meta = CONNECTOR_KIND_META[kind];
+              const Icon = meta.icon;
+              const isActive = (selectedConnector?.kind ?? connectorKind) === kind;
+
+              return (
+                <button
+                  key={kind}
+                  aria-label={meta.title}
+                  aria-pressed={isActive}
+                  className={`system-drawpad__icon-button ${
+                    isActive ? "system-drawpad__icon-button--active" : ""
+                  }`}
+                  title={meta.title}
+                  type="button"
+                  onClick={() => {
+                    updateSelectedConnectorKind(kind);
+                    setMode("connector");
+                    setDragState(null);
+                  }}
+                >
+                  <Icon aria-hidden="true" size={15} strokeWidth={2} />
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div
@@ -981,12 +1182,57 @@ export const SystemDesignDrawpad = ({
                 id="system-drawpad-arrow"
                 markerHeight="10"
                 markerWidth="10"
-                orient="auto"
+                orient="auto-start-reverse"
                 refX="8"
                 refY="5"
                 viewBox="0 0 10 10"
               >
-                <path d="M 0 0 L 10 5 L 0 10 z" />
+                <path
+                  className="system-drawpad__marker-path"
+                  d="M 0 0 L 10 5 L 0 10 z"
+                />
+              </marker>
+              <marker
+                id="system-drawpad-arrow-selected"
+                markerHeight="10"
+                markerWidth="10"
+                orient="auto-start-reverse"
+                refX="8"
+                refY="5"
+                viewBox="0 0 10 10"
+              >
+                <path
+                  className="system-drawpad__marker-path system-drawpad__marker-path--selected"
+                  d="M 0 0 L 10 5 L 0 10 z"
+                />
+              </marker>
+              <marker
+                id="system-drawpad-open-arrow"
+                markerHeight="10"
+                markerWidth="10"
+                orient="auto-start-reverse"
+                refX="8"
+                refY="5"
+                viewBox="0 0 10 10"
+              >
+                <path
+                  className="system-drawpad__marker-path system-drawpad__marker-path--open"
+                  d="M 1 1 L 9 5 L 1 9"
+                />
+              </marker>
+              <marker
+                id="system-drawpad-open-arrow-selected"
+                markerHeight="10"
+                markerWidth="10"
+                orient="auto-start-reverse"
+                refX="8"
+                refY="5"
+                viewBox="0 0 10 10"
+              >
+                <path
+                  className="system-drawpad__marker-path system-drawpad__marker-path--open-selected"
+                  d="M 1 1 L 9 5 L 1 9"
+                />
               </marker>
             </defs>
             <rect
@@ -1010,6 +1256,10 @@ export const SystemDesignDrawpad = ({
                 const isSelected =
                   selection?.type === "connector" &&
                   selection.id === connector.id;
+                const connectorMarker = getConnectorMarker(
+                  connector.kind,
+                  isSelected,
+                );
 
                 return (
                   <g
@@ -1021,6 +1271,7 @@ export const SystemDesignDrawpad = ({
                       event.stopPropagation();
                       setMode("select");
                       setConnectorSourceId(null);
+                      setConnectorKind(connector.kind);
                       setSelection({
                         id: connector.id,
                         type: "connector",
@@ -1032,8 +1283,10 @@ export const SystemDesignDrawpad = ({
                       d={connectorPath.path}
                     />
                     <path
-                      className="system-drawpad__connector-line"
+                      className={`system-drawpad__connector-line system-drawpad__connector-line--${connector.kind}`}
                       d={connectorPath.path}
+                      markerEnd={connectorMarker.markerEnd}
+                      markerStart={connectorMarker.markerStart}
                     />
                     {connector.label ? (
                       <g className="system-drawpad__connector-label">
@@ -1129,6 +1382,38 @@ export const SystemDesignDrawpad = ({
                   onChange={(event) => updateSelectedLabel(event.target.value)}
                 />
               </label>
+              <div className="system-drawpad__field">
+                <span>Arrow</span>
+                <div
+                  aria-label="Selected connector arrow style"
+                  className="system-drawpad__segmented-control"
+                  role="group"
+                >
+                  {CONNECTOR_KIND_OPTIONS.map((kind) => {
+                    const meta = CONNECTOR_KIND_META[kind];
+                    const Icon = meta.icon;
+
+                    return (
+                      <button
+                        key={kind}
+                        aria-label={meta.title}
+                        aria-pressed={selectedConnector.kind === kind}
+                        className={`system-drawpad__segment-button ${
+                          selectedConnector.kind === kind
+                            ? "system-drawpad__segment-button--active"
+                            : ""
+                        }`}
+                        title={meta.title}
+                        type="button"
+                        onClick={() => updateSelectedConnectorKind(kind)}
+                      >
+                        <Icon aria-hidden="true" size={14} strokeWidth={2} />
+                        <span>{meta.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <div className="system-drawpad__meta-row">
                 <span>From</span>
                 <strong>

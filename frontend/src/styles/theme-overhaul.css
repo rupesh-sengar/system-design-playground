@@ -140,7 +140,7 @@
 .app-header__meta span,
 .playground-page__metric-strip span,
 .playground-stageboard__meta span,
-.playground-ai__meta span,
+.playground-ai__kpi,
 .playground-ai__chip,
 .playground-sidebar__status,
 .playground-sidebar__stage-state,
@@ -301,7 +301,7 @@
 .pill,
 .playground-page__metric-strip span,
 .playground-stageboard__meta span,
-.playground-ai__meta span,
+.playground-ai__kpi,
 .playground-ai__chip,
 .playground-sidebar__status,
 .playground-sidebar__stage-state,
@@ -470,6 +470,14 @@
 .playground-sidebar__problem,
 .playground-sidebar__stage {
     border-color: var(--border);
+}
+
+.playground-sidebar__problem h1 {
+    width: 100%;
+    max-width: none;
+    max-inline-size: none;
+    text-wrap: wrap;
+    white-space: normal;
 }
 
 .playground-sidebar__expand-toggle,
@@ -726,7 +734,7 @@
 :root[data-theme="dark"] .app-header__meta span,
 :root[data-theme="dark"] .playground-page__metric-strip span,
 :root[data-theme="dark"] .playground-stageboard__meta span,
-:root[data-theme="dark"] .playground-ai__meta span,
+:root[data-theme="dark"] .playground-ai__kpi,
 :root[data-theme="dark"] .playground-ai__chip,
 :root[data-theme="dark"] .playground-sidebar__status,
 :root[data-theme="dark"] .playground-sidebar__stage-state,
@@ -1207,7 +1215,7 @@
 .app-header__meta span,
 .playground-page__metric-strip span,
 .playground-stageboard__meta span,
-.playground-ai__meta span,
+.playground-ai__kpi,
 .playground-ai__chip,
 .playground-sidebar__status,
 .playground-sidebar__stage-state,
@@ -1313,8 +1321,51 @@
 }
 
 .playground-ai {
+    align-content: start;
+    align-items: stretch;
     gap: 10px;
     padding: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface-strong);
+}
+
+.playground-sidebar__tab-sections--ai {
+    align-content: start;
+    align-items: start;
+}
+
+.playground-ai__header {
+    display: grid;
+    gap: 10px;
+}
+
+.playground-ai__title {
+    gap: 5px;
+}
+
+.playground-ai__title h3 {
+    font-size: 1rem;
+    line-height: 1.22;
+}
+
+.playground-ai__title p:not(.section-label) {
+    font-size: 0.86rem;
+    line-height: 1.45;
+}
+
+.playground-ai__actions {
+    justify-content: stretch;
+}
+
+.playground-ai__actions .primary-action,
+.playground-ai__actions .secondary-action {
+    min-height: 34px;
+    border-radius: 8px;
+}
+
+.playground-ai__meta {
+    display: grid;
+    gap: 6px;
 }
 
 .playground-ai__results,
@@ -1330,10 +1381,85 @@
 .playground-ai__banner {
     gap: 10px;
     padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-soft);
 }
 
 .playground-ai__grid {
     gap: 8px;
+}
+
+.playground-ai__kpi,
+.playground-ai__chip {
+    border-radius: 8px;
+    border-color: var(--border);
+    background: var(--surface-soft);
+}
+
+.playground-ai__kpi,
+.playground-ai__score-card {
+    display: grid;
+    gap: 2px;
+    align-content: center;
+}
+
+.playground-ai__kpi strong,
+.playground-ai__score-card strong {
+    color: var(--text);
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.playground-ai__kpi span,
+.playground-ai__score-card span {
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 760;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.playground-ai__kpi--primary,
+.playground-ai__score-card {
+    border-color: rgba(66, 184, 174, 0.22);
+    background: rgba(16, 46, 48, 0.16);
+}
+
+.playground-ai__kpi--ready {
+    border-color: rgba(82, 190, 126, 0.2);
+    background: rgba(18, 47, 32, 0.16);
+}
+
+.playground-ai__kpi--warning {
+    border-color: rgba(213, 164, 69, 0.22);
+    background: rgba(57, 41, 18, 0.14);
+}
+
+.playground-ai__score-card {
+    min-width: 76px;
+    padding: 9px 10px;
+    border: 1px solid rgba(66, 184, 174, 0.22);
+    border-radius: 10px;
+}
+
+.playground-ai__score-card strong {
+    font-size: 1.35rem;
+}
+
+.playground-ai__score-card--secondary strong {
+    font-size: 0.9rem;
+    text-transform: capitalize;
+}
+
+.playground-ai__empty {
+    margin: 0;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-inset);
+    font-size: 0.86rem;
+    line-height: 1.45;
 }
 
 .rich-text-editor {
@@ -1341,13 +1467,13 @@
 }
 
 .playground-stageboard__canvas .rich-text-editor__frame {
-    border-color: transparent;
+    border-color: var(--border);
     border-radius: 10px;
-    background: transparent;
+    background: var(--surface-strong);
 }
 
 .playground-stageboard__canvas .rich-text-editor__frame:focus-within {
-    border-color: transparent;
+    border-color: var(--border-strong);
     box-shadow: inset 0 0 0 1px var(--flow-line-strong);
 }
 
@@ -1358,12 +1484,67 @@
 }
 
 .playground-stageboard__canvas .rich-text-editor .jodit-toolbar__box {
-    padding: 4px 42px 4px 6px;
+    padding: 5px 42px 5px 8px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-muted);
+}
+
+.rich-text-editor .jodit-ui-group {
+    gap: 2px;
+}
+
+.rich-text-editor .jodit-toolbar-button {
+    min-width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    color: var(--muted-strong);
+}
+
+.rich-text-editor .jodit-toolbar-button__button {
+    min-width: 30px;
+    height: 30px;
+    border-radius: 7px;
+}
+
+.rich-text-editor .jodit-toolbar-button:hover,
+.rich-text-editor .jodit-toolbar-button:focus-within {
+    background: var(--surface-soft);
+}
+
+.rich-text-editor .jodit-toolbar-button__text {
+    color: var(--muted-strong);
+    font-size: 0.72rem;
+    font-weight: 760;
+}
+
+.rich-text-editor .jodit-toolbar-button svg,
+.rich-text-editor .jodit-toolbar-button .jodit-icon,
+.rich-text-editor .jodit-toolbar-button__trigger,
+.rich-text-editor .jodit-toolbar-select__trigger {
+    color: var(--muted-strong);
+    fill: currentColor;
+}
+
+.rich-text-editor .jodit-status-bar {
+    min-height: 24px;
+    border-top: 1px solid var(--border);
+    background: var(--surface-muted);
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 760;
+    text-transform: uppercase;
 }
 
 .rich-text-editor .jodit-wysiwyg,
 .rich-text-editor .jodit-wysiwyg_iframe {
     padding: 16px 18px;
+    font-size: 0.94rem;
+    line-height: 1.62;
+}
+
+.rich-text-editor .jodit-wysiwyg[data-placeholder]:empty::before {
+    color: var(--muted);
+    font-weight: 650;
 }
 
 @media (max-width: 760px) {

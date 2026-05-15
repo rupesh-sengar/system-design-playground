@@ -255,11 +255,21 @@ export const PracticeAiReviewPanel = ({
         </div>
       </div>
 
-      <div className="playground-ai__meta">
-        <span className="playground-ai__info">
-          {draftWordCount} words in current draft
+      <div className="playground-ai__meta" aria-label="AI review KPIs">
+        <span className="playground-ai__kpi playground-ai__kpi--primary">
+          <strong>{draftWordCount}</strong>
+          <span>Draft words</span>
         </span>
-        <span className="playground-ai__info">{helperText}</span>
+        <span
+          className={`playground-ai__kpi ${
+            canValidateDraft
+              ? "playground-ai__kpi--ready"
+              : "playground-ai__kpi--warning"
+          }`}
+        >
+          <strong>{canValidateDraft ? "Ready" : "Pending"}</strong>
+          <span>{helperText}</span>
+        </span>
       </div>
 
       {authError ? (
@@ -364,12 +374,17 @@ export const PracticeAiReviewPanel = ({
                 <h4>Structured review</h4>
               </div>
               <div className="playground-ai__card-meta">
-                <span className="playground-ai__chip">
-                  Score {validationResult.score}/10
-                </span>
-                <span className="playground-ai__chip">
-                  Confidence {validationResult.confidence}
-                </span>
+                <div
+                  aria-label={`Validation score ${validationResult.score} out of 10`}
+                  className="playground-ai__score-card"
+                >
+                  <strong>{validationResult.score}</strong>
+                  <span>/10 score</span>
+                </div>
+                <div className="playground-ai__score-card playground-ai__score-card--secondary">
+                  <strong>{validationResult.confidence}</strong>
+                  <span>confidence</span>
+                </div>
                 <span className="playground-ai__chip">
                   {formatProviderLabel(validationResult.meta)}
                 </span>

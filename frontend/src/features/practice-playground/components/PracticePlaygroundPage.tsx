@@ -594,7 +594,7 @@ export const PracticePlaygroundPage = ({
             ) : null}
 
             {activeSidebarTab === "ai" ? (
-              <div className="playground-sidebar__tab-sections">
+              <div className="playground-sidebar__tab-sections playground-sidebar__tab-sections--ai">
                 {!authReady ? (
                   <section className="playground-sidebar__section playground-sidebar__section--ai">
                     <div className="playground-sidebar__section-head">
