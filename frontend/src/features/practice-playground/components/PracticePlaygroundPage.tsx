@@ -281,8 +281,9 @@ export const PracticePlaygroundPage = ({
   const renderSidebarTabs = () => (
     <div
       className="playground-sidebar__tabs"
-      role="tablist"
       aria-label="Playground sections"
+      data-tour-target="playground-guidance"
+      role="tablist"
     >
       <button
         aria-selected={activeSidebarTab === "overview"}
@@ -377,6 +378,7 @@ export const PracticePlaygroundPage = ({
           className={`playground-sidebar ${
             isSidebarExpanded ? "playground-sidebar--expanded" : ""
           }`}
+          data-tour-target="playground-overview"
         >
           {renderSidebarUtility()}
           {renderSidebarTabs()}
@@ -652,7 +654,10 @@ export const PracticePlaygroundPage = ({
             isStageboardExpanded ? "playground-stageboard--expanded" : ""
           }`}
         >
-          <div className="playground-stage-strip">
+          <div
+            className="playground-stage-strip"
+            data-tour-target="playground-stages"
+          >
             {stages.map((stage) => {
               const stageDraft = stageDrafts[stage.id];
               const isActive = activeStage.id === stage.id;
@@ -682,7 +687,10 @@ export const PracticePlaygroundPage = ({
           </div>
 
           <div className="playground-stageboard__body">
-            <section className="playground-stageboard__canvas">
+            <section
+              className="playground-stageboard__canvas"
+              data-tour-target="playground-workspace"
+            >
               <button
                 aria-label={
                   isStageboardExpanded ? "Collapse editor" : "Expand editor"
@@ -771,7 +779,10 @@ export const PracticePlaygroundPage = ({
               </div>
             </section>
 
-            <div className="playground-stageboard__actions">
+            <div
+              className="playground-stageboard__actions"
+              data-tour-target="playground-actions"
+            >
               <button
                 className="secondary-action"
                 type="button"

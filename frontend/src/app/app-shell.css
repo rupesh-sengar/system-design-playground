@@ -8,12 +8,28 @@
     width: min(1520px, calc(100vw - 32px));
 }
 
+.shell--landing {
+    width: 100%;
+    padding-bottom: 36px;
+}
+
+/*.shell--landing .app-toolbar {
+    width: min(1380px, calc(100vw - 32px));
+    margin-inline: auto;
+}*/
+
 .app-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 16px;
     margin-bottom: 16px;
+}
+
+.app-toolbar__left {
+    display: flex;
+    align-items: center;
+    min-width: 0;
 }
 
 .app-toolbar__controls {
@@ -24,15 +40,42 @@
     min-width: 0;
 }
 
+.app-toolbar__tutorial {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 7px 11px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+}
+
 .app-toolbar__brand {
     display: grid;
     gap: 4px;
+    min-width: 0;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
 }
 
 .app-toolbar__brand span {
     color: var(--muted);
     font-size: 0.84rem;
     font-weight: 600;
+}
+
+.app-toolbar__brand:hover span {
+    color: var(--text);
+}
+
+.app-toolbar__brand:focus-visible {
+    outline: none;
+    border-radius: 8px;
+    box-shadow: 0 0 0 3px var(--focus);
 }
 
 .app-toolbar__save-status {
@@ -114,6 +157,14 @@
         padding: 10px 0 18px;
     }
 
+    .shell--landing {
+        width: 100%;
+    }
+
+    .shell--landing .app-toolbar {
+        width: min(100vw - 12px, 100%);
+    }
+
     .shell--playground {
         width: 100%;
     }
@@ -124,6 +175,11 @@
         gap: 10px;
         align-items: start;
         padding: 0 6px;
+    }
+
+    .app-toolbar__left {
+        display: grid;
+        width: 100%;
     }
 
     .app-toolbar__controls {

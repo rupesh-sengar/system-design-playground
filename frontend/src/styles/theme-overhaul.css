@@ -1809,10 +1809,6 @@
     background: transparent;
 }
 
-:root[data-theme="dark"] .catalog.panel {
-    background: color-mix(in srgb, var(--surface-strong) 58%, transparent);
-}
-
 :root[data-theme="dark"] .catalog-status--error {
     border-color: rgba(236, 116, 116, 0.18);
     background: var(--danger-surface);

@@ -127,7 +127,7 @@ export const ProblemCatalogPanel = ({
   };
 
   return (
-    <section className="catalog panel">
+    <section className="catalog panel" data-tour-target="problem-library">
       <div className="catalog-head">
         <div className="catalog-head__copy">
           <div className="catalog-title">
@@ -175,7 +175,11 @@ export const ProblemCatalogPanel = ({
         </div>
       </div>
 
-      <section className="catalog-filters" aria-label="Problem filters">
+      <section
+        className="catalog-filters"
+        aria-label="Problem filters"
+        data-tour-target="library-filters"
+      >
         <div className="catalog-filters__head">
           <span>
             <ListFilter aria-hidden="true" size={15} strokeWidth={2} />
@@ -267,7 +271,7 @@ export const ProblemCatalogPanel = ({
         </div>
       </section>
 
-      <div className="problem-list">
+      <div className="problem-list" data-tour-target="library-problems">
         {paginatedProblems.length > 0 ? (
           paginatedProblems.map((problem) => (
             <ProblemCard

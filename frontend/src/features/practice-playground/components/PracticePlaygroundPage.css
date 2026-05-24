@@ -202,6 +202,7 @@
 
 .playground-sidebar__panel {
     min-height: 0;
+    overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
 }

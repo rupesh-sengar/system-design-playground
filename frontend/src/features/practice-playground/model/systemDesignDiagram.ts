@@ -52,9 +52,17 @@ export interface SystemDesignDiagramConnector {
   toNodeId: string;
 }
 
+export interface SystemDesignDiagramViewport {
+  height: number;
+  width: number;
+  x: number;
+  y: number;
+}
+
 export interface SystemDesignDiagram {
   connectors: SystemDesignDiagramConnector[];
   nodes: SystemDesignDiagramNode[];
+  viewport?: SystemDesignDiagramViewport | null;
 }
 
 const DEFAULT_NODE_WIDTH = 152;
@@ -63,6 +71,8 @@ const DEFAULT_CONNECTOR_KIND: SystemDesignConnectorKind = "one-way";
 const MAX_LABEL_LENGTH = 80;
 const MIN_COORDINATE = -100000;
 const MAX_COORDINATE = 100000;
+const MIN_VIEWPORT_SIZE = 100;
+const MAX_VIEWPORT_SIZE = 100000;
 
 const defaultLabelByKind: Record<SystemDesignNodeKind, string> = {
   "api-gateway": "API Gateway",
@@ -126,6 +136,7 @@ const normalizeLabel = (value: unknown, fallback: string): string => {
 export const createEmptySystemDesignDiagram = (): SystemDesignDiagram => ({
   connectors: [],
   nodes: [],
+  viewport: null,
 });
 
 export const createDefaultSystemDesignNode = (
@@ -211,10 +222,39 @@ export const normalizeSystemDesignDiagram = (
       (connector): connector is SystemDesignDiagramConnector =>
         connector !== null,
     );
+  const viewport = isRecord(value.viewport)
+    ? {
+        height: clampNumber(
+          value.viewport.height,
+          860,
+          MIN_VIEWPORT_SIZE,
+          MAX_VIEWPORT_SIZE,
+        ),
+        width: clampNumber(
+          value.viewport.width,
+          1400,
+          MIN_VIEWPORT_SIZE,
+          MAX_VIEWPORT_SIZE,
+        ),
+        x: clampNumber(
+          value.viewport.x,
+          0,
+          MIN_COORDINATE,
+          MAX_COORDINATE,
+        ),
+        y: clampNumber(
+          value.viewport.y,
+          0,
+          MIN_COORDINATE,
+          MAX_COORDINATE,
+        ),
+      }
+    : null;
 
   return {
     connectors,
     nodes,
+    viewport,
   };
 };
 

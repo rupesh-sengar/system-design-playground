@@ -3,6 +3,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
   type WheelEvent as ReactWheelEvent,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -50,6 +51,7 @@ import {
   type SystemDesignDiagram,
   type SystemDesignDiagramConnector,
   type SystemDesignDiagramNode,
+  type SystemDesignDiagramViewport,
   type SystemDesignConnectorKind,
   type SystemDesignNodeKind,
 } from "../model/systemDesignDiagram";
@@ -87,12 +89,7 @@ interface Point {
   y: number;
 }
 
-interface Viewport {
-  height: number;
-  width: number;
-  x: number;
-  y: number;
-}
+type Viewport = SystemDesignDiagramViewport;
 
 interface CanvasClientPoint {
   clientX: number;
@@ -473,7 +470,11 @@ export const SystemDesignDrawpad = ({
   value,
   onChange,
 }: SystemDesignDrawpadProps) => {
+  const initialViewport =
+    normalizeSystemDesignDiagram(value)?.viewport ?? DEFAULT_VIEWPORT;
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const lastValueRef = useRef<SystemDesignDiagram | null>(null);
+  const viewportRef = useRef<Viewport>(initialViewport);
   const [mode, setMode] = useState<DrawpadMode>("select");
   const [connectorKind, setConnectorKind] =
     useState<SystemDesignConnectorKind>("one-way");
@@ -483,7 +484,7 @@ export const SystemDesignDrawpad = ({
   );
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [panState, setPanState] = useState<PanState | null>(null);
-  const [viewport, setViewport] = useState<Viewport>(DEFAULT_VIEWPORT);
+  const [viewport, setViewport] = useState<Viewport>(() => initialViewport);
   const diagram = useMemo(
     () => normalizeSystemDesignDiagram(value) ?? createEmptySystemDesignDiagram(),
     [value],
@@ -501,8 +502,47 @@ export const SystemDesignDrawpad = ({
         null
       : null;
 
-  const commitDiagram = (nextDiagram: SystemDesignDiagram): void => {
-    onChange(normalizeSystemDesignDiagram(nextDiagram));
+  useEffect(() => {
+    if (value === lastValueRef.current) {
+      return;
+    }
+
+    lastValueRef.current = value;
+
+    const nextViewport = diagram.viewport ?? DEFAULT_VIEWPORT;
+
+    viewportRef.current = nextViewport;
+    setViewport(nextViewport);
+  }, [diagram.viewport, value]);
+
+  const commitDiagram = (
+    nextDiagram: SystemDesignDiagram,
+    nextViewport: Viewport = viewportRef.current,
+  ): void => {
+    onChange(
+      normalizeSystemDesignDiagram({
+        ...nextDiagram,
+        viewport: nextViewport,
+      }),
+    );
+  };
+
+  const persistViewport = (nextViewport: Viewport): void => {
+    commitDiagram(diagram, nextViewport);
+  };
+
+  const applyViewport = (
+    nextViewport: Viewport,
+    options?: {
+      persist?: boolean;
+    },
+  ): void => {
+    viewportRef.current = nextViewport;
+    setViewport(nextViewport);
+
+    if (options?.persist) {
+      persistViewport(nextViewport);
+    }
   };
 
   const getCanvasPoint = (event: CanvasClientPoint): Point => {
@@ -531,21 +571,42 @@ export const SystemDesignDrawpad = ({
     nextZoom: number,
     anchorPoint?: Point,
   ): void => {
-    setViewport((currentViewport) =>
-      getViewportFromZoom(currentViewport, nextZoom, anchorPoint),
+    const nextViewport = getViewportFromZoom(
+      viewportRef.current,
+      nextZoom,
+      anchorPoint,
     );
+
+    applyViewport(nextViewport, {
+      persist: true,
+    });
   };
 
   const zoomIn = (): void => {
-    setZoom(getZoomFromViewport(viewport) * 1.18);
+    setZoom(getZoomFromViewport(viewportRef.current) * 1.18);
   };
 
   const zoomOut = (): void => {
-    setZoom(getZoomFromViewport(viewport) / 1.18);
+    setZoom(getZoomFromViewport(viewportRef.current) / 1.18);
+  };
+
+  const setFittedViewport = (nextViewport: Viewport): void => {
+    applyViewport(nextViewport, {
+      persist: true,
+    });
   };
 
   const resetViewport = (): void => {
-    setViewport(getViewportForDiagram(diagram));
+    setFittedViewport(getViewportForDiagram(diagram));
+  };
+
+  const setDiagramAndViewport = (
+    nextDiagram: SystemDesignDiagram,
+    nextViewport: Viewport,
+  ): void => {
+    viewportRef.current = nextViewport;
+    setViewport(nextViewport);
+    commitDiagram(nextDiagram, nextViewport);
   };
 
   const addNode = (kind: SystemDesignNodeKind): void => {
@@ -717,9 +778,9 @@ export const SystemDesignDrawpad = ({
     }
 
     const template = createSystemArchitectureTemplate();
+    const nextViewport = getViewportForDiagram(template);
 
-    commitDiagram(template);
-    setViewport(getViewportForDiagram(template));
+    setDiagramAndViewport(template, nextViewport);
     setConnectorSourceId(null);
     setSelection(null);
     setMode("select");
@@ -733,8 +794,7 @@ export const SystemDesignDrawpad = ({
       return;
     }
 
-    commitDiagram(createEmptySystemDesignDiagram());
-    setViewport(DEFAULT_VIEWPORT);
+    setDiagramAndViewport(createEmptySystemDesignDiagram(), DEFAULT_VIEWPORT);
     setConnectorSourceId(null);
     setSelection(null);
   };
@@ -813,7 +873,7 @@ export const SystemDesignDrawpad = ({
         ((event.clientY - panState.startClientY) / bounds.height) *
         panState.startViewport.height;
 
-      setViewport({
+      applyViewport({
         ...panState.startViewport,
         x: panState.startViewport.x - deltaX,
         y: panState.startViewport.y - deltaY,
@@ -857,6 +917,7 @@ export const SystemDesignDrawpad = ({
 
     if (panState) {
       svgRef.current?.releasePointerCapture(panState.pointerId);
+      persistViewport(viewportRef.current);
     }
 
     setDragState(null);

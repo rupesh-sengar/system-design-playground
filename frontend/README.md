@@ -27,6 +27,20 @@ npm install
 npm run dev
 ```
 
+## Auth0 configuration
+
+The custom auth screens use Auth0 for credential handling and callbacks.
+
+```bash
+VITE_AUTH0_DOMAIN=your-tenant.region.auth0.com
+VITE_AUTH0_CLIENT_ID=your-spa-client-id
+VITE_AUTH0_AUDIENCE=your-api-audience
+VITE_AUTH0_CONNECTION=Username-Password-Authentication
+```
+
+Set `VITE_AUTH0_CONNECTION` to the database connection that should receive
+password reset requests.
+
 ## Type-check and build
 
 ```bash

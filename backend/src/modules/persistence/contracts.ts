@@ -20,18 +20,34 @@ export const updateProblemProgressSchema = z
   );
 
 const systemDesignNodeKindSchema = z.enum([
+  "dns",
   "client",
   "cdn",
+  "firewall",
   "load-balancer",
   "api-gateway",
+  "auth",
+  "rate-limiter",
   "service",
+  "service-discovery",
   "database",
   "cache",
   "queue",
   "stream",
   "worker",
+  "scheduler",
+  "search",
   "storage",
+  "monitoring",
   "external",
+]);
+
+const systemDesignConnectorKindSchema = z.enum([
+  "one-way",
+  "async",
+  "bidirectional",
+  "dependency",
+  "plain",
 ]);
 
 const systemDesignDiagramSchema = z.object({
@@ -40,6 +56,7 @@ const systemDesignDiagramSchema = z.object({
       z.object({
         fromNodeId: z.string().trim().min(1),
         id: z.string().trim().min(1),
+        kind: systemDesignConnectorKindSchema,
         label: z.string().max(80),
         toNodeId: z.string().trim().min(1),
       }),
@@ -58,6 +75,15 @@ const systemDesignDiagramSchema = z.object({
       }),
     )
     .max(100),
+  viewport: z
+    .object({
+      height: z.number().finite().min(100).max(100000),
+      width: z.number().finite().min(100).max(100000),
+      x: z.number().finite().min(-100000).max(100000),
+      y: z.number().finite().min(-100000).max(100000),
+    })
+    .nullable()
+    .optional(),
 });
 
 const practiceStageDraftSchema = z.object({

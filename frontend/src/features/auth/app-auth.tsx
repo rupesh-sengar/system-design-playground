@@ -10,10 +10,20 @@ import {
 } from "react";
 import { setApiAccessTokenResolver } from "@/shared/api/http";
 import {
+  buildAuth0EndpointUrl,
   buildAuth0AuthorizationParams,
   getAuth0Config,
   type Auth0Config,
 } from "./config";
+
+export type AuthIntent = "login" | "signup";
+
+interface AuthRedirectOptions {
+  intent?: AuthIntent;
+  loginHint?: string;
+  method?: "popup" | "redirect";
+  returnToHash?: string;
+}
 
 interface AppAuthContextValue {
   authError: string | null;
@@ -23,8 +33,9 @@ interface AppAuthContextValue {
   isAuthenticated: boolean;
   isConfigured: boolean;
   isLoading: boolean;
-  login: () => Promise<void>;
+  login: (options?: AuthRedirectOptions) => Promise<void>;
   logout: () => void;
+  requestPasswordReset: (email: string) => Promise<string>;
   userEmail: string | null;
   userName: string | null;
 }
@@ -45,6 +56,7 @@ const unauthenticatedContextValue: AppAuthContextValue = {
   isLoading: false,
   login: async () => undefined,
   logout: () => undefined,
+  requestPasswordReset: async () => "",
   userEmail: null,
   userName: null,
 };
@@ -61,12 +73,42 @@ const formatAuthError = (error: unknown, fallbackMessage: string): string => {
   return fallbackMessage;
 };
 
+const getAuth0ApiErrorMessage = (
+  responseBody: string,
+  fallbackMessage: string,
+): string => {
+  if (!responseBody) {
+    return fallbackMessage;
+  }
+
+  try {
+    const parsedBody = JSON.parse(responseBody) as {
+      error?: unknown;
+      error_description?: unknown;
+      message?: unknown;
+    };
+    const message =
+      typeof parsedBody.error_description === "string"
+        ? parsedBody.error_description
+        : typeof parsedBody.message === "string"
+          ? parsedBody.message
+          : typeof parsedBody.error === "string"
+            ? parsedBody.error
+            : null;
+
+    return message ?? fallbackMessage;
+  } catch {
+    return responseBody;
+  }
+};
+
 const Auth0Bridge = ({ children }: PropsWithChildren) => {
   const {
     error,
     getAccessTokenSilently,
     isAuthenticated,
     isLoading,
+    loginWithPopup,
     loginWithRedirect,
     logout,
     user,
@@ -109,12 +151,69 @@ const Auth0Bridge = ({ children }: PropsWithChildren) => {
   }, []);
 
   const contextValue = useMemo<AppAuthContextValue>(() => {
-    const login = async (): Promise<void> => {
+    const login = async (options?: AuthRedirectOptions): Promise<void> => {
+      const loginHint = options?.loginHint?.trim();
+      const authorizationParams = {
+        ...buildAuth0AuthorizationParams(auth0Config),
+        ...(options?.intent === "signup" ? { screen_hint: "signup" } : {}),
+        ...(loginHint ? { login_hint: loginHint } : {}),
+      };
+
+      if (options?.method === "popup") {
+        await loginWithPopup({
+          authorizationParams,
+        });
+        return;
+      }
+
       await loginWithRedirect({
         appState: {
-          returnToHash: window.location.hash || "#/",
+          returnToHash: options?.returnToHash ?? (window.location.hash || "#/"),
         },
+        authorizationParams,
       });
+    };
+
+    const requestPasswordReset = async (email: string): Promise<string> => {
+      const trimmedEmail = email.trim();
+
+      if (!auth0Config.domain || !auth0Config.clientId) {
+        throw new Error("Auth0 domain and client ID are required.");
+      }
+
+      if (!auth0Config.connection) {
+        throw new Error("Auth0 database connection is required.");
+      }
+
+      const response = await fetch(
+        buildAuth0EndpointUrl(auth0Config, "/dbconnections/change_password"),
+        {
+          body: JSON.stringify({
+            client_id: auth0Config.clientId,
+            connection: auth0Config.connection,
+            email: trimmedEmail,
+          }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+          method: "POST",
+        },
+      );
+      const responseBody = await response.text();
+
+      if (!response.ok) {
+        throw new Error(
+          getAuth0ApiErrorMessage(
+            responseBody,
+            "Unable to start the password reset flow.",
+          ),
+        );
+      }
+
+      return (
+        responseBody ||
+        "If an account exists for that email, Auth0 will send reset instructions."
+      );
     };
 
     return {
@@ -140,6 +239,7 @@ const Auth0Bridge = ({ children }: PropsWithChildren) => {
           },
         });
       },
+      requestPasswordReset,
       userEmail: typeof user?.email === "string" ? user.email : null,
       userName:
         typeof user?.name === "string"
@@ -154,6 +254,7 @@ const Auth0Bridge = ({ children }: PropsWithChildren) => {
     isApiTokenResolverReady,
     isLoading,
     loginWithRedirect,
+    loginWithPopup,
     logout,
     user?.email,
     user?.name,
