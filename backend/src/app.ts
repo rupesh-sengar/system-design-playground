@@ -3,6 +3,8 @@ import express, { type Express, type Request, type Response } from "express";
 import type { AppConfig } from "./config/env.js";
 import type { PostgresDatabase } from "./database/postgres.js";
 import { createAiRouter } from "./modules/ai/ai.routes.js";
+import { StageEditorialRepository } from "./modules/editorials/editorials.repository.js";
+import { createEditorialsRouter } from "./modules/editorials/editorials.routes.js";
 import { createCurrentAppUserMiddleware } from "./modules/persistence/current-app-user.middleware.js";
 import {
   AppUserRepository,
@@ -47,6 +49,7 @@ export const buildApp = (
   const appUserRepository = new AppUserRepository(database);
   const problemProgressRepository = new ProblemProgressRepository(database);
   const practiceSessionRepository = new PracticeSessionRepository(database);
+  const stageEditorialRepository = new StageEditorialRepository(database);
 
   app.get(
     "/healthz",
@@ -80,6 +83,12 @@ export const buildApp = (
       practiceSessionRepository,
       problemProgressRepository,
     }),
+  );
+  app.use(
+    "/v1/editorials",
+    ...createAuth0JwtMiddleware(config),
+    createCurrentAppUserMiddleware({ appUserRepository }),
+    createEditorialsRouter({ stageEditorialRepository }),
   );
 
   registerErrorHandler(app);

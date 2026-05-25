@@ -21,15 +21,29 @@ Postgres migrations live in `db/migrations`.
 - adds `diagram_json` to `practice_stage_drafts`
 - stores the High-level Design drawpad nodes and connectors with the stage draft
 
+`004_stage_editorials.sql` adds protected editorial storage:
+
+- stores one editorial per `problem_id` and `stage_id`
+- tracks creating and updating users from Auth0-backed app users
+- keeps editorial HTML out of the frontend bundle
+
 To apply the schema with `psql`:
 
 ```bash
 psql "$DATABASE_URL" -f db/migrations/001_initial_postgres_schema.sql
 psql "$DATABASE_URL" -f db/migrations/002_judge_reference_vectors.sql
 psql "$DATABASE_URL" -f db/migrations/003_practice_stage_diagrams.sql
+psql "$DATABASE_URL" -f db/migrations/004_stage_editorials.sql
 ```
 
 The backend now upserts `app_users`, `user_problem_progress`, and `practice_sessions` from authenticated API calls under `/v1/persistence/*`.
+
+To seed protected stage editorials for every catalog problem:
+
+```bash
+cd backend
+npm run seed:stage-editorials
+```
 
 ## Judge Reference Embeddings
 

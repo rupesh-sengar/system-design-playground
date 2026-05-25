@@ -23,12 +23,14 @@ import {
   Maximize2,
   Minimize2,
   RotateCcw,
+  ScrollText,
   ShieldCheck,
   Sparkles,
   Target,
 } from "lucide-react";
 import { useAppAuth } from "@/features/auth/app-auth";
 import { getDifficultyClassName } from "@/features/problem-library/lib/catalog";
+import { sanitizeRichTextHtml } from "@/shared/lib/richText";
 import { Loader } from "@/shared/ui/Loader";
 import { RichTextEditor } from "@/shared/ui/RichTextEditor";
 import { PracticeAiReviewPanel } from "./PracticeAiReviewPanel";
@@ -61,7 +63,7 @@ const SIDEBAR_WIDTH_STORAGE_KEY =
   "system-design-lab.playground-sidebar-width.v2";
 const MIN_SIDEBAR_WIDTH = 248;
 const MAX_SIDEBAR_WIDTH = 420;
-type SidebarTab = "overview" | "guides" | "ai";
+type SidebarTab = "overview" | "guides" | "editorial" | "ai";
 type HighLevelDesignSurface = "diagram" | "notes";
 
 const clampSidebarWidth = (value: number): number =>
@@ -88,6 +90,7 @@ export const PracticePlaygroundPage = ({
     activeStageDraft,
     assistant,
     drafts,
+    editorial,
     metrics,
     session,
     storage,
@@ -115,6 +118,9 @@ export const PracticePlaygroundPage = ({
           ? "Saving your practice session..."
           : "Progress is saved to your account."
       : "Progress is stored in this browser.";
+  const sanitizedEditorialHtml = editorial.contentHtml
+    ? sanitizeRichTextHtml(editorial.contentHtml)
+    : "";
 
   useEffect(() => {
     const storedWidth = window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
@@ -310,6 +316,20 @@ export const PracticePlaygroundPage = ({
       >
         <ListChecks aria-hidden="true" size={14} strokeWidth={2} />
         Guides
+      </button>
+      <button
+        aria-selected={activeSidebarTab === "editorial"}
+        className={`playground-sidebar__tab ${
+          activeSidebarTab === "editorial"
+            ? "playground-sidebar__tab--active"
+            : ""
+        }`}
+        role="tab"
+        type="button"
+        onClick={() => setActiveSidebarTab("editorial")}
+      >
+        <ScrollText aria-hidden="true" size={14} strokeWidth={2} />
+        Editorial
       </button>
       <button
         aria-selected={activeSidebarTab === "ai"}
@@ -592,6 +612,58 @@ export const PracticePlaygroundPage = ({
                     ))}
                   </div>
                 </details>
+
+              </div>
+            ) : null}
+
+            {activeSidebarTab === "editorial" ? (
+              <div className="playground-sidebar__tab-sections playground-sidebar__tab-sections--editorial">
+                <section className="playground-sidebar__section playground-sidebar__section--editorial">
+                  <div className="playground-sidebar__section-head">
+                    <p className="section-label">
+                      <ScrollText
+                        aria-hidden="true"
+                        size={12}
+                        strokeWidth={2}
+                      />
+                      Expected Solution
+                    </p>
+                    {editorial.updatedAt ? (
+                      <span>
+                        {new Date(editorial.updatedAt).toLocaleDateString()}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="playground-sidebar__editorial">
+                    {!authReady ? (
+                      <p>Sign in to view protected editorials.</p>
+                    ) : editorial.isLoading ? (
+                      <p>Loading editorial...</p>
+                    ) : editorial.errorMessage ? (
+                      <p>{editorial.errorMessage}</p>
+                    ) : sanitizedEditorialHtml ? (
+                      <div className="playground-sidebar__editorial-content">
+                        <div className="playground-sidebar__editorial-title">
+                          <span>
+                            Step {activeStage.step} of {metrics.totalCount}
+                          </span>
+                          <h2>
+                            {editorial.title ||
+                              `Expected ${activeStage.title} Solution`}
+                          </h2>
+                        </div>
+                        <div
+                          className="playground-sidebar__editorial-body"
+                          dangerouslySetInnerHTML={{
+                            __html: sanitizedEditorialHtml,
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <p>No editorial has been added for this stage yet.</p>
+                    )}
+                  </div>
+                </section>
               </div>
             ) : null}
 

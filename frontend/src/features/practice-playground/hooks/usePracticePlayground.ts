@@ -12,6 +12,7 @@ import {
   useGetPracticeSessionQuery,
   useUpsertPracticeSessionMutation,
 } from "../api/practiceSessionApi";
+import { useGetStageEditorialQuery } from "../api/stageEditorialApi";
 import {
   useGenerateStageHintsMutation,
   useValidateStageDraftMutation,
@@ -221,6 +222,20 @@ export const usePracticePlayground = (
       practiceStages[0]
     );
   }, [session]);
+  const {
+    data: stageEditorial,
+    error: stageEditorialError,
+    isFetching: isStageEditorialFetching,
+    isLoading: isStageEditorialLoading,
+  } = useGetStageEditorialQuery(
+    {
+      problemId: problem?.id ?? "",
+      stageId: activeStage.id,
+    },
+    {
+      skip: !isApiAuthReady || !problem,
+    },
+  );
 
   const activeStageDraft = useMemo(() => {
     if (!session) {
@@ -605,6 +620,13 @@ export const usePracticePlayground = (
         isHintStale: false,
         isValidationStale: false,
       },
+      editorial: {
+        contentHtml: null,
+        errorMessage: null,
+        isLoading: false,
+        title: null,
+        updatedAt: null,
+      },
       metrics: buildPracticeMetrics(createDefaultSession()),
       session: null,
       storage,
@@ -783,6 +805,21 @@ export const usePracticePlayground = (
       hasAnyFeedback,
       isHintStale,
       isValidationStale,
+    },
+    editorial: {
+      contentHtml: stageEditorial?.contentHtml ?? null,
+      errorMessage: stageEditorialError
+        ? getApiErrorDetails(
+            stageEditorialError,
+            "Unable to load the stage editorial.",
+          ).message
+        : null,
+      isLoading:
+        isApiAuthReady &&
+        Boolean(problem) &&
+        (isStageEditorialLoading || isStageEditorialFetching),
+      title: stageEditorial?.title || null,
+      updatedAt: stageEditorial?.updatedAt ?? null,
     },
     metrics,
     session,

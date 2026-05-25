@@ -13,8 +13,10 @@ Express + TypeScript backend for the System Design Platform. The initial AI stac
 - `GET /v1/persistence/practice-sessions/:problemId`
 - `PUT /v1/persistence/practice-sessions/:problemId`
 - `DELETE /v1/persistence/practice-sessions/:problemId`
+- `GET /v1/editorials/:problemId/:stageId`
+- `PUT /v1/editorials/:problemId/:stageId`
 
-`/v1/ai/*` and `/v1/persistence/*` expect a valid Auth0 bearer token when `AUTH0_DOMAIN` and `AUTH0_AUDIENCE` are configured.
+`/v1/ai/*`, `/v1/persistence/*`, and `/v1/editorials/*` expect a valid Auth0 bearer token when `AUTH0_DOMAIN` and `AUTH0_AUDIENCE` are configured. Editorial reads require `read:all` or `commitly:readall`; editorial writes require `create:all` or `commitly:writeall`.
 
 ## Run locally
 
@@ -58,6 +60,7 @@ Postgres migrations live in `db/migrations`.
 `002_judge_reference_vectors.sql` creates `judge_reference_chunks` for preferred-solution embeddings and enables `pgvector`.
 
 `003_practice_stage_diagrams.sql` adds `diagram_json` for saved drawpad diagrams.
+`004_stage_editorials.sql` creates `stage_editorials` for protected per-problem, per-stage editorial content.
 
 Apply them with:
 
@@ -66,6 +69,7 @@ cd backend
 psql "$DATABASE_URL" -f db/migrations/001_initial_postgres_schema.sql
 psql "$DATABASE_URL" -f db/migrations/002_judge_reference_vectors.sql
 psql "$DATABASE_URL" -f db/migrations/003_practice_stage_diagrams.sql
+psql "$DATABASE_URL" -f db/migrations/004_stage_editorials.sql
 ```
 
 ## Judge embeddings
@@ -88,6 +92,17 @@ EMBEDDING_PROVIDER=ollama npm run seed:judge-embeddings
 ```
 
 The seed covers every problem and all six stages, then replaces `judge_reference_chunks` so stale vectors do not survive rubric changes.
+
+## Stage editorials
+
+Stage editorials are stored in Postgres and served through protected `/v1/editorials/*` routes. Seed them after applying `004_stage_editorials.sql`:
+
+```bash
+cd backend
+npm run seed:stage-editorials
+```
+
+The seed creates one editorial for every catalog problem and each of the six practice stages.
 
 ## ADK dev UI
 

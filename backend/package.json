@@ -12,6 +12,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
+    "seed:stage-editorials": "tsx src/scripts/seed-stage-editorials.ts",
     "seed:judge-embeddings": "tsx src/scripts/seed-judge-reference-embeddings.ts",
     "adk:web": "npx @google/adk-devtools web src/agent.ts"
   },

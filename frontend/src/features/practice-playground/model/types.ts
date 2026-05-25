@@ -131,6 +131,14 @@ export interface PracticeSessionStorageState {
   statusTone: "error" | "loading" | "local" | "saved" | "saving";
 }
 
+export interface PracticeStageEditorialState {
+  contentHtml: string | null;
+  errorMessage: string | null;
+  isLoading: boolean;
+  title: string | null;
+  updatedAt: string | null;
+}
+
 export interface PracticePlaygroundViewModel {
   actions: {
     goToNextStage: () => void;
@@ -161,6 +169,7 @@ export interface PracticePlaygroundViewModel {
     isHintStale: boolean;
     isValidationStale: boolean;
   };
+  editorial: PracticeStageEditorialState;
   metrics: PracticeMetrics;
   session: PracticeSession | null;
   storage: PracticeSessionStorageState;
