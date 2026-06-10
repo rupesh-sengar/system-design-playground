@@ -38,6 +38,7 @@ interface AppAuthContextValue {
   requestPasswordReset: (email: string) => Promise<string>;
   userEmail: string | null;
   userName: string | null;
+  userPicture: string | null;
 }
 
 type RedirectAppState = AppState & {
@@ -59,13 +60,51 @@ const unauthenticatedContextValue: AppAuthContextValue = {
   requestPasswordReset: async () => "",
   userEmail: null,
   userName: null,
+  userPicture: null,
 };
 
 const AppAuthContext = createContext<AppAuthContextValue>(
   unauthenticatedContextValue,
 );
 
+const getStringProperty = (
+  value: unknown,
+  propertyName: string,
+): string | null => {
+  if (typeof value !== "object" || value === null || !(propertyName in value)) {
+    return null;
+  }
+
+  const propertyValue = (value as Record<string, unknown>)[propertyName];
+
+  return typeof propertyValue === "string" ? propertyValue : null;
+};
+
+const isInvalidAuthStateError = (error: unknown): boolean => {
+  const errorCode =
+    getStringProperty(error, "error") ??
+    getStringProperty(error, "code") ??
+    getStringProperty(error, "name");
+  const errorMessage =
+    error instanceof Error
+      ? error.message
+      : (getStringProperty(error, "message") ??
+        getStringProperty(error, "error_description"));
+  const normalizedCode = errorCode?.toLowerCase().replace(/[\s-]+/g, "_");
+  const normalizedMessage = errorMessage?.toLowerCase();
+
+  return (
+    normalizedCode === "invalid_state" ||
+    normalizedMessage === "invalid state" ||
+    normalizedMessage?.includes("invalid state") === true
+  );
+};
+
 const formatAuthError = (error: unknown, fallbackMessage: string): string => {
+  if (isInvalidAuthStateError(error)) {
+    return "Verify your email, then sign in again.";
+  }
+
   if (error instanceof Error) {
     return error.message;
   }
@@ -135,7 +174,7 @@ const Auth0Bridge = ({ children }: PropsWithChildren) => {
       }
 
       if (!isAuthenticatedRef.current) {
-        throw new Error("Login with Auth0 before using protected API routes.");
+        throw new Error("Login before using protected API routes.");
       }
 
       return getAccessTokenSilentlyRef.current({
@@ -247,6 +286,7 @@ const Auth0Bridge = ({ children }: PropsWithChildren) => {
           : typeof user?.nickname === "string"
             ? user.nickname
             : null,
+      userPicture: typeof user?.picture === "string" ? user.picture : null,
     };
   }, [
     error,

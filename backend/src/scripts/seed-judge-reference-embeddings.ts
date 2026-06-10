@@ -7,7 +7,6 @@ import {
   type UpsertReferenceChunkInput,
 } from "../modules/judge/references/judge-reference.repository.js";
 import { buildPreferredSolutionChunks } from "../modules/judge/references/preferred-solution.chunks.js";
-import { GeminiEmbeddingProvider } from "../providers/gemini/gemini-embedding.provider.js";
 import { OllamaEmbeddingProvider } from "../providers/ollama/ollama-embedding.provider.js";
 
 const EMBEDDING_BATCH_SIZE = 16;
@@ -42,22 +41,13 @@ const loadProblemCatalog = async () => {
 
 const createEmbeddingProvider = (
   config: ReturnType<typeof getEnv>,
-): EmbeddingProvider => {
-  if (config.embeddings.provider === "ollama") {
-    return new OllamaEmbeddingProvider({
-      baseUrl: config.ollama.baseUrl,
-      dimensions: config.embeddings.dimensions,
-      model: config.ollama.embeddingModel,
-      requestTimeoutMs: config.ollama.requestTimeoutMs,
-    });
-  }
-
-  return new GeminiEmbeddingProvider({
-    configured: config.hasGeminiCredentials,
+): EmbeddingProvider =>
+  new OllamaEmbeddingProvider({
+    baseUrl: config.ollama.baseUrl,
     dimensions: config.embeddings.dimensions,
-    model: config.embeddings.model,
+    model: config.ollama.embeddingModel,
+    requestTimeoutMs: config.ollama.requestTimeoutMs,
   });
-};
 
 const run = async (): Promise<void> => {
   const config = getEnv();

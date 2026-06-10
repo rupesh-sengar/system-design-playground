@@ -27,6 +27,17 @@ Postgres migrations live in `db/migrations`.
 - tracks creating and updating users from Auth0-backed app users
 - keeps editorial HTML out of the frontend bundle
 
+`005_billing_onboarding.sql` adds the first SaaS billing slice:
+
+- stores onboarding profile answers per user
+- maps app users to Razorpay customer IDs
+- stores paid subscription state synced from Razorpay webhooks
+- tracks monthly AI hint and validation usage events
+
+`006_razorpay_billing_rename.sql` keeps local databases compatible if the billing slice was applied before the Razorpay switch.
+
+`007_plus_pro_plan_tiers.sql` converts the paid plan enum to Plus and Pro.
+
 To apply the schema with `psql`:
 
 ```bash
@@ -34,9 +45,12 @@ psql "$DATABASE_URL" -f db/migrations/001_initial_postgres_schema.sql
 psql "$DATABASE_URL" -f db/migrations/002_judge_reference_vectors.sql
 psql "$DATABASE_URL" -f db/migrations/003_practice_stage_diagrams.sql
 psql "$DATABASE_URL" -f db/migrations/004_stage_editorials.sql
+psql "$DATABASE_URL" -f db/migrations/005_billing_onboarding.sql
+psql "$DATABASE_URL" -f db/migrations/006_razorpay_billing_rename.sql
+psql "$DATABASE_URL" -f db/migrations/007_plus_pro_plan_tiers.sql
 ```
 
-The backend now upserts `app_users`, `user_problem_progress`, and `practice_sessions` from authenticated API calls under `/v1/persistence/*`.
+The backend now upserts `app_users`, `user_problem_progress`, and `practice_sessions` from authenticated API calls under `/v1/persistence/*`. Billing and onboarding tables are written by `/v1/billing/*`, `/v1/onboarding/*`, and Razorpay webhooks.
 
 To seed protected stage editorials for every catalog problem:
 
@@ -70,18 +84,16 @@ The seed replaces `judge_reference_chunks` on each run so stale vectors are remo
 The seed script requires:
 
 - `DATABASE_URL`
-- `EMBEDDING_PROVIDER`, either `gemini` or `ollama`
+- `EMBEDDING_PROVIDER=ollama`
 - `EMBEDDING_DIMENSIONS`, defaulting to `768`
-- for Gemini: `GEMINI_API_KEY` or `GOOGLE_API_KEY`
-- `GEMINI_EMBEDDING_MODEL`, defaulting to `gemini-embedding-001`
-- for Ollama: `OLLAMA_BASE_URL`, defaulting to `http://localhost:11434`
-- for Ollama: `OLLAMA_EMBEDDING_MODEL`, defaulting to `nomic-embed-text`
+- `OLLAMA_BASE_URL`, defaulting to `http://localhost:11434`
+- `OLLAMA_EMBEDDING_MODEL`, defaulting to `nomic-embed-text`
 
 The migration defines `embedding VECTOR(768)`, so keep `EMBEDDING_DIMENSIONS=768` unless you also update the migration/table type. `nomic-embed-text` is the safest Ollama default for the current 768-dimensional table.
 
-To seed with Ollama:
+To seed:
 
 ```bash
 ollama pull nomic-embed-text
-EMBEDDING_PROVIDER=ollama npm run seed:judge-embeddings
+npm run seed:judge-embeddings
 ```

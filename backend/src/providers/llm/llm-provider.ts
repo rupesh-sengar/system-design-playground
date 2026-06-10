@@ -8,8 +8,8 @@ import type {
 export type ProviderMetadata = {
   configured: boolean;
   model: string;
-  orchestration: "google-adk" | "google-genai";
-  provider: "gemini";
+  orchestration: "openai-compatible";
+  provider: "deepseek";
 };
 
 export interface LlmProvider {

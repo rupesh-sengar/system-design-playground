@@ -34,6 +34,7 @@ export type PracticeAiRequestErrorKind =
   | "auth"
   | "forbidden"
   | "network"
+  | "payment"
   | "rate-limit"
   | "request"
   | "service"
@@ -42,8 +43,8 @@ export type PracticeAiRequestErrorKind =
 export interface PracticeAiMeta {
   configured: boolean;
   model?: string;
-  orchestration: "google-adk" | "google-genai" | "rule-engine";
-  provider: "gemini" | "rule-engine";
+  orchestration: "openai-compatible" | "rule-engine";
+  provider: "deepseek" | "rule-engine";
   rubricVersion?: string;
 }
 

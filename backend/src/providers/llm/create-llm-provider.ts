@@ -1,10 +1,12 @@
 import type { AppConfig } from "../../config/env.js";
-import { GeminiAdkProvider } from "../gemini/gemini-adk.provider.js";
+import { DeepSeekProvider } from "../deepseek/deepseek.provider.js";
 import type { LlmProvider } from "./llm-provider.js";
 
 export const createLlmProvider = (config: AppConfig): LlmProvider =>
-  new GeminiAdkProvider({
-    appName: config.APP_NAME,
-    configured: config.hasGeminiCredentials,
-    model: config.GEMINI_MODEL,
+  new DeepSeekProvider({
+    apiKey: config.deepseek.apiKey,
+    baseUrl: config.deepseek.baseUrl,
+    configured: config.hasDeepSeekCredentials,
+    model: config.deepseek.model,
+    requestTimeoutMs: config.deepseek.requestTimeoutMs,
   });

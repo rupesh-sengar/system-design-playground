@@ -1,3 +1,5 @@
+import { frontendConfig } from "@/config/env";
+
 export interface Auth0Config {
   audience: string | null;
   clientId: string | null;
@@ -7,33 +9,16 @@ export interface Auth0Config {
   scope: string;
 }
 
-const DEFAULT_AUTH0_DATABASE_CONNECTION = "Username-Password-Authentication";
-
-const getTrimmedEnvValue = (
-  value: string | undefined,
-): string | null => {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
-};
-
 export const getAuth0Config = (): Auth0Config => {
-  const domain = getTrimmedEnvValue(import.meta.env.VITE_AUTH0_DOMAIN);
-  const clientId = getTrimmedEnvValue(import.meta.env.VITE_AUTH0_CLIENT_ID);
-  const audience = getTrimmedEnvValue(import.meta.env.VITE_AUTH0_AUDIENCE);
-  const connection =
-    getTrimmedEnvValue(import.meta.env.VITE_AUTH0_CONNECTION) ??
-    DEFAULT_AUTH0_DATABASE_CONNECTION;
-  const scope =
-    getTrimmedEnvValue(import.meta.env.VITE_AUTH0_SCOPE) ??
-    "openid profile email";
+  const { auth0, features } = frontendConfig;
 
   return {
-    audience,
-    clientId,
-    connection,
-    domain,
-    isConfigured: Boolean(domain && clientId),
-    scope,
+    audience: auth0.audience,
+    clientId: auth0.clientId,
+    connection: auth0.connection,
+    domain: auth0.domain,
+    isConfigured: features.auth && Boolean(auth0.domain && auth0.clientId),
+    scope: auth0.scope,
   };
 };
 

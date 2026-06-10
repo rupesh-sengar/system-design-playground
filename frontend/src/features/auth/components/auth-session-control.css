@@ -53,11 +53,19 @@
     height: 34px;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
     border-radius: 999px;
     background: rgba(15, 122, 115, 0.12);
     color: var(--accent-deep);
     font-size: 0.8rem;
     font-weight: 800;
+}
+
+.session-nav__avatar-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .session-nav__status-dot {
@@ -72,24 +80,24 @@
     box-shadow: 0 0 0 3px rgba(94, 108, 109, 0.1);
 }
 
-.session-nav__status-dot--connected,
-.session-nav__connection--connected {
+.session-nav__status-dot--connected {
     color: var(--easy);
 }
 
-.session-nav__status-dot--checking,
-.session-nav__connection--checking {
+.session-nav__status-dot--checking {
     color: var(--accent-deep);
 }
 
-.session-nav__status-dot--reconnecting,
-.session-nav__connection--reconnecting {
+.session-nav__status-dot--reconnecting {
     color: var(--accent-gold);
 }
 
-.session-nav__status-dot--disconnected,
-.session-nav__connection--disconnected {
+.session-nav__status-dot--disconnected {
     color: var(--hard);
+}
+
+.session-nav__status-dot--pending {
+    color: var(--accent-gold);
 }
 
 .session-nav__status-dot--connected {
@@ -108,6 +116,10 @@
 
 .session-nav__status-dot--disconnected {
     background: var(--hard);
+}
+
+.session-nav__status-dot--pending {
+    background: var(--accent-gold);
 }
 
 .session-nav__signin {
@@ -162,17 +174,51 @@
     backdrop-filter: blur(18px);
 }
 
+.session-nav__profile-summary {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: center;
+    gap: 11px;
+}
+
+.session-nav__profile-avatar {
+    display: inline-flex;
+    width: 42px;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(15, 122, 115, 0.12);
+    color: var(--accent-deep);
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.session-nav__profile-copy {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+}
+
 .session-nav__menu-section {
     display: grid;
     gap: 6px;
 }
 
-.session-nav__menu-section--status {
-    gap: 8px;
-    padding: 12px;
-    border-radius: 18px;
-    border: 1px solid rgba(41, 58, 61, 0.08);
-    background: rgba(255, 255, 255, 0.68);
+.session-nav__account-type {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    min-height: 26px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: var(--success-surface);
+    color: var(--easy);
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .session-nav__menu-label {
@@ -181,6 +227,31 @@
     font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
+}
+
+.session-nav__profile-copy strong {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 0.95rem;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.session-nav__profile-copy span,
+.session-nav__profile-copy p {
+    margin: 0;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.session-nav__account-line b {
+    color: var(--text);
+    font-weight: 800;
 }
 
 .session-nav__menu-section strong {
@@ -195,48 +266,6 @@
     color: var(--muted);
     font-size: 0.82rem;
     line-height: 1.5;
-}
-
-.session-nav__connection {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    width: fit-content;
-    padding: 6px 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(41, 58, 61, 0.08);
-    background: rgba(255, 255, 255, 0.72);
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-
-.session-nav__connection--connected {
-    border-color: rgba(45, 132, 88, 0.18);
-    background: rgba(238, 250, 244, 0.92);
-}
-
-.session-nav__connection--checking {
-    border-color: rgba(15, 122, 115, 0.18);
-    background: rgba(235, 248, 246, 0.9);
-}
-
-.session-nav__connection--reconnecting {
-    border-color: rgba(196, 116, 24, 0.18);
-    background: rgba(252, 238, 213, 0.92);
-}
-
-.session-nav__connection--disconnected {
-    border-color: rgba(180, 69, 69, 0.18);
-    background: rgba(252, 232, 232, 0.92);
-}
-
-.session-nav__connection-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: currentColor;
 }
 
 .session-nav__menu-note {
@@ -262,7 +291,16 @@
     background: rgba(41, 58, 61, 0.08);
 }
 
+.session-nav__menu-actions {
+    display: grid;
+    gap: 8px;
+}
+
 .session-nav__menu-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 9px;
     width: 100%;
     padding: 11px 14px;
     border-radius: 14px;
@@ -306,6 +344,11 @@
     color: var(--accent-deep);
 }
 
+:root[data-theme="dark"] .session-nav__profile-avatar {
+    background: rgba(66, 184, 174, 0.18);
+    color: var(--accent-deep);
+}
+
 :root[data-theme="dark"] .session-nav__trigger {
     background: rgba(13, 20, 27, 0.84);
 }
@@ -329,39 +372,18 @@
     color: #ffb2b2;
 }
 
-:root[data-theme="dark"] .session-nav__menu-section--status,
-:root[data-theme="dark"] .session-nav__connection,
 :root[data-theme="dark"] .session-nav__menu-action {
     border-color: rgba(143, 170, 176, 0.14);
     background: rgba(19, 29, 37, 0.9);
 }
 
-:root[data-theme="dark"] .session-nav__menu-divider {
-    background: rgba(143, 170, 176, 0.14);
-}
-
-:root[data-theme="dark"] .session-nav__connection--connected {
+:root[data-theme="dark"] .session-nav__account-type {
     background: rgba(15, 41, 29, 0.94);
-    border-color: rgba(71, 176, 122, 0.18);
     color: #8fe0b2;
 }
 
-:root[data-theme="dark"] .session-nav__connection--checking {
-    background: rgba(16, 46, 48, 0.8);
-    border-color: rgba(66, 184, 174, 0.2);
-    color: var(--accent-deep);
-}
-
-:root[data-theme="dark"] .session-nav__connection--reconnecting {
-    background: rgba(57, 41, 18, 0.82);
-    border-color: rgba(213, 164, 69, 0.2);
-    color: #f3c874;
-}
-
-:root[data-theme="dark"] .session-nav__connection--disconnected {
-    background: rgba(60, 24, 24, 0.84);
-    border-color: rgba(215, 106, 106, 0.22);
-    color: #ffb2b2;
+:root[data-theme="dark"] .session-nav__menu-divider {
+    background: rgba(143, 170, 176, 0.14);
 }
 
 @media (max-width: 760px) {

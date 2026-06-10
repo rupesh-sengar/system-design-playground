@@ -1,5 +1,5 @@
-const DEFAULT_API_BASE_URL =
-  "https://system-design-playground-oky8.onrender.com";
+import { frontendConfig } from "@/config/env";
+
 const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
 
 type ErrorPayload = {
@@ -23,6 +23,7 @@ export type ApiErrorKind =
   | "auth"
   | "forbidden"
   | "network"
+  | "payment"
   | "rate-limit"
   | "request"
   | "service"
@@ -68,13 +69,7 @@ export const setApiAccessTokenResolver = (
 };
 
 export const getApiBaseUrl = (): string => {
-  const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
-
-  if (!configuredBaseUrl) {
-    return DEFAULT_API_BASE_URL;
-  }
-
-  return configuredBaseUrl.replace(/\/+$/, "");
+  return frontendConfig.apiBaseUrl;
 };
 
 export const getApiErrorMessage = (
@@ -154,6 +149,17 @@ export const getApiErrorDetails = (
         };
       }
 
+      if (rtkError.status === 402) {
+        return {
+          kind: rtkError.data?.kind ?? "payment",
+          message:
+            rtkError.data?.error ??
+            "Upgrade your plan to use this feature.",
+          retryable: rtkError.data?.retryable ?? false,
+          statusCode,
+        };
+      }
+
       if (rtkError.status === 429) {
         return {
           kind: rtkError.data?.kind ?? "rate-limit",
@@ -201,6 +207,15 @@ export const getApiErrorDetails = (
         message:
           error.message ||
           "This account is not allowed to use the AI workspace.",
+        retryable: false,
+        statusCode: error.statusCode,
+      };
+    }
+
+    if (error.statusCode === 402) {
+      return {
+        kind: "payment",
+        message: error.message || "Upgrade your plan to use this feature.",
         retryable: false,
         statusCode: error.statusCode,
       };

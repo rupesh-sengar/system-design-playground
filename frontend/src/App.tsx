@@ -1,5 +1,10 @@
 import { type ReactNode, useCallback, useEffect, useState } from "react";
-import { AlertTriangle, BookOpenCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  BookOpenCheck,
+  CheckCircle2,
+  CreditCard,
+} from "lucide-react";
 import {
   findProblemById,
   ProblemCatalogPanel,
@@ -7,10 +12,13 @@ import {
   useProblemLibrary,
 } from "@/features/problem-library";
 import { LandingPage } from "@/features/landing";
+import { AccountBillingPage, PricingPage } from "@/features/billing";
 import {
   NewUserTutorial,
+  OnboardingPage,
   type TutorialRouteTarget,
 } from "@/features/onboarding";
+import { AuthReturnNotice } from "@/features/auth/components/AuthReturnNotice";
 import { AuthSessionControl } from "@/features/auth/components/AuthSessionControl";
 import { ThemeModeControl } from "@/features/theme/components/ThemeModeControl";
 import { useAppRoute } from "@/app/router";
@@ -18,6 +26,8 @@ import {
   PracticePlaygroundPage,
   type PlaygroundSaveStatus,
 } from "@/features/practice-playground";
+import { frontendConfig } from "@/config/env";
+import { NoticeDialog } from "@/shared/ui/NoticeDialog";
 import "@/app/app-shell.css";
 import "@/shared/ui/shared-ui.css";
 import "@/styles/theme-overhaul.css";
@@ -26,9 +36,21 @@ const NEW_USER_TUTORIAL_STORAGE_KEY =
   "system-design-lab.new-user-tutorial.seen.v1";
 
 export default function App() {
-  const { goToHome, goToLibrary, goToPlayground, route } = useAppRoute();
+  const { features } = frontendConfig;
+  const {
+    goToAccount,
+    goToHome,
+    goToLibrary,
+    goToOnboarding,
+    goToPlayground,
+    goToPricing,
+    route,
+  } = useAppRoute();
   const [playgroundSaveStatus, setPlaygroundSaveStatus] =
     useState<PlaygroundSaveStatus | null>(null);
+  const [isDevelopmentNoticeOpen, setIsDevelopmentNoticeOpen] = useState(
+    features.developmentNotice,
+  );
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const {
     actions,
@@ -122,7 +144,13 @@ export default function App() {
       ? "Home"
       : route.name === "playground"
         ? "Practice Playground"
-        : "Problem Library";
+        : route.name === "pricing" && features.billing
+          ? "Pricing"
+          : route.name === "onboarding" && features.onboarding
+            ? "Setup"
+            : route.name === "account" && features.billing
+              ? "Account"
+              : "Problem Library";
 
   useEffect(() => {
     if (route.name !== "playground") {
@@ -146,6 +174,16 @@ export default function App() {
 
       <div className="app-toolbar__controls">
         {leadingControl}
+        {features.billing ? (
+          <button
+            className="secondary-action app-toolbar__tutorial"
+            type="button"
+            onClick={goToPricing}
+          >
+            <CreditCard aria-hidden="true" size={15} strokeWidth={2} />
+            Pricing
+          </button>
+        ) : null}
         <button
           className="secondary-action app-toolbar__tutorial"
           type="button"
@@ -166,24 +204,70 @@ export default function App() {
           </span>
         ) : null}
         <ThemeModeControl />
-        <AuthSessionControl />
+        <AuthSessionControl
+          onOpenAccount={features.billing ? goToAccount : undefined}
+        />
       </div>
     </div>
   );
 
+  const renderHeader = (leadingControl?: ReactNode) => (
+    <>
+      {renderToolbar(leadingControl)}
+      <AuthReturnNotice />
+    </>
+  );
+
   const renderTutorial = () => (
     <NewUserTutorial
-      currentRoute={route.name}
-      isOpen={isTutorialOpen}
+      currentRoute={
+        route.name === "home" ||
+        route.name === "library" ||
+        route.name === "playground"
+          ? route.name
+          : "home"
+      }
+      isOpen={isTutorialOpen && !isDevelopmentNoticeOpen}
       onClose={handleCloseTutorial}
       onNavigate={handleTutorialNavigate}
     />
   );
 
+  const renderDevelopmentNotice = () => (
+    <NoticeDialog
+      actionIcon={
+        <CheckCircle2 aria-hidden="true" size={16} strokeWidth={2} />
+      }
+      confirmLabel="I understand"
+      description="This application is still being built. Some pages, AI responses, account flows, and billing experiences may be incomplete or change before launch."
+      eyebrow="Development Preview"
+      icon={<AlertTriangle aria-hidden="true" size={20} strokeWidth={2} />}
+      isOpen={isDevelopmentNoticeOpen}
+      onConfirm={() => setIsDevelopmentNoticeOpen(false)}
+      role="alertdialog"
+      title="This site is still in development"
+      tone="warning"
+    >
+      <ul className="notice-dialog__list">
+        <li>
+          Use the app for exploration and practice, but expect rough edges.
+        </li>
+        <li>Data, feedback, and plan details may be reset or revised.</li>
+      </ul>
+    </NoticeDialog>
+  );
+
+  const renderOverlays = () => (
+    <>
+      {renderTutorial()}
+      {renderDevelopmentNotice()}
+    </>
+  );
+
   if (route.name === "playground") {
     return (
       <div className="shell shell--playground">
-        {renderToolbar(
+        {renderHeader(
           playgroundSaveStatus ? (
             <span
               className={`app-toolbar__save-status app-toolbar__save-status--${playgroundSaveStatus.statusTone}`}
@@ -206,7 +290,7 @@ export default function App() {
           }}
           onSaveStatusChange={setPlaygroundSaveStatus}
         />
-        {renderTutorial()}
+        {renderOverlays()}
       </div>
     );
   }
@@ -214,7 +298,7 @@ export default function App() {
   if (route.name === "home") {
     return (
       <div className="shell shell--landing">
-        {renderToolbar()}
+        {renderHeader()}
 
         <LandingPage
           categories={categories}
@@ -225,14 +309,57 @@ export default function App() {
           onPickRandomProblem={handlePickRandomProblem}
           onSelectProblem={handleSelectProblem}
         />
-        {renderTutorial()}
+        {renderOverlays()}
+      </div>
+    );
+  }
+
+  if (route.name === "pricing" && features.billing) {
+    return (
+      <div className="shell">
+        {renderHeader()}
+
+        <PricingPage
+          onOpenAccount={goToAccount}
+          onOpenLibrary={goToLibrary}
+          onOpenOnboarding={features.onboarding ? goToOnboarding : goToLibrary}
+        />
+        {renderOverlays()}
+      </div>
+    );
+  }
+
+  if (route.name === "onboarding" && features.onboarding) {
+    return (
+      <div className="shell">
+        {renderHeader()}
+
+        <OnboardingPage
+          onOpenLibrary={goToLibrary}
+          onOpenPricing={features.billing ? goToPricing : goToLibrary}
+        />
+        {renderOverlays()}
+      </div>
+    );
+  }
+
+  if (route.name === "account" && features.billing) {
+    return (
+      <div className="shell">
+        {renderHeader()}
+
+        <AccountBillingPage
+          onOpenOnboarding={goToOnboarding}
+          onOpenPricing={goToPricing}
+        />
+        {renderOverlays()}
       </div>
     );
   }
 
   return (
     <div className="shell">
-      {renderToolbar()}
+      {renderHeader()}
 
       <main className="workspace workspace--library-only">
         <ProblemCatalogPanel
@@ -258,7 +385,7 @@ export default function App() {
           onStatusChange={actions.setStatus}
         />
       </main>
-      {renderTutorial()}
+      {renderOverlays()}
     </div>
   );
 }

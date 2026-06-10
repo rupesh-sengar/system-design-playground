@@ -1,3 +1,4 @@
+import { frontendConfig } from "@/config/env";
 import { useAppAuth } from "@/features/auth/app-auth";
 import "@/shared/ui/shared-ui.css";
 import "./PracticeAiReviewPanel.css";
@@ -98,7 +99,7 @@ const AiRequestNotice = ({
   }
 
   const bannerVariant =
-    error.kind === "rate-limit"
+    error.kind === "payment" || error.kind === "rate-limit"
       ? "playground-ai__banner--warning"
       : "playground-ai__banner--error";
 
@@ -183,7 +184,7 @@ export const PracticeAiReviewPanel = ({
     : !canRequestApiToken
       ? "Add an Auth0 audience so the app can request API tokens automatically."
       : !isAuthenticated
-        ? "Login with Auth0 to enable AI feedback requests."
+        ? "Login to enable AI feedback requests."
         : isLoading
           ? "Authentication is still initializing."
           : canValidateDraft
@@ -197,6 +198,20 @@ export const PracticeAiReviewPanel = ({
     !activeStageState.hintError &&
     !activeStageState.validationError;
 
+  if (!frontendConfig.features.aiReview) {
+    return (
+      <section className="playground-ai">
+        <div className="playground-ai__header">
+          <div className="playground-ai__title">
+            <p className="section-label">AI Review</p>
+            <h3>{activeStageTitle} coach</h3>
+            <p>AI review is disabled in this environment.</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="playground-ai">
       <div className="playground-ai__header">
@@ -204,8 +219,7 @@ export const PracticeAiReviewPanel = ({
           <p className="section-label">AI Review</p>
           <h3>{activeStageTitle} coach</h3>
           <p>
-            Send the current stage notes to Gemini for hints or structured
-            validation.
+            Send the current stage notes for hints or structured validation.
           </p>
         </div>
 

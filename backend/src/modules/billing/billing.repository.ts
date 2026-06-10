@@ -1,0 +1,484 @@
+import type { QueryResultRow } from "pg";
+import type { PostgresDatabase } from "../../database/postgres.js";
+import type { OnboardingProfileInput } from "./contracts.js";
+
+export type PlanTier = "free" | "plus" | "pro";
+export type SubscriptionStatus =
+  | "created"
+  | "authenticated"
+  | "active"
+  | "pending"
+  | "halted"
+  | "cancelled"
+  | "completed"
+  | "expired"
+  | "paused"
+  | "resumed";
+export type UsageEventType = "ai_hint" | "ai_validation";
+
+type IsoDateValue = Date | string | null;
+
+const toIsoString = (value: IsoDateValue): string => {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === "string") {
+    return new Date(value).toISOString();
+  }
+
+  throw new Error("Expected timestamp value.");
+};
+
+const toNullableIsoString = (value: IsoDateValue): string | null =>
+  value === null ? null : toIsoString(value);
+
+const getRequiredRow = <Row>(row: Row | undefined, message: string): Row => {
+  if (!row) {
+    throw new Error(message);
+  }
+
+  return row;
+};
+
+export interface BillingCustomerRecord {
+  razorpayCustomerId: string;
+  updatedAt: string;
+  userId: string;
+}
+
+export interface UserSubscriptionRecord {
+  cancelAtPeriodEnd: boolean;
+  currentPeriodEnd: string | null;
+  currentPeriodStart: string | null;
+  planTier: PlanTier;
+  razorpayPlanId: string | null;
+  razorpaySubscriptionId: string | null;
+  status: SubscriptionStatus;
+  updatedAt: string;
+}
+
+export interface OnboardingProfileRecord {
+  completedAt: string | null;
+  experienceLevel: string | null;
+  focusAreas: string[];
+  interviewTimeline: string | null;
+  targetRole: string | null;
+  updatedAt: string;
+}
+
+const mapBillingCustomerRecord = (
+  row: QueryResultRow & {
+    razorpay_customer_id: string;
+    updated_at: IsoDateValue;
+    user_id: string;
+  },
+): BillingCustomerRecord => ({
+  razorpayCustomerId: row.razorpay_customer_id,
+  updatedAt: toIsoString(row.updated_at),
+  userId: row.user_id,
+});
+
+const mapSubscriptionRecord = (
+  row: QueryResultRow & {
+    cancel_at_period_end: boolean;
+    current_period_end: IsoDateValue;
+    current_period_start: IsoDateValue;
+    plan_tier: PlanTier;
+    razorpay_plan_id: string | null;
+    razorpay_subscription_id: string | null;
+    status: SubscriptionStatus;
+    updated_at: IsoDateValue;
+  },
+): UserSubscriptionRecord => ({
+  cancelAtPeriodEnd: row.cancel_at_period_end,
+  currentPeriodEnd: toNullableIsoString(row.current_period_end),
+  currentPeriodStart: toNullableIsoString(row.current_period_start),
+  planTier: row.plan_tier,
+  razorpayPlanId: row.razorpay_plan_id,
+  razorpaySubscriptionId: row.razorpay_subscription_id,
+  status: row.status,
+  updatedAt: toIsoString(row.updated_at),
+});
+
+const mapOnboardingProfileRecord = (
+  row: QueryResultRow & {
+    completed_at: IsoDateValue;
+    experience_level: string | null;
+    focus_areas: string[] | null;
+    interview_timeline: string | null;
+    target_role: string | null;
+    updated_at: IsoDateValue;
+  },
+): OnboardingProfileRecord => ({
+  completedAt: toNullableIsoString(row.completed_at),
+  experienceLevel: row.experience_level,
+  focusAreas: row.focus_areas ?? [],
+  interviewTimeline: row.interview_timeline,
+  targetRole: row.target_role,
+  updatedAt: toIsoString(row.updated_at),
+});
+
+export class BillingCustomerRepository {
+  constructor(private readonly database: PostgresDatabase) {}
+
+  async findByUserId(userId: string): Promise<BillingCustomerRecord | null> {
+    const result = await this.database.query<{
+      razorpay_customer_id: string;
+      updated_at: IsoDateValue;
+      user_id: string;
+    }>(
+      `
+        select
+          user_id,
+          razorpay_customer_id,
+          updated_at
+        from billing_customers
+        where user_id = $1
+      `,
+      [userId],
+    );
+
+    return result.rows[0] ? mapBillingCustomerRecord(result.rows[0]) : null;
+  }
+
+  async findUserIdByRazorpayCustomerId(
+    razorpayCustomerId: string,
+  ): Promise<string | null> {
+    const result = await this.database.query<{ user_id: string }>(
+      `
+        select user_id
+        from billing_customers
+        where razorpay_customer_id = $1
+      `,
+      [razorpayCustomerId],
+    );
+
+    return result.rows[0]?.user_id ?? null;
+  }
+
+  async upsert(
+    userId: string,
+    razorpayCustomerId: string,
+  ): Promise<BillingCustomerRecord> {
+    const result = await this.database.query<{
+      razorpay_customer_id: string;
+      updated_at: IsoDateValue;
+      user_id: string;
+    }>(
+      `
+        insert into billing_customers (
+          user_id,
+          razorpay_customer_id
+        )
+        values ($1, $2)
+        on conflict (user_id)
+        do update set
+          razorpay_customer_id = excluded.razorpay_customer_id,
+          updated_at = now()
+        returning
+          user_id,
+          razorpay_customer_id,
+          updated_at
+      `,
+      [userId, razorpayCustomerId],
+    );
+
+    return mapBillingCustomerRecord(
+      getRequiredRow(
+        result.rows[0],
+        "Billing customer upsert returned no row.",
+      ),
+    );
+  }
+}
+
+export class UserSubscriptionRepository {
+  constructor(private readonly database: PostgresDatabase) {}
+
+  async findCurrentByUserId(
+    userId: string,
+  ): Promise<UserSubscriptionRecord | null> {
+    const result = await this.database.query<{
+      cancel_at_period_end: boolean;
+      current_period_end: IsoDateValue;
+      current_period_start: IsoDateValue;
+      plan_tier: PlanTier;
+      razorpay_plan_id: string | null;
+      razorpay_subscription_id: string | null;
+      status: SubscriptionStatus;
+      updated_at: IsoDateValue;
+    }>(
+      `
+        select
+          razorpay_subscription_id,
+          razorpay_plan_id,
+          plan_tier,
+          status,
+          current_period_start,
+          current_period_end,
+          cancel_at_period_end,
+          updated_at
+        from user_subscriptions
+        where user_id = $1
+        order by
+          case
+            when status in ('authenticated', 'active') then 0
+            when status = 'pending' then 1
+            else 2
+          end,
+          updated_at desc
+        limit 1
+      `,
+      [userId],
+    );
+
+    return result.rows[0] ? mapSubscriptionRecord(result.rows[0]) : null;
+  }
+
+  async findByRazorpaySubscriptionId(
+    razorpaySubscriptionId: string,
+  ): Promise<UserSubscriptionRecord | null> {
+    const result = await this.database.query<{
+      cancel_at_period_end: boolean;
+      current_period_end: IsoDateValue;
+      current_period_start: IsoDateValue;
+      plan_tier: PlanTier;
+      razorpay_plan_id: string | null;
+      razorpay_subscription_id: string | null;
+      status: SubscriptionStatus;
+      updated_at: IsoDateValue;
+    }>(
+      `
+        select
+          razorpay_subscription_id,
+          razorpay_plan_id,
+          plan_tier,
+          status,
+          current_period_start,
+          current_period_end,
+          cancel_at_period_end,
+          updated_at
+        from user_subscriptions
+        where razorpay_subscription_id = $1
+        limit 1
+      `,
+      [razorpaySubscriptionId],
+    );
+
+    return result.rows[0] ? mapSubscriptionRecord(result.rows[0]) : null;
+  }
+
+  async findUserIdByRazorpaySubscriptionId(
+    razorpaySubscriptionId: string,
+  ): Promise<string | null> {
+    const result = await this.database.query<{ user_id: string }>(
+      `
+        select user_id
+        from user_subscriptions
+        where razorpay_subscription_id = $1
+        limit 1
+      `,
+      [razorpaySubscriptionId],
+    );
+
+    return result.rows[0]?.user_id ?? null;
+  }
+
+  async upsertFromRazorpay(input: {
+    cancelAtPeriodEnd: boolean;
+    currentPeriodEnd: Date | null;
+    currentPeriodStart: Date | null;
+    planTier: PlanTier;
+    razorpayPlanId: string | null;
+    razorpaySubscriptionId: string;
+    status: SubscriptionStatus;
+    userId: string;
+  }): Promise<UserSubscriptionRecord> {
+    const result = await this.database.query<{
+      cancel_at_period_end: boolean;
+      current_period_end: IsoDateValue;
+      current_period_start: IsoDateValue;
+      plan_tier: PlanTier;
+      razorpay_plan_id: string | null;
+      razorpay_subscription_id: string | null;
+      status: SubscriptionStatus;
+      updated_at: IsoDateValue;
+    }>(
+      `
+        insert into user_subscriptions (
+          user_id,
+          razorpay_subscription_id,
+          razorpay_plan_id,
+          plan_tier,
+          status,
+          current_period_start,
+          current_period_end,
+          cancel_at_period_end
+        )
+        values ($1, $2, $3, $4, $5, $6, $7, $8)
+        on conflict (razorpay_subscription_id)
+        do update set
+          razorpay_plan_id = excluded.razorpay_plan_id,
+          plan_tier = excluded.plan_tier,
+          status = excluded.status,
+          current_period_start = excluded.current_period_start,
+          current_period_end = excluded.current_period_end,
+          cancel_at_period_end = excluded.cancel_at_period_end,
+          updated_at = now()
+        returning
+          razorpay_subscription_id,
+          razorpay_plan_id,
+          plan_tier,
+          status,
+          current_period_start,
+          current_period_end,
+          cancel_at_period_end,
+          updated_at
+      `,
+      [
+        input.userId,
+        input.razorpaySubscriptionId,
+        input.razorpayPlanId,
+        input.planTier,
+        input.status,
+        input.currentPeriodStart,
+        input.currentPeriodEnd,
+        input.cancelAtPeriodEnd,
+      ],
+    );
+
+    return mapSubscriptionRecord(
+      getRequiredRow(result.rows[0], "Subscription upsert returned no row."),
+    );
+  }
+}
+
+export class UsageEventRepository {
+  constructor(private readonly database: PostgresDatabase) {}
+
+  async countMonthlyAiUsage(userId: string, monthStart: Date): Promise<number> {
+    const result = await this.database.query<{ used: number }>(
+      `
+        select coalesce(sum(quantity), 0)::int as used
+        from user_usage_events
+        where user_id = $1
+          and event_type = any($2::usage_event_type[])
+          and created_at >= $3
+      `,
+      [userId, ["ai_hint", "ai_validation"], monthStart],
+    );
+
+    return result.rows[0]?.used ?? 0;
+  }
+
+  async record(input: {
+    eventType: UsageEventType;
+    metadata?: Record<string, unknown>;
+    quantity?: number;
+    userId: string;
+  }): Promise<void> {
+    await this.database.query(
+      `
+        insert into user_usage_events (
+          user_id,
+          event_type,
+          quantity,
+          metadata
+        )
+        values ($1, $2, $3, $4)
+      `,
+      [
+        input.userId,
+        input.eventType,
+        input.quantity ?? 1,
+        JSON.stringify(input.metadata ?? {}),
+      ],
+    );
+  }
+}
+
+export class OnboardingProfileRepository {
+  constructor(private readonly database: PostgresDatabase) {}
+
+  async findByUserId(userId: string): Promise<OnboardingProfileRecord | null> {
+    const result = await this.database.query<{
+      completed_at: IsoDateValue;
+      experience_level: string | null;
+      focus_areas: string[] | null;
+      interview_timeline: string | null;
+      target_role: string | null;
+      updated_at: IsoDateValue;
+    }>(
+      `
+        select
+          target_role,
+          experience_level,
+          interview_timeline,
+          focus_areas,
+          completed_at,
+          updated_at
+        from user_onboarding_profiles
+        where user_id = $1
+      `,
+      [userId],
+    );
+
+    return result.rows[0] ? mapOnboardingProfileRecord(result.rows[0]) : null;
+  }
+
+  async upsert(
+    userId: string,
+    input: OnboardingProfileInput,
+  ): Promise<OnboardingProfileRecord> {
+    const result = await this.database.query<{
+      completed_at: IsoDateValue;
+      experience_level: string | null;
+      focus_areas: string[] | null;
+      interview_timeline: string | null;
+      target_role: string | null;
+      updated_at: IsoDateValue;
+    }>(
+      `
+        insert into user_onboarding_profiles (
+          user_id,
+          target_role,
+          experience_level,
+          interview_timeline,
+          focus_areas,
+          completed_at
+        )
+        values ($1, $2, $3, $4, $5, now())
+        on conflict (user_id)
+        do update set
+          target_role = excluded.target_role,
+          experience_level = excluded.experience_level,
+          interview_timeline = excluded.interview_timeline,
+          focus_areas = excluded.focus_areas,
+          completed_at = coalesce(user_onboarding_profiles.completed_at, now()),
+          updated_at = now()
+        returning
+          target_role,
+          experience_level,
+          interview_timeline,
+          focus_areas,
+          completed_at,
+          updated_at
+      `,
+      [
+        userId,
+        input.targetRole ?? null,
+        input.experienceLevel ?? null,
+        input.interviewTimeline ?? null,
+        input.focusAreas,
+      ],
+    );
+
+    return mapOnboardingProfileRecord(
+      getRequiredRow(
+        result.rows[0],
+        "Onboarding profile upsert returned no row.",
+      ),
+    );
+  }
+}

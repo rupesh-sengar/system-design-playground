@@ -7,34 +7,62 @@ export type AppRoute =
       name: "home";
     }
   | {
+      name: "account";
+    }
+  | {
       name: "library";
+    }
+  | {
+      name: "onboarding";
     }
   | {
       name: "playground";
       problemId: string;
+    }
+  | {
+      name: "pricing";
     };
 
 const parseRoute = (hash: string): AppRoute => {
   const normalizedHash = hash.replace(/^#/, "");
+  const routePath = normalizedHash.split("?")[0] ?? normalizedHash;
 
   if (
-    normalizedHash === "" ||
-    normalizedHash === "/" ||
-    normalizedHash === "/home"
+    routePath === "" ||
+    routePath === "/" ||
+    routePath === "/home"
   ) {
     return {
       name: "home",
     };
   }
 
-  if (normalizedHash === "/problems" || normalizedHash === "/library") {
+  if (routePath === "/problems" || routePath === "/library") {
     return {
       name: "library",
     };
   }
 
-  if (normalizedHash.startsWith("/playground/")) {
-    const [, , rawProblemId] = normalizedHash.split("/");
+  if (routePath === "/pricing") {
+    return {
+      name: "pricing",
+    };
+  }
+
+  if (routePath === "/onboarding" || routePath === "/setup") {
+    return {
+      name: "onboarding",
+    };
+  }
+
+  if (routePath === "/account" || routePath === "/billing") {
+    return {
+      name: "account",
+    };
+  }
+
+  if (routePath.startsWith("/playground/")) {
+    const [, , rawProblemId] = routePath.split("/");
 
     if (rawProblemId) {
       return {
@@ -52,6 +80,12 @@ const parseRoute = (hash: string): AppRoute => {
 export const buildHomeRoute = (): string => "#/";
 
 export const buildLibraryRoute = (): string => "#/problems";
+
+export const buildPricingRoute = (): string => "#/pricing";
+
+export const buildOnboardingRoute = (): string => "#/onboarding";
+
+export const buildAccountRoute = (): string => "#/account";
 
 export const buildPlaygroundRoute = (problemId: string): string =>
   `#/playground/${encodeURIComponent(problemId)}`;
@@ -77,6 +111,18 @@ export const useAppRoute = () => {
     window.location.hash = buildLibraryRoute();
   };
 
+  const goToPricing = (): void => {
+    window.location.hash = buildPricingRoute();
+  };
+
+  const goToOnboarding = (): void => {
+    window.location.hash = buildOnboardingRoute();
+  };
+
+  const goToAccount = (): void => {
+    window.location.hash = buildAccountRoute();
+  };
+
   const goToHome = (): void => {
     window.location.hash = buildHomeRoute();
   };
@@ -87,8 +133,11 @@ export const useAppRoute = () => {
 
   return {
     route,
+    goToAccount,
     goToHome,
     goToLibrary,
+    goToOnboarding,
     goToPlayground,
+    goToPricing,
   };
 };

@@ -1,0 +1,245 @@
+.pricing-page {
+    display: grid;
+    gap: 18px;
+    width: min(1180px, calc(100vw - 32px));
+    margin: 0 auto;
+}
+
+.pricing-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    gap: 18px;
+    align-items: stretch;
+    padding: 28px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.pricing-hero__copy {
+    display: grid;
+    gap: 12px;
+    align-content: center;
+}
+
+.pricing-hero__copy h1,
+.pricing-card h2 {
+    margin: 0;
+    letter-spacing: 0;
+}
+
+.pricing-hero__copy h1 {
+    font-size: 4.2rem;
+    line-height: 0.92;
+}
+
+.pricing-hero__copy p,
+.pricing-card p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.55;
+}
+
+.pricing-hero__summary {
+    display: grid;
+    gap: 10px;
+    align-content: start;
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-strong);
+}
+
+.pricing-hero__icon,
+.pricing-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+}
+
+.pricing-hero__summary > span:not(.pricing-hero__icon),
+.pricing-usage__topline,
+.pricing-card__subprice,
+.pricing-card__badge {
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.pricing-hero__summary > strong {
+    font-size: 1.85rem;
+    line-height: 1;
+}
+
+.pricing-usage {
+    display: grid;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.pricing-usage__topline {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.pricing-usage__meter {
+    height: 9px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--surface-inset);
+}
+
+.pricing-usage__meter span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--accent-deep);
+}
+
+.pricing-notice {
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.pricing-notice--error {
+    background: var(--danger-surface);
+    color: var(--hard);
+}
+
+.pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.pricing-card {
+    position: relative;
+    display: grid;
+    gap: 16px;
+    align-content: start;
+    min-height: 100%;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.pricing-card--featured {
+    border-color: rgba(20, 156, 146, 0.45);
+    background: var(--surface-strong);
+}
+
+.pricing-card__badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: var(--success-surface);
+    color: var(--easy);
+}
+
+.pricing-card__head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    padding-right: 82px;
+}
+
+.pricing-card:not(.pricing-card--featured) .pricing-card__head {
+    padding-right: 0;
+}
+
+.pricing-card__price {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.pricing-card__price strong {
+    font-size: 2.35rem;
+    line-height: 1;
+}
+
+.pricing-card__price span {
+    color: var(--muted);
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.pricing-card__features {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pricing-card__features li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+    color: var(--muted-strong);
+    font-size: 0.92rem;
+    line-height: 1.4;
+}
+
+.pricing-card__features svg {
+    margin-top: 2px;
+    color: var(--easy);
+}
+
+.pricing-card__actions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+}
+
+.pricing-card__action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+}
+
+@media (max-width: 980px) {
+    .pricing-hero,
+    .pricing-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    .pricing-page {
+        width: min(100vw - 12px, 100%);
+    }
+
+    .pricing-hero,
+    .pricing-card {
+        border-radius: 12px;
+    }
+
+    .pricing-hero {
+        padding: 18px;
+    }
+
+    .pricing-hero__copy h1 {
+        font-size: 2.4rem;
+    }
+
+    .pricing-card__actions {
+        grid-template-columns: 1fr;
+    }
+}

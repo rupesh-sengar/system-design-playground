@@ -2,7 +2,7 @@
   "name": "system-design-platform-backend",
   "private": true,
   "version": "0.1.0",
-  "description": "Node.js API for the System Design Platform, backed by Google ADK and Gemini.",
+  "description": "Node.js API for the System Design Platform, backed by DeepSeek coaching and validation.",
   "type": "module",
   "engines": {
     "node": ">=20.12.7"
@@ -13,12 +13,9 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "seed:stage-editorials": "tsx src/scripts/seed-stage-editorials.ts",
-    "seed:judge-embeddings": "tsx src/scripts/seed-judge-reference-embeddings.ts",
-    "adk:web": "npx @google/adk-devtools web src/agent.ts"
+    "seed:judge-embeddings": "tsx src/scripts/seed-judge-reference-embeddings.ts"
   },
   "dependencies": {
-    "@google/adk": "^0.2.0",
-    "@google/genai": "latest",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
@@ -27,7 +24,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@google/adk-devtools": "^0.2.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.5.2",

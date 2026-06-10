@@ -27,6 +27,36 @@ npm install
 npm run dev
 ```
 
+## Environment configuration
+
+The frontend uses Vite environment files. Only variables prefixed with `VITE_`
+are exposed to the browser bundle.
+
+- `.env.development` contains checked-in local defaults.
+- `.env.production` contains checked-in production defaults.
+- `.env.local` is ignored by git and can override values on a developer machine.
+  Copy `.env.local.example` to `.env.local` when local overrides are needed.
+- Production hosts should set real secret-adjacent values, such as Auth0 IDs, in
+  the deployment provider environment instead of committing them.
+
+Useful scripts:
+
+```bash
+npm run dev:local
+npm run build:local
+npm run build:prod
+```
+
+Feature flags can be toggled per environment:
+
+```bash
+VITE_ENABLE_AUTH=true
+VITE_ENABLE_BILLING=true
+VITE_ENABLE_ONBOARDING=true
+VITE_ENABLE_AI_REVIEW=true
+VITE_ENABLE_DEVELOPMENT_NOTICE=true
+```
+
 ## Auth0 configuration
 
 The custom auth screens use Auth0 for credential handling and callbacks.

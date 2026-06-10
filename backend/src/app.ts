@@ -2,6 +2,23 @@ import cors from "cors";
 import express, { type Express, type Request, type Response } from "express";
 import type { AppConfig } from "./config/env.js";
 import type { PostgresDatabase } from "./database/postgres.js";
+import {
+  BillingCustomerRepository,
+  OnboardingProfileRepository,
+  UsageEventRepository,
+  UserSubscriptionRepository,
+} from "./modules/billing/billing.repository.js";
+import {
+  createBillingRouter,
+  createRazorpayWebhookRouter,
+} from "./modules/billing/billing.routes.js";
+import { BillingAccessService } from "./modules/billing/entitlements.js";
+import { createOnboardingRouter } from "./modules/billing/onboarding.routes.js";
+import {
+  RazorpayBillingClient,
+  RazorpayWebhookService,
+  RazorpayWebhookVerifier,
+} from "./modules/billing/razorpay.js";
 import { createAiRouter } from "./modules/ai/ai.routes.js";
 import { StageEditorialRepository } from "./modules/editorials/editorials.repository.js";
 import { createEditorialsRouter } from "./modules/editorials/editorials.routes.js";
@@ -43,13 +60,38 @@ export const buildApp = (
       origin: config.corsOrigins,
     }),
   );
-  app.use(express.json({ limit: "1mb" }));
 
   const llmProvider = createLlmProvider(config);
   const appUserRepository = new AppUserRepository(database);
+  const billingCustomerRepository = new BillingCustomerRepository(database);
+  const onboardingProfileRepository = new OnboardingProfileRepository(database);
   const problemProgressRepository = new ProblemProgressRepository(database);
   const practiceSessionRepository = new PracticeSessionRepository(database);
   const stageEditorialRepository = new StageEditorialRepository(database);
+  const usageEventRepository = new UsageEventRepository(database);
+  const userSubscriptionRepository = new UserSubscriptionRepository(database);
+  const billingAccessService = new BillingAccessService(
+    config,
+    userSubscriptionRepository,
+    usageEventRepository,
+  );
+  const razorpayClient = new RazorpayBillingClient(config);
+  const razorpayWebhookVerifier = new RazorpayWebhookVerifier(config);
+  const razorpayWebhookService = new RazorpayWebhookService(
+    config,
+    billingCustomerRepository,
+    userSubscriptionRepository,
+  );
+
+  app.use(
+    "/v1/billing/webhook",
+    express.raw({ type: "application/json" }),
+    createRazorpayWebhookRouter({
+      razorpayWebhookService,
+      razorpayWebhookVerifier,
+    }),
+  );
+  app.use(express.json({ limit: "1mb" }));
 
   app.get(
     "/healthz",
@@ -73,7 +115,30 @@ export const buildApp = (
   app.use(
     "/v1/ai",
     ...createAuth0JwtMiddleware(config),
-    createAiRouter({ llmProvider }),
+    createCurrentAppUserMiddleware({ appUserRepository }),
+    createAiRouter({
+      billingAccessService,
+      llmProvider,
+      validationProvider: config.ai.validationProvider,
+    }),
+  );
+  app.use(
+    "/v1/billing",
+    ...createAuth0JwtMiddleware(config),
+    createCurrentAppUserMiddleware({ appUserRepository }),
+    createBillingRouter({
+      billingAccessService,
+      config,
+      razorpayClient,
+      razorpayWebhookService,
+      userSubscriptionRepository,
+    }),
+  );
+  app.use(
+    "/v1/onboarding",
+    ...createAuth0JwtMiddleware(config),
+    createCurrentAppUserMiddleware({ appUserRepository }),
+    createOnboardingRouter({ onboardingProfileRepository }),
   );
   app.use(
     "/v1/persistence",
