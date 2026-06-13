@@ -40,6 +40,66 @@
     min-width: 0;
 }
 
+.app-toolbar__warning-control {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.app-toolbar__warning-button {
+    display: inline-grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--medium) 36%, var(--border));
+    border-color: color-mix(in srgb, var(--medium) 36%, var(--border));
+    border-radius: 10px;
+    background: var(--warning-surface);
+    padding: 0;
+    color: var(--medium);
+}
+
+.app-toolbar__warning-button:hover,
+.app-toolbar__warning-button:focus-visible {
+    border-color: color-mix(in srgb, var(--medium) 54%, var(--border-strong));
+    background: var(--warning-surface);
+    color: var(--medium);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--focus);
+}
+
+.app-toolbar__warning-tooltip {
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 9px);
+    z-index: 20;
+    width: max-content;
+    min-width: min(280px, calc(100vw - 24px));
+    max-width: min(360px, calc(100vw - 24px));
+    transform: translateX(-50%) translateY(-2px);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: var(--surface-strong);
+    color: var(--text);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.2);
+    font-size: 0.78rem;
+    font-weight: 760;
+    line-height: 1.35;
+    opacity: 0;
+    pointer-events: none;
+    text-align: center;
+    transition:
+        opacity 140ms ease,
+        transform 140ms ease;
+}
+
+.app-toolbar__warning-control:hover .app-toolbar__warning-tooltip,
+.app-toolbar__warning-control:focus-within .app-toolbar__warning-tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
 .app-toolbar__tutorial {
     display: inline-flex;
     align-items: center;
@@ -188,6 +248,17 @@
         align-items: center;
         flex-wrap: wrap;
         gap: 8px;
+    }
+
+    .app-toolbar__warning-tooltip {
+        left: 0;
+        transform: translateY(-2px);
+        text-align: left;
+    }
+
+    .app-toolbar__warning-control:hover .app-toolbar__warning-tooltip,
+    .app-toolbar__warning-control:focus-within .app-toolbar__warning-tooltip {
+        transform: translateY(0);
     }
 
     .app-toolbar__save-status,

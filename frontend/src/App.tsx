@@ -34,6 +34,7 @@ import "@/styles/theme-overhaul.css";
 
 const NEW_USER_TUTORIAL_STORAGE_KEY =
   "system-design-lab.new-user-tutorial.seen.v1";
+const DEVELOPMENT_NOTICE_LABEL = "This site is still in development";
 
 export default function App() {
   const { features } = frontendConfig;
@@ -174,6 +175,21 @@ export default function App() {
 
       <div className="app-toolbar__controls">
         {leadingControl}
+        {features.developmentNotice ? (
+          <span className="app-toolbar__warning-control">
+            <button
+              aria-label={DEVELOPMENT_NOTICE_LABEL}
+              className="app-toolbar__warning-button"
+              type="button"
+              onClick={() => setIsDevelopmentNoticeOpen(true)}
+            >
+              <AlertTriangle aria-hidden="true" size={20} strokeWidth={2} />
+            </button>
+            <span className="app-toolbar__warning-tooltip" role="tooltip">
+              {DEVELOPMENT_NOTICE_LABEL}
+            </span>
+          </span>
+        ) : null}
         {features.billing ? (
           <button
             className="secondary-action app-toolbar__tutorial"
@@ -245,7 +261,7 @@ export default function App() {
       isOpen={isDevelopmentNoticeOpen}
       onConfirm={() => setIsDevelopmentNoticeOpen(false)}
       role="alertdialog"
-      title="This site is still in development"
+      title={DEVELOPMENT_NOTICE_LABEL}
       tone="warning"
     >
       <ul className="notice-dialog__list">
