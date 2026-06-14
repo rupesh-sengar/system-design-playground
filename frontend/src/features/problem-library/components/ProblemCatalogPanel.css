@@ -136,8 +136,116 @@
 
 .field input:focus,
 .field select:focus {
-    border-color: rgba(15, 122, 115, 0.42);
-    box-shadow: 0 0 0 4px rgba(15, 122, 115, 0.12);
+    /*border-color: var(--border-strong);*/
+    /*box-shadow: 0 0 0 3px var(--focus);*/
+}
+
+.field__control--search,
+.field__control--search:focus-within {
+    box-shadow: none;
+}
+
+.field__control--search:focus-within {
+    border-color: var(--border-strong);
+}
+
+.field .field__control input,
+.field .field__control input:hover,
+.field .field__control input:focus,
+.field .field__control input:focus-visible {
+    width: 100%;
+    min-height: 0;
+    appearance: none;
+    border: 0 !important;
+    border-radius: 0;
+    padding: 0 !important;
+    background: transparent !important;
+    color: var(--text);
+    border-color: transparent;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.field .field__control input::-webkit-search-decoration,
+.field .field__control input::-webkit-search-cancel-button {
+    appearance: none;
+}
+
+.field-dropdown {
+    position: relative;
+    min-width: 0;
+}
+
+.field__control--dropdown {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    width: 100%;
+    border: 1px solid var(--border);
+    text-align: left;
+    cursor: pointer;
+}
+
+.field__control--dropdown:focus-visible {
+    outline: none;
+}
+
+.field-dropdown__value {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.field-dropdown__menu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 30;
+    display: grid;
+    gap: 3px;
+    max-height: min(320px, 48vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 5px;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    background: var(--surface-strong);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.18);
+    scrollbar-width: thin;
+}
+
+.field-dropdown__option {
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+    min-width: 0;
+    border: 0;
+    border-radius: 7px;
+    padding: 7px 9px;
+    background: transparent;
+    color: var(--text);
+    font-size: 0.82rem;
+    font-weight: 690;
+    line-height: 1.2;
+    text-align: left;
+}
+
+.field-dropdown__option--active {
+    background: var(--accent-soft);
+}
+
+.field-dropdown__option--selected {
+    color: var(--text);
+    font-weight: 800;
+}
+
+.field-dropdown__option:focus-visible {
+    outline: none;
+}
+
+.field-dropdown--open .field__chevron {
+    transform: rotate(180deg);
 }
 
 .problem-list {
@@ -249,8 +357,8 @@
 
 :root[data-theme="dark"] .field input:focus,
 :root[data-theme="dark"] .field select:focus {
-    border-color: rgba(66, 184, 174, 0.34);
-    box-shadow: 0 0 0 4px rgba(66, 184, 174, 0.12);
+    border-color: var(--border-strong);
+    box-shadow: 0 0 0 3px var(--focus);
 }
 
 @media (max-width: 1120px) {

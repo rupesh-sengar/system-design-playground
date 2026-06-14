@@ -1,14 +1,14 @@
 .pricing-page {
     display: grid;
-    gap: 18px;
-    width: min(1180px, calc(100vw - 32px));
+    gap: var(--section-gap);
+    width: calc(100vw - (var(--page-gutter) * 2));
     margin: 0 auto;
 }
 
 .pricing-hero {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-    gap: 18px;
+    grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+    gap: var(--section-gap);
     align-items: stretch;
     padding: 28px;
     border: 1px solid var(--border);
@@ -117,7 +117,7 @@
 
 .pricing-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 14px;
 }
 
@@ -223,7 +223,7 @@
 
 @media (max-width: 760px) {
     .pricing-page {
-        width: min(100vw - 12px, 100%);
+        width: calc(100vw - 12px);
     }
 
     .pricing-hero,

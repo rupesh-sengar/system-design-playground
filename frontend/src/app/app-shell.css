@@ -1,11 +1,11 @@
 .shell {
-    width: min(1380px, calc(100vw - 32px));
+    width: calc(100vw - (var(--page-gutter) * 2));
     margin: 0 auto;
-    padding: 24px 0 36px;
+    padding: clamp(12px, 1.4vw, 24px) 0 clamp(22px, 2vw, 36px);
 }
 
 .shell--playground {
-    width: min(1520px, calc(100vw - 32px));
+    width: calc(100vw - (var(--page-gutter) * 2));
 }
 
 .shell--landing {
@@ -13,16 +13,16 @@
     padding-bottom: 36px;
 }
 
-/*.shell--landing .app-toolbar {
-    width: min(1380px, calc(100vw - 32px));
+.shell--landing .app-toolbar {
+    width: calc(100vw - (var(--page-gutter) * 2));
     margin-inline: auto;
-}*/
+}
 
 .app-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 16px;
+    gap: var(--section-gap);
     margin-bottom: 16px;
 }
 
@@ -178,7 +178,7 @@
 .workspace {
     display: grid;
     grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.9fr);
-    gap: 16px;
+    gap: var(--section-gap);
     margin-top: 14px;
     align-items: start;
 }
@@ -213,7 +213,7 @@
 
 @media (max-width: 760px) {
     .shell {
-        width: min(100vw - 12px, 100%);
+        width: calc(100vw - 12px);
         padding: 10px 0 18px;
     }
 
@@ -222,7 +222,7 @@
     }
 
     .shell--landing .app-toolbar {
-        width: min(100vw - 12px, 100%);
+        width: calc(100vw - 12px);
     }
 
     .shell--playground {

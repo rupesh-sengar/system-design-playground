@@ -3,7 +3,7 @@
     grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 14px;
     align-items: center;
-    width: min(1180px, calc(100vw - 32px));
+    width: calc(100vw - (var(--page-gutter) * 2));
     margin: 0 auto 16px;
     padding: 14px 16px;
     border: 1px solid rgba(196, 116, 24, 0.18);
@@ -65,7 +65,7 @@
 @media (max-width: 760px) {
     .auth-return-notice {
         grid-template-columns: auto minmax(0, 1fr);
-        width: min(100vw - 12px, 100%);
+        width: calc(100vw - 12px);
         padding: 12px;
         border-radius: 12px;
     }

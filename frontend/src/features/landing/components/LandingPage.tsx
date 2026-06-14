@@ -72,79 +72,85 @@ export const LandingPage = ({
         aria-labelledby="landing-title"
         data-tour-target="home-overview"
       >
-        <div className="landing-hero__scene" aria-hidden="true">
-          <div className="landing-map">
-            <span className="landing-map__line landing-map__line--one" />
-            <span className="landing-map__line landing-map__line--two" />
-            <span className="landing-map__line landing-map__line--three" />
-            <span className="landing-map__line landing-map__line--four" />
+        <div className="landing-hero__inner">
+          <div className="landing-hero__content">
+            <p className="eyebrow">Interview practice workspace</p>
+            <h1 id="landing-title">System Design Lab</h1>
+            <p className="landing-hero__copy">
+              Work through curated system design prompts, structure your answer
+              in a focused playground, and keep progress visible as you
+              practice.
+            </p>
 
-            <div className="landing-map__node landing-map__node--client">
-              <Network size={16} strokeWidth={1.9} />
-              Client
-            </div>
-            <div className="landing-map__node landing-map__node--gateway">
-              <Route size={16} strokeWidth={1.9} />
-              Gateway
-            </div>
-            <div className="landing-map__node landing-map__node--cache">
-              <Timer size={16} strokeWidth={1.9} />
-              Cache
-            </div>
-            <div className="landing-map__node landing-map__node--queue">
-              <GitBranch size={16} strokeWidth={1.9} />
-              Queue
-            </div>
-            <div className="landing-map__node landing-map__node--worker">
-              <Layers size={16} strokeWidth={1.9} />
-              Workers
-            </div>
-            <div className="landing-map__node landing-map__node--store">
-              <Database size={16} strokeWidth={1.9} />
-              Storage
-            </div>
-          </div>
-        </div>
-
-        <div className="landing-hero__content">
-          <p className="eyebrow">Interview practice workspace</p>
-          <h1 id="landing-title">System Design Lab</h1>
-          <p className="landing-hero__copy">
-            Work through curated system design prompts, structure your answer in
-            a focused playground, and keep progress visible as you practice.
-          </p>
-
-          <div className="landing-hero__actions" data-tour-target="home-actions">
-            <button
-              className="primary-action landing-action"
-              type="button"
-              onClick={onOpenLibrary}
-            >
-              <BookOpenCheck aria-hidden="true" size={16} strokeWidth={2} />
-              Browse Problems
-              <ArrowRight aria-hidden="true" size={16} strokeWidth={2} />
-            </button>
-            <button
-              className="secondary-action landing-action"
-              type="button"
-              onClick={onPickRandomProblem}
-            >
-              <Shuffle aria-hidden="true" size={16} strokeWidth={2} />
-              Random Drill
-            </button>
-          </div>
-
-          <div className="landing-hero__progress">
-            <span>{completionPercent}% practiced</span>
             <div
-              aria-label={`${completionPercent}% of problems practiced`}
-              aria-valuemax={100}
-              aria-valuemin={0}
-              aria-valuenow={completionPercent}
-              className="landing-progress-meter"
-              role="meter"
+              className="landing-hero__actions"
+              data-tour-target="home-actions"
             >
-              <span style={{ width: `${completionPercent}%` }} />
+              <button
+                className="primary-action landing-action"
+                type="button"
+                onClick={onOpenLibrary}
+              >
+                <BookOpenCheck aria-hidden="true" size={16} strokeWidth={2} />
+                Browse Problems
+                <ArrowRight aria-hidden="true" size={16} strokeWidth={2} />
+              </button>
+              <button
+                className="secondary-action landing-action"
+                type="button"
+                onClick={onPickRandomProblem}
+              >
+                <Shuffle aria-hidden="true" size={16} strokeWidth={2} />
+                Random Drill
+              </button>
+            </div>
+
+            <div className="landing-hero__progress">
+              <span>{completionPercent}% practiced</span>
+              <div
+                aria-label={`${completionPercent}% of problems practiced`}
+                aria-valuemax={100}
+                aria-valuemin={0}
+                aria-valuenow={completionPercent}
+                className="landing-progress-meter"
+                role="meter"
+              >
+                <span style={{ width: `${completionPercent}%` }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="landing-hero__scene" aria-hidden="true">
+            <div className="landing-map">
+              <span className="landing-map__line landing-map__line--one" />
+              <span className="landing-map__line landing-map__line--two" />
+              <span className="landing-map__line landing-map__line--three" />
+              <span className="landing-map__line landing-map__line--four" />
+
+              <div className="landing-map__node landing-map__node--client">
+                <Network size={16} strokeWidth={1.9} />
+                Client
+              </div>
+              <div className="landing-map__node landing-map__node--gateway">
+                <Route size={16} strokeWidth={1.9} />
+                Gateway
+              </div>
+              <div className="landing-map__node landing-map__node--cache">
+                <Timer size={16} strokeWidth={1.9} />
+                Cache
+              </div>
+              <div className="landing-map__node landing-map__node--queue">
+                <GitBranch size={16} strokeWidth={1.9} />
+                Queue
+              </div>
+              <div className="landing-map__node landing-map__node--worker">
+                <Layers size={16} strokeWidth={1.9} />
+                Workers
+              </div>
+              <div className="landing-map__node landing-map__node--store">
+                <Database size={16} strokeWidth={1.9} />
+                Storage
+              </div>
             </div>
           </div>
         </div>

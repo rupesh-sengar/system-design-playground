@@ -1,7 +1,7 @@
 .account-page {
     display: grid;
-    gap: 16px;
-    width: min(1100px, calc(100vw - 32px));
+    gap: var(--section-gap);
+    width: calc(100vw - (var(--page-gutter) * 2));
     margin: 0 auto;
 }
 
@@ -70,7 +70,7 @@
 
 .account-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 14px;
 }
 
@@ -154,7 +154,7 @@
 
 @media (max-width: 760px) {
     .account-page {
-        width: min(100vw - 12px, 100%);
+        width: calc(100vw - 12px);
     }
 
     .account-head h1 {

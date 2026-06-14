@@ -1,6 +1,17 @@
-import type { ChangeEvent } from "react";
 import {
+  type ChangeEvent,
+  type FocusEvent,
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  ArrowUpDown,
   BookOpenCheck,
+  ChevronDown,
+  Folders,
   ListFilter,
   RotateCcw,
   Search,
@@ -20,6 +31,11 @@ import type {
   SortMode,
   StatusFilter,
 } from "../model/types";
+
+interface DropdownOption<TValue extends string> {
+  label: string;
+  value: TValue;
+}
 
 interface ProblemCatalogPanelProps {
   bookmarkedIds: Set<string>;
@@ -50,6 +66,221 @@ const statusOptions: Array<{ id: StatusFilter; label: string }> = [
   { id: "practiced", label: "Done" },
   { id: "unpracticed", label: "Open" },
 ];
+
+const sortOptions: Array<DropdownOption<SortMode>> = [
+  { label: "Recommended", value: "recommended" },
+  { label: "Difficulty", value: "difficulty" },
+  { label: "Title", value: "title" },
+  { label: "Category", value: "category" },
+];
+
+interface FilterDropdownProps<TValue extends string> {
+  icon: ReactNode;
+  id: string;
+  label: string;
+  options: Array<DropdownOption<TValue>>;
+  value: TValue;
+  onChange: (value: TValue) => void;
+}
+
+const FilterDropdown = <TValue extends string,>({
+  icon,
+  id,
+  label,
+  options,
+  value,
+  onChange,
+}: FilterDropdownProps<TValue>) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedIndex = Math.max(
+    0,
+    options.findIndex((option) => option.value === value),
+  );
+  const [activeIndex, setActiveIndex] = useState(selectedIndex);
+  const selectedOption = options[selectedIndex] ?? options[0];
+  const listboxId = `${id}-listbox`;
+
+  useEffect(() => {
+    setActiveIndex(selectedIndex);
+  }, [selectedIndex]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent): void => {
+      if (
+        containerRef.current &&
+        event.target instanceof Node &&
+        containerRef.current.contains(event.target)
+      ) {
+        return;
+      }
+
+      setIsOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [isOpen]);
+
+  const selectOption = (index: number): void => {
+    const option = options[index];
+
+    if (!option) {
+      return;
+    }
+
+    onChange(option.value);
+    setIsOpen(false);
+    window.requestAnimationFrame(() => triggerRef.current?.focus());
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+    if (!isOpen) {
+      if (
+        event.key === "ArrowDown" ||
+        event.key === "Enter" ||
+        event.key === " "
+      ) {
+        event.preventDefault();
+        setActiveIndex(selectedIndex);
+        setIsOpen(true);
+      }
+
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setIsOpen(false);
+      triggerRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveIndex((currentIndex) => (currentIndex + 1) % options.length);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex(
+        (currentIndex) => (currentIndex - 1 + options.length) % options.length,
+      );
+      return;
+    }
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      setActiveIndex(0);
+      return;
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      setActiveIndex(options.length - 1);
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      selectOption(activeIndex);
+    }
+  };
+
+  const handleBlur = (event: FocusEvent<HTMLDivElement>): void => {
+    const nextTarget = event.relatedTarget;
+
+    if (
+      nextTarget instanceof Node &&
+      containerRef.current?.contains(nextTarget)
+    ) {
+      return;
+    }
+
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="field">
+      <span id={`${id}-label`}>{label}</span>
+      <div
+        ref={containerRef}
+        className={`field-dropdown ${isOpen ? "field-dropdown--open" : ""}`}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+      >
+        <button
+          ref={triggerRef}
+          aria-activedescendant={
+            isOpen ? `${listboxId}-option-${activeIndex}` : undefined
+          }
+          aria-controls={listboxId}
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+          aria-labelledby={`${id}-label ${id}-value`}
+          className="field__control field__control--dropdown"
+          role="combobox"
+          type="button"
+          onClick={() => {
+            setActiveIndex(selectedIndex);
+            setIsOpen((currentValue) => !currentValue);
+          }}
+        >
+          {icon}
+          <span className="field-dropdown__value" id={`${id}-value`}>
+            {selectedOption?.label}
+          </span>
+          <ChevronDown
+            aria-hidden="true"
+            className="field__chevron"
+            size={15}
+            strokeWidth={2}
+          />
+        </button>
+
+        {isOpen ? (
+          <div
+            aria-labelledby={`${id}-label`}
+            className="field-dropdown__menu"
+            id={listboxId}
+            role="listbox"
+          >
+            {options.map((option, index) => (
+              <button
+                key={option.value}
+                aria-selected={option.value === value}
+                className={`field-dropdown__option ${
+                  index === activeIndex ? "field-dropdown__option--active" : ""
+                } ${
+                  option.value === value
+                    ? "field-dropdown__option--selected"
+                    : ""
+                }`}
+                id={`${listboxId}-option-${index}`}
+                role="option"
+                tabIndex={-1}
+                type="button"
+                onClick={() => selectOption(index)}
+                onMouseEnter={() => setActiveIndex(index)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+};
 
 const buildPaginationItems = (
   currentPage: number,
@@ -116,15 +347,12 @@ export const ProblemCatalogPanel = ({
     onSearchChange(event.target.value);
   };
 
-  const handleCategoryChange = (
-    event: ChangeEvent<HTMLSelectElement>,
-  ): void => {
-    onCategoryChange(event.target.value);
-  };
-
-  const handleSortChange = (event: ChangeEvent<HTMLSelectElement>): void => {
-    onSortChange(event.target.value as SortMode);
-  };
+  const categoryOptions: Array<DropdownOption<string>> = categories.map(
+    (category) => ({
+      label: category,
+      value: category,
+    }),
+  );
 
   return (
     <section className="catalog panel" data-tour-target="problem-library">
@@ -191,7 +419,7 @@ export const ProblemCatalogPanel = ({
           <div className="filter-grid">
             <label className="field">
               <span>Search</span>
-              <div className="field__control">
+              <div className="field__control field__control--search">
                 <Search aria-hidden="true" size={15} strokeWidth={2} />
                 <input
                   type="search"
@@ -203,26 +431,25 @@ export const ProblemCatalogPanel = ({
               </div>
             </label>
 
-            <label className="field">
-              <span>Category</span>
-              <select value={filters.category} onChange={handleCategoryChange}>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <FilterDropdown
+              icon={<Folders aria-hidden="true" size={15} strokeWidth={2} />}
+              id="category-filter"
+              label="Category"
+              options={categoryOptions}
+              value={filters.category}
+              onChange={onCategoryChange}
+            />
 
-            <label className="field">
-              <span>Sort</span>
-              <select value={filters.sortBy} onChange={handleSortChange}>
-                <option value="recommended">Recommended</option>
-                <option value="difficulty">Difficulty</option>
-                <option value="title">Title</option>
-                <option value="category">Category</option>
-              </select>
-            </label>
+            <FilterDropdown
+              icon={
+                <ArrowUpDown aria-hidden="true" size={15} strokeWidth={2} />
+              }
+              id="sort-filter"
+              label="Sort"
+              options={sortOptions}
+              value={filters.sortBy}
+              onChange={onSortChange}
+            />
           </div>
 
           <button

@@ -35,6 +35,8 @@
     --medium: #9a6b16;
     --hard: #ad4040;
     --shadow: 0 16px 38px rgba(0, 0, 0, 0.06);
+    --page-gutter: clamp(12px, 1.4vw, 32px);
+    --section-gap: clamp(14px, 1.1vw, 24px);
 }
 
 * {

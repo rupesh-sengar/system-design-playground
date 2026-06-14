@@ -1,7 +1,7 @@
 .onboarding-page {
     display: grid;
-    gap: 16px;
-    width: min(1100px, calc(100vw - 32px));
+    gap: var(--section-gap);
+    width: calc(100vw - (var(--page-gutter) * 2));
     margin: 0 auto;
 }
 
@@ -58,7 +58,7 @@
 
 .onboarding-form {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
     gap: 14px;
     align-items: start;
 }
@@ -184,7 +184,7 @@
 
 @media (max-width: 760px) {
     .onboarding-page {
-        width: min(100vw - 12px, 100%);
+        width: calc(100vw - 12px);
     }
 
     .onboarding-head,

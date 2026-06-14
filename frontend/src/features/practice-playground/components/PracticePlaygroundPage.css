@@ -1,11 +1,11 @@
 .playground-page {
     display: grid;
-    gap: 22px;
+    gap: var(--section-gap);
     min-height: 0;
 }
 
 .playground-studio {
-    --playground-sidebar-width: 280px;
+    --playground-sidebar-width: 320px;
     position: relative;
     display: grid;
     grid-template-columns:
@@ -13,8 +13,8 @@
         18px minmax(0, 1fr);
     gap: 18px 0;
     padding: 20px 0 20px 20px;
-    height: min(900px, calc(100dvh - 152px));
-    min-height: 640px;
+    height: calc(100dvh - 116px);
+    min-height: min(760px, calc(100dvh - 116px));
     overflow: hidden;
 }
 
@@ -988,7 +988,7 @@
 
 .playground-stageboard__actions {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 10px;
     padding: 4px 0 0;
 }
