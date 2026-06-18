@@ -27,9 +27,12 @@ import {
   fromPersistedPracticeSession,
   getAdjacentStageId,
   normalizePracticeSession,
-  parseStoredSessions,
   toPersistedPracticeSessionInput,
 } from "../lib/session";
+import {
+  loadBrowserPracticeSessions,
+  saveBrowserPracticeSessions,
+} from "../lib/browserPracticeSessionStore";
 import { practiceStages } from "../model/stages";
 import {
   normalizeSystemDesignDiagram,
@@ -52,8 +55,6 @@ import type {
   PracticeStageId,
   PracticeStageValidationResult,
 } from "../model/types";
-
-const STORAGE_KEY = "system-design-lab.practice-playground";
 
 type PracticeCoachStore = Record<string, PracticeCoachStageStateMap>;
 type PracticeFullDesignReviewRuntimeState = Pick<
@@ -132,6 +133,20 @@ const buildStageDraftPlainText = (
     .filter(Boolean)
     .join("\n\n");
 
+const createBrowserSessionsSnapshot = (
+  sessions: PracticeSessionStore,
+): string =>
+  JSON.stringify(
+    Object.entries(sessions)
+      .sort(([leftProblemId], [rightProblemId]) =>
+        leftProblemId.localeCompare(rightProblemId),
+      )
+      .map(([problemId, session]) => [
+        problemId,
+        createPracticeSessionSnapshot(normalizePracticeSession(session)),
+      ]),
+  );
+
 const toPracticeAiRequestError = (
   error: unknown,
   fallbackMessage: string,
@@ -159,9 +174,13 @@ export const usePracticePlayground = (
     useDeletePracticeSessionMutation();
   const [savePracticeSession, savePracticeSessionState] =
     useUpsertPracticeSessionMutation();
-  const [sessions, setSessions] = useState<PracticeSessionStore>(() =>
-    parseStoredSessions(window.localStorage.getItem(STORAGE_KEY)),
-  );
+  const [sessions, setSessions] = useState<PracticeSessionStore>({});
+  const [isBrowserSessionsLoading, setIsBrowserSessionsLoading] =
+    useState(true);
+  const [isBrowserSessionsSaving, setIsBrowserSessionsSaving] =
+    useState(false);
+  const [browserSessionsErrorMessage, setBrowserSessionsErrorMessage] =
+    useState<string | null>(null);
   const [coachStateByProblemId, setCoachStateByProblemId] =
     useState<PracticeCoachStore>({});
   const [fullReviewStateByProblemId, setFullReviewStateByProblemId] =
@@ -195,10 +214,93 @@ export const usePracticePlayground = (
   });
   const lastPersistedSessionErrorRef = useRef<string | null>(null);
   const lastSaveErrorRef = useRef<string | null>(null);
+  const browserSessionsSnapshotRef = useRef(createBrowserSessionsSnapshot({}));
+  const browserSessionsSaveIdRef = useRef(0);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-  }, [sessions]);
+    let isCancelled = false;
+
+    const loadSessions = async (): Promise<void> => {
+      setIsBrowserSessionsLoading(true);
+
+      try {
+        const storedSessions = await loadBrowserPracticeSessions();
+
+        if (isCancelled) {
+          return;
+        }
+
+        browserSessionsSnapshotRef.current =
+          createBrowserSessionsSnapshot(storedSessions);
+        setSessions((currentSessions) => ({
+          ...currentSessions,
+          ...storedSessions,
+        }));
+        setBrowserSessionsErrorMessage(null);
+      } catch {
+        if (!isCancelled) {
+          setBrowserSessionsErrorMessage(
+            "Unable to load saved playground notes from this browser.",
+          );
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsBrowserSessionsLoading(false);
+        }
+      }
+    };
+
+    void loadSessions();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isBrowserSessionsLoading || shouldUseRemotePersistence) {
+      return;
+    }
+
+    const currentSnapshot = createBrowserSessionsSnapshot(sessions);
+
+    if (currentSnapshot === browserSessionsSnapshotRef.current) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      const saveId = browserSessionsSaveIdRef.current + 1;
+      browserSessionsSaveIdRef.current = saveId;
+      setIsBrowserSessionsSaving(true);
+
+      const persistSessions = async (): Promise<void> => {
+        try {
+          await saveBrowserPracticeSessions(sessions);
+
+          if (browserSessionsSaveIdRef.current === saveId) {
+            browserSessionsSnapshotRef.current = currentSnapshot;
+            setBrowserSessionsErrorMessage(null);
+          }
+        } catch {
+          if (browserSessionsSaveIdRef.current === saveId) {
+            setBrowserSessionsErrorMessage(
+              "Unable to save playground notes in this browser.",
+            );
+          }
+        } finally {
+          if (browserSessionsSaveIdRef.current === saveId) {
+            setIsBrowserSessionsSaving(false);
+          }
+        }
+      };
+
+      void persistSessions();
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isBrowserSessionsLoading, sessions, shouldUseRemotePersistence]);
 
   const browserSession = useMemo<PracticeSession | null>(() => {
     if (!problem) {
@@ -417,6 +519,10 @@ export const usePracticePlayground = (
     updater: (current: PracticeSession) => PracticeSession,
   ): void => {
     if (!problem) {
+      return;
+    }
+
+    if (!shouldUseRemotePersistence && isBrowserSessionsLoading) {
       return;
     }
 
@@ -712,27 +818,28 @@ export const usePracticePlayground = (
       savePracticeSessionState.error ??
       deletePracticeSessionState.error ??
       persistedSessionError;
-    const errorMessage = errorSource
-      ? getApiErrorDetails(
-          errorSource,
-          "Unable to sync saved playground notes.",
-        ).message
+    const remoteErrorMessage = errorSource
+      ? getApiErrorDetails(errorSource, "Unable to sync saved playground notes.")
+          .message
       : null;
+    const errorMessage = shouldUseRemotePersistence
+      ? remoteErrorMessage
+      : browserSessionsErrorMessage;
     const hasPendingRemoteChanges =
       shouldUseRemotePersistence &&
       remoteSession !== null &&
       persistedRemoteSnapshot !== null &&
       createPracticeSessionSnapshot(remoteSession) !== persistedRemoteSnapshot;
-    const isLoading =
-      shouldUseRemotePersistence &&
-      Boolean(problem) &&
-      remoteSession === null &&
-      (isPersistedSessionLoading || isPersistedSessionFetching);
-    const isSaving =
-      shouldUseRemotePersistence &&
-      (savePracticeSessionState.isLoading ||
+    const isLoading = shouldUseRemotePersistence
+      ? Boolean(problem) &&
+        remoteSession === null &&
+        (isPersistedSessionLoading || isPersistedSessionFetching)
+      : Boolean(problem) && isBrowserSessionsLoading;
+    const isSaving = shouldUseRemotePersistence
+      ? savePracticeSessionState.isLoading ||
         deletePracticeSessionState.isLoading ||
-        hasPendingRemoteChanges);
+        hasPendingRemoteChanges
+      : isBrowserSessionsSaving;
 
     return {
       errorMessage,
@@ -757,8 +864,11 @@ export const usePracticePlayground = (
               : "local",
     };
   }, [
+    browserSessionsErrorMessage,
     deletePracticeSessionState.error,
     deletePracticeSessionState.isLoading,
+    isBrowserSessionsLoading,
+    isBrowserSessionsSaving,
     isPersistedSessionFetching,
     isPersistedSessionLoading,
     persistedSessionError,

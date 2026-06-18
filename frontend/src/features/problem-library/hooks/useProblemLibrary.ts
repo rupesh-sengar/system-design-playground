@@ -510,25 +510,40 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
     updateProblemProgressState.error ??
     resetProblemProgressState.error ??
     remoteProgressError;
+  const remotePersistenceErrorMessage = persistenceErrorSource
+    ? getApiErrorMessage(
+        persistenceErrorSource,
+        "Unable to sync saved progress.",
+      )
+    : null;
+  const browserPersistenceErrorMessage =
+    bookmarked.errorMessage ?? practiced.errorMessage;
   const persistence = useMemo<ProblemLibraryPersistenceState>(
     () => ({
-      errorMessage: persistenceErrorSource
-        ? getApiErrorMessage(
-            persistenceErrorSource,
-            "Unable to sync saved progress.",
-          )
-        : null,
+      errorMessage: shouldUseRemoteProgress
+        ? remotePersistenceErrorMessage
+        : browserPersistenceErrorMessage,
       isLoading: shouldUseRemoteProgress
         ? isRemoteProgressLoading || isRemoteProgressFetching
-        : false,
+        : bookmarked.isLoading || practiced.isLoading,
       isRemote: shouldUseRemoteProgress,
       isSyncing:
-        updateProblemProgressState.isLoading || resetProblemProgressState.isLoading,
+        updateProblemProgressState.isLoading ||
+        resetProblemProgressState.isLoading ||
+        (!shouldUseRemoteProgress &&
+          (bookmarked.isSaving || practiced.isSaving)),
     }),
     [
+      bookmarked.errorMessage,
+      bookmarked.isLoading,
+      bookmarked.isSaving,
+      browserPersistenceErrorMessage,
       isRemoteProgressFetching,
       isRemoteProgressLoading,
-      persistenceErrorSource,
+      practiced.errorMessage,
+      practiced.isLoading,
+      practiced.isSaving,
+      remotePersistenceErrorMessage,
       resetProblemProgressState.isLoading,
       shouldUseRemoteProgress,
       updateProblemProgressState.isLoading,

@@ -108,18 +108,18 @@ export const PracticePlaygroundPage = ({
     useState<HighLevelDesignSurface>("diagram");
   const canMarkPracticed = metrics.completedCount === metrics.totalCount;
   const authReady = isApiAuthReady;
-  const showLoadingOverlay = storage.isRemote && storage.isLoading;
+  const showLoadingOverlay = storage.isLoading;
   const fallbackDrafts = createDefaultSession().stages;
   const stageDrafts = drafts ?? fallbackDrafts;
   const storageNotice = storage.errorMessage
     ? storage.errorMessage
-    : storage.isRemote
-      ? storage.isLoading
-        ? "Loading your saved practice session..."
-        : storage.isSaving
-          ? "Saving your practice session..."
-          : "Progress is saved to your account."
-      : "Progress is stored in this browser.";
+    : storage.isLoading
+      ? "Loading your saved practice session..."
+      : storage.isSaving
+        ? "Saving your practice session..."
+        : storage.isRemote
+          ? "Progress is saved to your account."
+          : "Progress is saved in this browser.";
   const sanitizedEditorialHtml = editorial.contentHtml
     ? sanitizeRichTextHtml(editorial.contentHtml)
     : "";
@@ -795,7 +795,7 @@ export const PracticePlaygroundPage = ({
                 )}
               </button>
               <div className="playground-workbench__notes">
-                {activeStage.id === "high-level-design" ? (
+                {storage.isLoading ? null : activeStage.id === "high-level-design" ? (
                   <div className="playground-workbench__system-design">
                     <div
                       aria-label="High-level design workspace"
