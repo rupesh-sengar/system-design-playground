@@ -2,7 +2,7 @@
 <testng-results ignored="0" total="1" passed="1" failed="0" skipped="0">
   <reporter-output>
   </reporter-output>
-  <suite started-at="2026-06-16T19:59:26 IST" name="System Design Platform Auth Suite" finished-at="2026-06-16T20:00:05 IST" duration-ms="38990">
+  <suite started-at="2026-06-18T14:57:50 IST" name="System Design Platform Auth Suite" finished-at="2026-06-18T14:58:32 IST" duration-ms="42383">
     <groups>
       <group name="auth">
         <method signature="SignupFlowTest.setupSignupCreatesAccountThroughAuth0()[pri:0, instance:com.systemdesign.platform.automation.tests.SignupFlowTest@7d8995e]" name="setupSignupCreatesAccountThroughAuth0" class="com.systemdesign.platform.automation.tests.SignupFlowTest"/>
@@ -17,9 +17,9 @@
         <method signature="SignupFlowTest.setupSignupCreatesAccountThroughAuth0()[pri:0, instance:com.systemdesign.platform.automation.tests.SignupFlowTest@7d8995e]" name="setupSignupCreatesAccountThroughAuth0" class="com.systemdesign.platform.automation.tests.SignupFlowTest"/>
       </group> <!-- signup -->
     </groups>
-    <test started-at="2026-06-16T19:59:26 IST" name="Auth Tests" finished-at="2026-06-16T20:00:05 IST" duration-ms="38990">
+    <test started-at="2026-06-18T14:57:50 IST" name="Auth Tests" finished-at="2026-06-18T14:58:32 IST" duration-ms="42383">
       <class name="com.systemdesign.platform.automation.tests.SignupFlowTest">
-        <test-method is-config="true" signature="setUpDriver(org.testng.ITestContext)[pri:0, instance:com.systemdesign.platform.automation.tests.SignupFlowTest@7d8995e]" started-at="2026-06-16T19:59:26 IST" name="setUpDriver" finished-at="2026-06-16T19:59:31 IST" duration-ms="5690" status="PASS">
+        <test-method is-config="true" signature="setUpDriver(org.testng.ITestContext)[pri:0, instance:com.systemdesign.platform.automation.tests.SignupFlowTest@7d8995e]" started-at="2026-06-18T14:57:50 IST" name="setUpDriver" finished-at="2026-06-18T14:57:59 IST" duration-ms="9690" status="PASS">
           <params>
             <param index="0">
               <value>
@@ -30,11 +30,11 @@
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUpDriver -->
-        <test-method signature="setupSignupCreatesAccountThroughAuth0()[pri:0, instance:com.systemdesign.platform.automation.tests.SignupFlowTest@7d8995e]" started-at="2026-06-16T19:59:31 IST" name="setupSignupCreatesAccountThroughAuth0" description="Setup signup creates an account through Auth0" finished-at="2026-06-16T19:59:56 IST" duration-ms="24384" status="PASS">
+        <test-method signature="setupSignupCreatesAccountThroughAuth0()[pri:0, instance:com.systemdesign.platform.automation.tests.SignupFlowTest@7d8995e]" started-at="2026-06-18T14:57:59 IST" name="setupSignupCreatesAccountThroughAuth0" description="Setup signup creates an account through Auth0" finished-at="2026-06-18T14:58:24 IST" duration-ms="25132" status="PASS">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setupSignupCreatesAccountThroughAuth0 -->
-        <test-method is-config="true" signature="tearDownDriver()[pri:0, instance:com.systemdesign.platform.automation.tests.SignupFlowTest@7d8995e]" started-at="2026-06-16T19:59:56 IST" name="tearDownDriver" finished-at="2026-06-16T20:00:05 IST" duration-ms="8872" status="PASS">
+        <test-method is-config="true" signature="tearDownDriver()[pri:0, instance:com.systemdesign.platform.automation.tests.SignupFlowTest@7d8995e]" started-at="2026-06-18T14:58:24 IST" name="tearDownDriver" finished-at="2026-06-18T14:58:32 IST" duration-ms="7514" status="PASS">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- tearDownDriver -->
