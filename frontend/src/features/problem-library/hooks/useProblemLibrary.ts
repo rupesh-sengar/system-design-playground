@@ -6,7 +6,9 @@ import {
   useRef,
   useState,
 } from "react";
+import { frontendConfig } from "@/config/env";
 import { useAppAuth } from "@/features/auth/app-auth";
+import { useGetBillingAccountQuery } from "@/features/billing/api/billingApi";
 import { getApiErrorMessage } from "@/shared/api/http";
 import { useToast } from "@/shared/toast/toast-provider";
 import {
@@ -14,6 +16,7 @@ import {
   useResetProblemProgressMutation,
   useUpdateProblemProgressMutation,
 } from "../api/problemProgressApi";
+import { isFreeStarterProblem } from "../lib/access";
 import {
   countProblemsByDifficulty,
   filterProblems,
@@ -22,7 +25,6 @@ import {
   sortProblems,
 } from "../lib/catalog";
 import {
-  categories,
   difficultyLevels,
   problems,
 } from "../model/problem-library";
@@ -31,6 +33,7 @@ import {
   defaultCatalogFilters,
   type CatalogFilters,
   type ProblemCatalogPagination,
+  type ProblemLibraryAccessState,
   type DifficultyCounts,
   type ProblemLibraryMetrics,
   type ProblemLibraryPersistenceState,
@@ -46,7 +49,6 @@ const STORAGE_KEYS = {
 } as const;
 
 const PROBLEMS_PER_PAGE = 8;
-const TOTAL_DIFFICULTY_COUNTS = countProblemsByDifficulty(problems);
 
 interface ProblemLibraryActions {
   clearFilters: () => void;
@@ -74,6 +76,7 @@ export interface ProblemLibraryViewModel {
   pagination: ProblemCatalogPagination;
   paginatedProblems: Problem[];
   persistence: ProblemLibraryPersistenceState;
+  access: ProblemLibraryAccessState;
   practicedIds: Set<string>;
   selectedProblem: Problem | null;
   selectedProblemId: string | null;
@@ -93,13 +96,60 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
   const deferredSearch = useDeferredValue(filters.search);
   const bookmarked = usePersistentIdSet(STORAGE_KEYS.bookmarked);
   const practiced = usePersistentIdSet(STORAGE_KEYS.practiced);
+  const { data: billingAccount } = useGetBillingAccountQuery(undefined, {
+    skip: !frontendConfig.features.billing || !isApiAuthReady,
+  });
+  const hasPremiumCatalog =
+    !frontendConfig.features.billing ||
+    Boolean(billingAccount?.entitlements.premiumCatalog);
+  const hasCloudSync =
+    !frontendConfig.features.billing ||
+    Boolean(billingAccount?.entitlements.cloudSync);
+  const shouldUseRemoteProgress = isApiAuthReady && hasCloudSync;
+  const catalogProblems = problems;
+  const catalogCategories = useMemo(
+    () => [
+      "All",
+      ...new Set(catalogProblems.map((item) => item.category).sort()),
+    ],
+    [catalogProblems],
+  );
+  const totalDifficultyCounts = useMemo(
+    () => countProblemsByDifficulty(catalogProblems),
+    [catalogProblems],
+  );
+  const access = useMemo<ProblemLibraryAccessState>(
+    () => ({
+      hasPremiumCatalog,
+      lockedProblemCount: hasPremiumCatalog
+        ? 0
+        : problems.filter((problem) => !isFreeStarterProblem(problem.id)).length,
+      starterProblemCount: problems.filter((problem) =>
+        isFreeStarterProblem(problem.id),
+      ).length,
+      totalProblemCount: problems.length,
+    }),
+    [hasPremiumCatalog],
+  );
+
+  useEffect(() => {
+    if (catalogCategories.includes(filters.category)) {
+      return;
+    }
+
+    setFilters((current) => ({
+      ...current,
+      category: "All",
+    }));
+  }, [catalogCategories, filters.category]);
+
   const {
     data: remoteProgressEntries = [],
     error: remoteProgressError,
     isFetching: isRemoteProgressFetching,
     isLoading: isRemoteProgressLoading,
   } = useGetProblemProgressQuery(undefined, {
-    skip: !isApiAuthReady,
+    skip: !shouldUseRemoteProgress,
   });
   const [triggerUpdateProblemProgress, updateProblemProgressState] =
     useUpdateProblemProgressMutation();
@@ -128,7 +178,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
   }, [remoteProgressEntries]);
 
   const progress = useMemo<ProblemProgress>(() => {
-    if (isApiAuthReady) {
+    if (shouldUseRemoteProgress) {
       return remoteProgress;
     }
 
@@ -136,10 +186,15 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
       bookmarkedIds: bookmarked.values,
       practicedIds: practiced.values,
     };
-  }, [bookmarked.values, isApiAuthReady, practiced.values, remoteProgress]);
+  }, [
+    bookmarked.values,
+    practiced.values,
+    remoteProgress,
+    shouldUseRemoteProgress,
+  ]);
 
   useEffect(() => {
-    if (!isApiAuthReady || !remoteProgressError) {
+    if (!shouldUseRemoteProgress || !remoteProgressError) {
       lastRemoteProgressErrorRef.current = null;
       return;
     }
@@ -158,12 +213,12 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
       dedupeKey: "problem-progress-load-error",
       title: "Progress Sync Failed",
     });
-  }, [isApiAuthReady, remoteProgressError, toast]);
+  }, [remoteProgressError, shouldUseRemoteProgress, toast]);
 
   const baseFilteredProblems = useMemo(
     () =>
       filterProblems(
-        problems,
+        catalogProblems,
         {
           search: deferredSearch,
           difficulty: "All",
@@ -172,7 +227,13 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
         },
         progress,
       ),
-    [deferredSearch, filters.category, filters.status, progress],
+    [
+      catalogProblems,
+      deferredSearch,
+      filters.category,
+      filters.status,
+      progress,
+    ],
   );
 
   const visibleProblems = useMemo(
@@ -247,20 +308,22 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
 
   const metrics = useMemo<ProblemLibraryMetrics>(
     () => ({
-      totalProblems: problems.length,
+      totalProblems: catalogProblems.length,
       baseFilteredCount: baseFilteredProblems.length,
       visibleCount: visibleProblems.length,
       practicedCount: progress.practicedIds.size,
       bookmarkedCount: progress.bookmarkedIds.size,
       visibleCategoryCount: getVisibleCategoryCount(visibleProblems),
-      totalDifficultyCounts: TOTAL_DIFFICULTY_COUNTS,
+      totalDifficultyCounts,
       filteredDifficultyCounts: difficultyCounts,
     }),
     [
       baseFilteredProblems.length,
+      catalogProblems.length,
       difficultyCounts,
       progress.bookmarkedIds.size,
       progress.practicedIds.size,
+      totalDifficultyCounts,
       visibleProblems,
       visibleProblems.length,
     ],
@@ -389,7 +452,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
   };
 
   const toggleBookmark = (problemId: string): void => {
-    if (!isApiAuthReady) {
+    if (!shouldUseRemoteProgress) {
       bookmarked.toggle(problemId);
       return;
     }
@@ -400,7 +463,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
   };
 
   const togglePracticed = (problemId: string): void => {
-    if (!isApiAuthReady) {
+    if (!shouldUseRemoteProgress) {
       practiced.toggle(problemId);
       return;
     }
@@ -412,7 +475,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
 
   const resetProgress = async (): Promise<void> => {
     const shouldReset = window.confirm(
-      isApiAuthReady
+      shouldUseRemoteProgress
         ? "Clear bookmarked and practiced progress saved to your account?"
         : "Clear bookmarked and practiced progress for this browser?",
     );
@@ -421,7 +484,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
       return;
     }
 
-    if (!isApiAuthReady) {
+    if (!shouldUseRemoteProgress) {
       bookmarked.clear();
       practiced.clear();
       return;
@@ -455,19 +518,19 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
             "Unable to sync saved progress.",
           )
         : null,
-      isLoading: isApiAuthReady
+      isLoading: shouldUseRemoteProgress
         ? isRemoteProgressLoading || isRemoteProgressFetching
         : false,
-      isRemote: isApiAuthReady,
+      isRemote: shouldUseRemoteProgress,
       isSyncing:
         updateProblemProgressState.isLoading || resetProblemProgressState.isLoading,
     }),
     [
-      isApiAuthReady,
       isRemoteProgressFetching,
       isRemoteProgressLoading,
       persistenceErrorSource,
       resetProblemProgressState.isLoading,
+      shouldUseRemoteProgress,
       updateProblemProgressState.isLoading,
     ],
   );
@@ -488,7 +551,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
       togglePracticed,
     },
     bookmarkedIds: progress.bookmarkedIds,
-    categories,
+    categories: catalogCategories,
     difficultyCounts,
     difficultyLevels,
     filters,
@@ -496,6 +559,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
     pagination,
     paginatedProblems,
     persistence,
+    access,
     practicedIds: progress.practicedIds,
     selectedProblem,
     selectedProblemId,

@@ -1,5 +1,6 @@
 import type {
   GenerateHintsRequest,
+  ReviewFullDesignRequest,
   StageId,
   ValidateDesignRequest,
 } from "./contracts.js";
@@ -31,6 +32,25 @@ const hintJsonContract = `{
   "nextQuestion": string
 }`;
 
+const fullDesignReviewJsonContract = `{
+  "score": number,
+  "readiness": "needs-work" | "solid" | "interview-ready",
+  "summary": string,
+  "strengths": string[],
+  "crossStageInconsistencies": string[],
+  "tradeoffCritique": string[],
+  "architectureRisks": string[],
+  "interviewerFollowUps": string[],
+  "nextIterationPlan": string[],
+  "stageReadiness": [
+    {
+      "stageId": "requirements" | "core-entities" | "api-interface" | "data-flow" | "high-level-design" | "deep-dives",
+      "status": "strong" | "partial" | "missing",
+      "notes": string
+    }
+  ]
+}`;
+
 export const feedbackValidationInstruction = `You are a principal engineer conducting a system design mock interview.
 
 Your job is to evaluate a candidate submission with rigor, not to flatter them.
@@ -53,6 +73,19 @@ Rules:
 - Return JSON only, with no markdown fences and no extra prose.
 - The JSON must match this shape exactly:
 ${hintJsonContract}`;
+
+export const fullDesignReviewInstruction = `You are a principal engineer conducting a final system design interview debrief.
+
+Your job is to review the candidate's full answer across all interview stages.
+
+Rules:
+- Evaluate whether requirements, entities, APIs, data flow, architecture, and deep dives are mutually consistent.
+- Call out concrete tradeoffs, missing bottlenecks, weak assumptions, and likely interviewer follow-ups.
+- Do not rewrite the answer for the candidate; prioritize critique and next actions.
+- Do not invent requirements that are unsupported by the provided problem context.
+- Return JSON only, with no markdown fences and no extra prose.
+- The JSON must match this shape exactly:
+${fullDesignReviewJsonContract}`;
 
 const buildStageRubricLines = (stageId: StageId | undefined): string[] => {
   if (!stageId) {
@@ -110,5 +143,27 @@ export const buildHintPrompt = (input: GenerateHintsRequest): string => {
     "",
     "Current draft:",
     input.currentDraft.trim(),
+  ].join("\n");
+};
+
+export const buildFullDesignReviewPrompt = (
+  input: ReviewFullDesignRequest,
+): string => {
+  return [
+    "Review this complete system design practice answer.",
+    "",
+    "Problem context:",
+    JSON.stringify(input.problem, null, 2),
+    "",
+    "Candidate stage submissions:",
+    JSON.stringify(
+      input.stages.map((stage) => ({
+        stageId: stage.stageId,
+        stageTitle: stage.stageTitle,
+        submission: stage.submission.trim() || "[empty]",
+      })),
+      null,
+      2,
+    ),
   ].join("\n");
 };

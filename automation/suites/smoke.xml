@@ -1,0 +1,23 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="System Design Platform Smoke Suite" verbose="1" parallel="false">
+    <listeners>
+        <listener class-name="com.systemdesign.platform.automation.listeners.FailureArtifactListener"/>
+    </listeners>
+
+    <parameter name="appBaseUrl" value="http://localhost:5173"/>
+    <parameter name="auth0Domain" value="login.systemdesignpark.com"/>
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="false"/>
+    <parameter name="timeoutSeconds" value="20"/>
+
+    <test name="Smoke Tests">
+        <groups>
+            <run>
+                <include name="smoke"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="com.systemdesign.platform.automation.tests"/>
+        </packages>
+    </test>
+</suite>

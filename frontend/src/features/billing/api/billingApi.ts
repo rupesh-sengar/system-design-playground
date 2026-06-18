@@ -2,16 +2,45 @@ import { baseApi } from "@/shared/api/baseApi";
 import { getApiErrorDetails, requestJson } from "@/shared/api/http";
 
 export type PlanTier = "free" | "plus" | "pro";
+export type BillingInterval = "monthly" | "yearly";
+
+export interface BillingPlanPrice {
+  amountMinor: number;
+  checkoutAvailable: boolean;
+  currency: "INR";
+  interval: BillingInterval;
+}
+
+export interface BillingPlan {
+  entitlements: {
+    advancedReview: boolean;
+    aiFeedback: boolean;
+    cloudSync: boolean;
+    editorials: boolean;
+    premiumCatalog: boolean;
+  };
+  isPaid: boolean;
+  label: string;
+  prices: BillingPlanPrice[];
+  rank: number;
+  tier: PlanTier;
+  usageQuotas: {
+    monthlyAi: number;
+  };
+}
 
 export interface BillingAccount {
   entitlements: {
     advancedReview: boolean;
     aiFeedback: boolean;
+    cloudSync: boolean;
     editorials: boolean;
     premiumCatalog: boolean;
   };
   plan: {
     isPaid: boolean;
+    monthlyAiQuotaOverride: number | null;
+    source: "admin" | "default" | "subscription";
     tier: PlanTier;
   };
   subscription: {
@@ -35,6 +64,12 @@ export interface BillingAccount {
 
 type BillingAccountEnvelope = {
   data: BillingAccount;
+};
+
+type BillingPlansEnvelope = {
+  data: {
+    plans: BillingPlan[];
+  };
 };
 
 type UrlEnvelope = {
@@ -147,6 +182,22 @@ export const billingApi = baseApi.injectEndpoints({
         }
       },
     }),
+    getBillingPlans: builder.query<BillingPlan[], void>({
+      providesTags: ["BillingPlans"],
+      queryFn: async () => {
+        try {
+          const response = await requestJson<BillingPlansEnvelope>(
+            "/v1/billing/plans",
+          );
+
+          return { data: response.data.plans };
+        } catch (error) {
+          return {
+            error: toQueryError(error, "Unable to load billing plans."),
+          };
+        }
+      },
+    }),
     verifyRazorpaySubscription: builder.mutation<
       BillingAccountEnvelope,
       {
@@ -200,6 +251,7 @@ export const billingApi = baseApi.injectEndpoints({
 export const {
   useCreateBillingPortalSessionMutation,
   useCreateCheckoutSessionMutation,
+  useGetBillingPlansQuery,
   useGetBillingAccountQuery,
   useVerifyRazorpaySubscriptionMutation,
 } = billingApi;

@@ -9,6 +9,7 @@ import type { BillingAccessService } from "../billing/entitlements.js";
 import { requireCurrentAppUser } from "../persistence/current-app-user.middleware.js";
 import {
   generateHintsRequestSchema,
+  reviewFullDesignRequestSchema,
   validateDesignRequestSchema,
 } from "./contracts.js";
 import type { LlmProvider } from "../../providers/llm/llm-provider.js";
@@ -58,6 +59,10 @@ export const createAiRouter = ({
     createAsyncHandler(async (request, response) => {
       const appUser = requireCurrentAppUser(request);
       const payload = validateDesignRequestSchema.parse(request.body);
+      await billingAccessService.assertCanAccessProblem({
+        problemId: payload.problem.id,
+        userId: appUser.id,
+      });
       await billingAccessService.assertCanUseAi(appUser.id);
 
       const result = await validationWorkflow.run(payload);
@@ -79,6 +84,10 @@ export const createAiRouter = ({
     createAsyncHandler(async (request, response) => {
       const appUser = requireCurrentAppUser(request);
       const payload = generateHintsRequestSchema.parse(request.body);
+      await billingAccessService.assertCanAccessProblem({
+        problemId: payload.problem.id,
+        userId: appUser.id,
+      });
       await billingAccessService.assertCanUseAi(appUser.id);
 
       const data = await hintWorkflow.run(payload);
@@ -87,6 +96,35 @@ export const createAiRouter = ({
         metadata: {
           problemId: payload.problem.id,
           stageId: payload.stageId,
+        },
+        userId: appUser.id,
+      });
+
+      response.json({
+        data,
+        meta: llmProvider.getMetadata(),
+      });
+    }),
+  );
+
+  router.post(
+    "/review-full-design",
+    createAsyncHandler(async (request, response) => {
+      const appUser = requireCurrentAppUser(request);
+      const payload = reviewFullDesignRequestSchema.parse(request.body);
+      await billingAccessService.assertCanAccessProblem({
+        problemId: payload.problem.id,
+        userId: appUser.id,
+      });
+      await billingAccessService.assertCanUseAdvancedReview(appUser.id);
+
+      const data = await llmProvider.reviewFullDesign(payload);
+      await billingAccessService.recordAiUsage({
+        eventType: "ai_validation",
+        metadata: {
+          operation: "full_design_review",
+          problemId: payload.problem.id,
+          stageCount: payload.stages.length,
         },
         userId: appUser.id,
       });

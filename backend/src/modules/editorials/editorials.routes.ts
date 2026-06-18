@@ -5,17 +5,19 @@ import {
   type Response,
 } from "express";
 import { requireCurrentAppUser } from "../persistence/current-app-user.middleware.js";
+import type { BillingAccessService } from "../billing/entitlements.js";
 import {
   stageEditorialParamsSchema,
   upsertStageEditorialSchema,
 } from "./contracts.js";
 import {
-  requireStageEditorialReadPermission,
+  hasStageEditorialReadPermission,
   requireStageEditorialWritePermission,
 } from "./editorial-permissions.js";
 import type { StageEditorialRepository } from "./editorials.repository.js";
 
 interface CreateEditorialsRouterOptions {
+  billingAccessService: BillingAccessService;
   stageEditorialRepository: StageEditorialRepository;
 }
 
@@ -40,6 +42,7 @@ const createAsyncHandler =
   };
 
 export const createEditorialsRouter = ({
+  billingAccessService,
   stageEditorialRepository,
 }: CreateEditorialsRouterOptions): Router => {
   const router = Router();
@@ -47,7 +50,10 @@ export const createEditorialsRouter = ({
   router.get(
     "/:problemId/:stageId",
     createAsyncHandler(async (request, response) => {
-      requireStageEditorialReadPermission(request);
+      if (!hasStageEditorialReadPermission(request)) {
+        const appUser = requireCurrentAppUser(request);
+        await billingAccessService.assertCanReadEditorials(appUser.id);
+      }
 
       const { problemId, stageId } = stageEditorialParamsSchema.parse(
         request.params,

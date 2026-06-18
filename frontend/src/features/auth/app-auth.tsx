@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { setApiAccessTokenResolver } from "@/shared/api/http";
+import { requestJson, setApiAccessTokenResolver } from "@/shared/api/http";
 import {
   buildAuth0EndpointUrl,
   buildAuth0AuthorizationParams,
@@ -156,6 +156,7 @@ const Auth0Bridge = ({ children }: PropsWithChildren) => {
   const getAccessTokenSilentlyRef = useRef(getAccessTokenSilently);
   const isAuthenticatedRef = useRef(isAuthenticated);
   const isLoadingRef = useRef(isLoading);
+  const lastProfileSyncSignatureRef = useRef<string | null>(null);
 
   getAccessTokenSilentlyRef.current = getAccessTokenSilently;
   isAuthenticatedRef.current = isAuthenticated;
@@ -188,6 +189,46 @@ const Auth0Bridge = ({ children }: PropsWithChildren) => {
       setIsApiTokenResolverReady(false);
     };
   }, []);
+
+  useEffect(() => {
+    if (
+      !auth0Config.isConfigured ||
+      !auth0Config.audience ||
+      !isAuthenticated ||
+      isLoading ||
+      !isApiTokenResolverReady ||
+      !user
+    ) {
+      return;
+    }
+
+    const email = getStringProperty(user, "email");
+    const name = getStringProperty(user, "name");
+    const nickname = getStringProperty(user, "nickname");
+    const preferredUsername = getStringProperty(user, "preferred_username");
+    const picture = getStringProperty(user, "picture");
+    const profile = {
+      displayName: name ?? nickname ?? email,
+      email,
+      pictureUrl: picture,
+      username: preferredUsername ?? nickname,
+    };
+    const profileSignature = JSON.stringify(profile);
+
+    if (lastProfileSyncSignatureRef.current === profileSignature) {
+      return;
+    }
+
+    lastProfileSyncSignatureRef.current = profileSignature;
+
+    void requestJson<{ data: unknown }>("/v1/persistence/me/profile", {
+      body: JSON.stringify(profile),
+      method: "PUT",
+      requiresAuth: true,
+    }).catch(() => {
+      lastProfileSyncSignatureRef.current = null;
+    });
+  }, [isAuthenticated, isApiTokenResolverReady, isLoading, user]);
 
   const contextValue = useMemo<AppAuthContextValue>(() => {
     const login = async (options?: AuthRedirectOptions): Promise<void> => {

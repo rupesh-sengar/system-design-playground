@@ -30,6 +30,7 @@ Postgres migrations live in `db/migrations`.
 `005_billing_onboarding.sql` adds the first SaaS billing slice:
 
 - stores onboarding profile answers per user
+- stores one explicit billing account row per user, defaulting to Free
 - maps app users to Razorpay customer IDs
 - stores paid subscription state synced from Razorpay webhooks
 - tracks monthly AI hint and validation usage events
@@ -37,6 +38,25 @@ Postgres migrations live in `db/migrations`.
 `006_razorpay_billing_rename.sql` keeps local databases compatible if the billing slice was applied before the Razorpay switch.
 
 `007_plus_pro_plan_tiers.sql` converts the paid plan enum to Plus and Pro.
+
+`009_app_user_profile_metadata.sql` adds searchable user profile metadata:
+
+- stores username and picture URL alongside email/display name
+- tracks `last_seen_at`
+- indexes email and username for admin lookup
+
+`010_user_billing_account_summary.sql` adds an admin lookup view:
+
+- shows each app user with effective plan tier
+- shows monthly AI quota used and remaining
+- includes subscription and profile identifiers for easier support lookup
+
+`011_user_billing_accounts.sql` backfills and enforces explicit billing accounts:
+
+- creates `user_billing_accounts` for existing databases
+- inserts a Free billing account row for every existing user without one
+- keeps active paid subscriptions reflected as subscription-sourced accounts
+- refreshes `user_billing_account_summary` to read from the explicit account table
 
 To apply the schema with `psql`:
 
@@ -48,6 +68,9 @@ psql "$DATABASE_URL" -f db/migrations/004_stage_editorials.sql
 psql "$DATABASE_URL" -f db/migrations/005_billing_onboarding.sql
 psql "$DATABASE_URL" -f db/migrations/006_razorpay_billing_rename.sql
 psql "$DATABASE_URL" -f db/migrations/007_plus_pro_plan_tiers.sql
+psql "$DATABASE_URL" -f db/migrations/009_app_user_profile_metadata.sql
+psql "$DATABASE_URL" -f db/migrations/010_user_billing_account_summary.sql
+psql "$DATABASE_URL" -f db/migrations/011_user_billing_accounts.sql
 ```
 
 The backend now upserts `app_users`, `user_problem_progress`, and `practice_sessions` from authenticated API calls under `/v1/persistence/*`. Billing and onboarding tables are written by `/v1/billing/*`, `/v1/onboarding/*`, and Razorpay webhooks.

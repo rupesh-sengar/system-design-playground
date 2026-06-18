@@ -40,6 +40,16 @@ Persistent storage routes also require `DATABASE_URL`.
 
 Judge reference embedding seeding requires Postgres with `pgvector` and Ollama. Use an Ollama embedding model that matches the 768-dimensional vector table, such as `nomic-embed-text`.
 
+## CORS
+
+Set `CORS_ORIGIN` to a comma-separated allowlist for browser clients:
+
+```bash
+CORS_ORIGIN=http://localhost:5173,https://app.example.com
+```
+
+`CORS_ORIGIN` is still supported as a backward-compatible fallback and also accepts comma-separated values.
+
 ## Auth0 JWT validation
 
 Set these env vars to protect the AI routes with Auth0:
@@ -100,7 +110,7 @@ RAZORPAY_PLAN_PRO_MONTHLY=plan_...
 RAZORPAY_PLAN_PRO_YEARLY=plan_...
 MONTHLY_AI_FREE_QUOTA=10
 MONTHLY_AI_PLUS_QUOTA=200
-MONTHLY_AI_PRO_QUOTA=1000
+MONTHLY_AI_PRO_QUOTA=600
 ```
 
 `POST /v1/billing/checkout-session` creates a Razorpay subscription and returns Checkout options. The frontend opens Razorpay Checkout, then sends `razorpay_payment_id`, `razorpay_subscription_id`, and `razorpay_signature` to `POST /v1/billing/verify-subscription`. Subscription state is also synced from Razorpay webhooks.

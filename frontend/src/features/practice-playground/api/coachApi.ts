@@ -2,6 +2,7 @@ import { baseApi } from "@/shared/api/baseApi";
 import { getApiErrorDetails, requestJson } from "@/shared/api/http";
 import type {
   PracticeProblem,
+  PracticeFullDesignReviewResult,
   PracticeStageHintResult,
   PracticeStageId,
   PracticeStageValidationResult,
@@ -34,6 +35,14 @@ type HintResponseEnvelope = {
 type ValidationResponseEnvelope = {
   data: Omit<
     PracticeStageValidationResult,
+    "meta" | "receivedAt" | "sourceDraft"
+  >;
+  meta: AiProviderMeta;
+};
+
+type FullDesignReviewResponseEnvelope = {
+  data: Omit<
+    PracticeFullDesignReviewResult,
     "meta" | "receivedAt" | "sourceDraft"
   >;
   meta: AiProviderMeta;
@@ -150,8 +159,48 @@ export const coachApi = baseApi.injectEndpoints({
         }
       },
     }),
+    reviewFullDesign: builder.mutation<
+      FullDesignReviewResponseEnvelope,
+      {
+        problem: PracticeProblem;
+        stages: Array<{
+          stageId: PracticeStageId;
+          stageTitle: string;
+          submission: string;
+        }>;
+      }
+    >({
+      queryFn: async ({ problem, stages }) => {
+        try {
+          const data = await requestJson<FullDesignReviewResponseEnvelope>(
+            "/v1/ai/review-full-design",
+            {
+              body: JSON.stringify({
+                problem: toProblemPayload(problem),
+                stages,
+              }),
+              method: "POST",
+              requiresAuth: true,
+              timeoutMs: 60_000,
+            },
+          );
+
+          return { data };
+        } catch (error) {
+          return {
+            error: toQueryError(
+              error,
+              "Unable to review the full design right now.",
+            ),
+          };
+        }
+      },
+    }),
   }),
 });
 
-export const { useGenerateStageHintsMutation, useValidateStageDraftMutation } =
-  coachApi;
+export const {
+  useGenerateStageHintsMutation,
+  useReviewFullDesignMutation,
+  useValidateStageDraftMutation,
+} = coachApi;

@@ -1,16 +1,21 @@
 import { z } from "zod";
 import {
   generateHintsResponseSchema,
+  reviewFullDesignResponseSchema,
   validateDesignResponseSchema,
   type GenerateHintsRequest,
   type GenerateHintsResponse,
+  type ReviewFullDesignRequest,
+  type ReviewFullDesignResponse,
   type ValidateDesignRequest,
   type ValidateDesignResponse,
 } from "../../modules/ai/contracts.js";
 import {
+  buildFullDesignReviewPrompt,
   feedbackValidationInstruction,
   buildHintPrompt,
   buildValidationPrompt,
+  fullDesignReviewInstruction,
   hintGenerationInstruction,
 } from "../../modules/ai/prompts.js";
 import { HttpError, ServiceUnavailableError } from "../../shared/http/errors.js";
@@ -130,6 +135,20 @@ export class DeepSeekProvider implements LlmProvider {
     });
 
     return parseStructuredOutput(generateHintsResponseSchema, rawOutput);
+  }
+
+  async reviewFullDesign(
+    input: ReviewFullDesignRequest,
+  ): Promise<ReviewFullDesignResponse> {
+    this.ensureConfigured();
+
+    const rawOutput = await this.runPrompt({
+      instruction: fullDesignReviewInstruction,
+      operation: "review-full-design",
+      prompt: buildFullDesignReviewPrompt(input),
+    });
+
+    return parseStructuredOutput(reviewFullDesignResponseSchema, rawOutput);
   }
 
   private ensureConfigured(): void {

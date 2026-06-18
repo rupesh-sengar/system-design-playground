@@ -63,9 +63,48 @@ export const generateHintsResponseSchema = z.object({
   nextQuestion: z.string().min(1),
 });
 
+export const reviewFullDesignRequestSchema = z.object({
+  problem: problemContextSchema,
+  stages: z
+    .array(
+      z.object({
+        stageId: stageIdSchema,
+        stageTitle: z.string().min(1),
+        submission: z.string(),
+      }),
+    )
+    .min(1)
+    .max(stageIds.length),
+});
+
+export const fullDesignStageReadinessSchema = z.object({
+  notes: z.string().min(1),
+  stageId: stageIdSchema,
+  status: z.enum(["strong", "partial", "missing"]),
+});
+
+export const reviewFullDesignResponseSchema = z.object({
+  architectureRisks: z.array(z.string().min(1)).default([]),
+  crossStageInconsistencies: z.array(z.string().min(1)).default([]),
+  interviewerFollowUps: z.array(z.string().min(1)).default([]),
+  nextIterationPlan: z.array(z.string().min(1)).default([]),
+  readiness: z.enum(["needs-work", "solid", "interview-ready"]),
+  score: z.number().min(0).max(10),
+  stageReadiness: z.array(fullDesignStageReadinessSchema).default([]),
+  strengths: z.array(z.string().min(1)).default([]),
+  summary: z.string().min(1),
+  tradeoffCritique: z.array(z.string().min(1)).default([]),
+});
+
 export type StageId = z.infer<typeof stageIdSchema>;
 export type ProblemContext = z.infer<typeof problemContextSchema>;
 export type ValidateDesignRequest = z.infer<typeof validateDesignRequestSchema>;
 export type ValidateDesignResponse = z.infer<typeof validateDesignResponseSchema>;
 export type GenerateHintsRequest = z.infer<typeof generateHintsRequestSchema>;
 export type GenerateHintsResponse = z.infer<typeof generateHintsResponseSchema>;
+export type ReviewFullDesignRequest = z.infer<
+  typeof reviewFullDesignRequestSchema
+>;
+export type ReviewFullDesignResponse = z.infer<
+  typeof reviewFullDesignResponseSchema
+>;

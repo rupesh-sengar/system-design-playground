@@ -55,6 +55,7 @@ interface PracticePlaygroundPageProps {
   isPracticed: boolean;
   onBack: () => void;
   onMarkPracticed: () => void;
+  onOpenPricing: () => void;
   onSaveStatusChange?: (status: PlaygroundSaveStatus) => void;
   problem: PracticeProblem | null;
 }
@@ -73,6 +74,7 @@ export const PracticePlaygroundPage = ({
   isPracticed,
   onBack,
   onMarkPracticed,
+  onOpenPricing,
   onSaveStatusChange,
   problem,
 }: PracticePlaygroundPageProps) => {
@@ -635,7 +637,18 @@ export const PracticePlaygroundPage = ({
                     ) : null}
                   </div>
                   <div className="playground-sidebar__editorial">
-                    {!authReady ? (
+                    {editorial.isLocked ? (
+                      <>
+                        <p>Upgrade to Plus or Pro to view stage editorials.</p>
+                        <button
+                          className="primary-action"
+                          type="button"
+                          onClick={onOpenPricing}
+                        >
+                          View plans
+                        </button>
+                      </>
+                    ) : !authReady ? (
                       <p>Sign in to view protected editorials.</p>
                     ) : editorial.isLoading ? (
                       <p>Loading editorial...</p>
@@ -705,6 +718,7 @@ export const PracticePlaygroundPage = ({
                   actionMode="clear-only"
                   activeStageTitle={activeStage.title}
                   assistant={assistant}
+                  onOpenPricing={onOpenPricing}
                 />
               </div>
             ) : null}

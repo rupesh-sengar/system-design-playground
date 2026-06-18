@@ -14,6 +14,7 @@ export type SubscriptionStatus =
   | "expired"
   | "paused"
   | "resumed";
+export type BillingPlanSource = "admin" | "default" | "subscription";
 export type UsageEventType = "ai_hint" | "ai_validation";
 
 type IsoDateValue = Date | string | null;
@@ -47,6 +48,15 @@ export interface BillingCustomerRecord {
   userId: string;
 }
 
+export interface BillingAccountRecord {
+  createdAt: string;
+  monthlyAiQuotaOverride: number | null;
+  planSource: BillingPlanSource;
+  planTier: PlanTier;
+  updatedAt: string;
+  userId: string;
+}
+
 export interface UserSubscriptionRecord {
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: string | null;
@@ -75,6 +85,24 @@ const mapBillingCustomerRecord = (
   },
 ): BillingCustomerRecord => ({
   razorpayCustomerId: row.razorpay_customer_id,
+  updatedAt: toIsoString(row.updated_at),
+  userId: row.user_id,
+});
+
+const mapBillingAccountRecord = (
+  row: QueryResultRow & {
+    created_at: IsoDateValue;
+    monthly_ai_quota_override: number | null;
+    plan_source: BillingPlanSource;
+    plan_tier: PlanTier;
+    updated_at: IsoDateValue;
+    user_id: string;
+  },
+): BillingAccountRecord => ({
+  createdAt: toIsoString(row.created_at),
+  monthlyAiQuotaOverride: row.monthly_ai_quota_override,
+  planSource: row.plan_source,
+  planTier: row.plan_tier,
   updatedAt: toIsoString(row.updated_at),
   userId: row.user_id,
 });
@@ -118,6 +146,105 @@ const mapOnboardingProfileRecord = (
   targetRole: row.target_role,
   updatedAt: toIsoString(row.updated_at),
 });
+
+export class BillingAccountRepository {
+  constructor(private readonly database: PostgresDatabase) {}
+
+  async ensureForUser(userId: string): Promise<BillingAccountRecord> {
+    const result = await this.database.query<{
+      created_at: IsoDateValue;
+      monthly_ai_quota_override: number | null;
+      plan_source: BillingPlanSource;
+      plan_tier: PlanTier;
+      updated_at: IsoDateValue;
+      user_id: string;
+    }>(
+      `
+        insert into user_billing_accounts (
+          user_id
+        )
+        values ($1)
+        on conflict (user_id)
+        do update set
+          updated_at = user_billing_accounts.updated_at
+        returning
+          user_id,
+          plan_tier,
+          plan_source,
+          monthly_ai_quota_override,
+          created_at,
+          updated_at
+      `,
+      [userId],
+    );
+
+    return mapBillingAccountRecord(
+      getRequiredRow(
+        result.rows[0],
+        "Billing account ensure returned no row.",
+      ),
+    );
+  }
+
+  async syncFromSubscription(input: {
+    planTier: PlanTier;
+    status: SubscriptionStatus;
+    userId: string;
+  }): Promise<BillingAccountRecord> {
+    const isActivePaidSubscription =
+      input.planTier !== "free" &&
+      (input.status === "authenticated" || input.status === "active");
+    const nextPlanTier = isActivePaidSubscription ? input.planTier : "free";
+    const nextPlanSource: BillingPlanSource = isActivePaidSubscription
+      ? "subscription"
+      : "default";
+    const result = await this.database.query<{
+      created_at: IsoDateValue;
+      monthly_ai_quota_override: number | null;
+      plan_source: BillingPlanSource;
+      plan_tier: PlanTier;
+      updated_at: IsoDateValue;
+      user_id: string;
+    }>(
+      `
+        insert into user_billing_accounts (
+          user_id,
+          plan_tier,
+          plan_source
+        )
+        values ($1, $2, $3)
+        on conflict (user_id)
+        do update set
+          plan_tier = case
+            when user_billing_accounts.plan_source = 'admin'
+              then user_billing_accounts.plan_tier
+            else excluded.plan_tier
+          end,
+          plan_source = case
+            when user_billing_accounts.plan_source = 'admin'
+              then user_billing_accounts.plan_source
+            else excluded.plan_source
+          end,
+          updated_at = now()
+        returning
+          user_id,
+          plan_tier,
+          plan_source,
+          monthly_ai_quota_override,
+          created_at,
+          updated_at
+      `,
+      [input.userId, nextPlanTier, nextPlanSource],
+    );
+
+    return mapBillingAccountRecord(
+      getRequiredRow(
+        result.rows[0],
+        "Billing account subscription sync returned no row.",
+      ),
+    );
+  }
+}
 
 export class BillingCustomerRepository {
   constructor(private readonly database: PostgresDatabase) {}

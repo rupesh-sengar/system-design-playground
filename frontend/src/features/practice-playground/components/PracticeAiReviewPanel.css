@@ -215,7 +215,8 @@
 
 .playground-ai__results,
 .playground-ai__rubric,
-.playground-ai__rubric-list {
+.playground-ai__rubric-list,
+.playground-ai__comparison {
     display: grid;
     gap: 12px;
 }
@@ -249,6 +250,58 @@
 .playground-ai__summary {
     color: var(--text);
     font-weight: 600;
+}
+
+.playground-ai__comparison {
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(196, 116, 24, 0.2);
+    background: rgba(252, 243, 226, 0.72);
+}
+
+.playground-ai__comparison summary {
+    cursor: pointer;
+    color: var(--text);
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.playground-ai__comparison-grid {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.playground-ai__comparison-pane {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+}
+
+.playground-ai__comparison-pane h5 {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.playground-ai__comparison-pane pre {
+    min-height: 132px;
+    max-height: 220px;
+    overflow: auto;
+    margin: 0;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(41, 58, 61, 0.08);
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .playground-ai__grid {
@@ -328,7 +381,8 @@
 :root[data-theme="dark"] .playground-ai__card,
 :root[data-theme="dark"] .playground-ai__list-block,
 :root[data-theme="dark"] .playground-ai__callout,
-:root[data-theme="dark"] .playground-ai__rubric-row {
+:root[data-theme="dark"] .playground-ai__rubric-row,
+:root[data-theme="dark"] .playground-ai__comparison-pane pre {
     border-color: rgba(143, 170, 176, 0.16);
     background: rgba(15, 22, 28, 0.82);
     box-shadow: none;
@@ -380,6 +434,11 @@
     color: #f3c874;
 }
 
+:root[data-theme="dark"] .playground-ai__comparison {
+    border-color: rgba(213, 164, 69, 0.2);
+    background: rgba(57, 41, 18, 0.72);
+}
+
 :root[data-theme="dark"] .playground-ai__banner--error {
     background: rgba(60, 24, 24, 0.84);
     border-color: rgba(215, 106, 106, 0.22);
@@ -397,5 +456,9 @@
     .playground-ai__rubric-topline {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .playground-ai__comparison-grid {
+        grid-template-columns: 1fr;
     }
 }

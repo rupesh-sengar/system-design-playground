@@ -2183,6 +2183,12 @@
     background: var(--flow-surface-inset);
 }
 
+.problem-card__icon--locked {
+    border-color: rgba(196, 116, 24, 0.28);
+    background: rgba(252, 238, 213, 0.72);
+    color: #8a5a0c;
+}
+
 .problem-card__action {
     grid-column: 4;
     grid-row: 1 / 4;
@@ -2253,6 +2259,12 @@
 :root[data-theme="dark"] .problem-card__icon {
     border-color: var(--flow-line-strong);
     background: var(--flow-surface-inset);
+}
+
+:root[data-theme="dark"] .problem-card__icon--locked {
+    border-color: rgba(213, 164, 69, 0.24);
+    background: rgba(57, 41, 18, 0.76);
+    color: #f3c874;
 }
 
 @media (max-width: 900px) {
@@ -2613,6 +2625,17 @@
         display: none;
     }
 
+    .problem-card--locked {
+        grid-template-columns: 28px minmax(0, 1fr) auto;
+    }
+
+    .problem-card--locked .problem-card__icon {
+        display: inline-grid;
+        grid-column: 1;
+        grid-row: 1;
+        align-self: center;
+    }
+
     .problem-card h3 {
         grid-column: 1;
         grid-row: 1;
@@ -2621,10 +2644,18 @@
         line-height: 1.25;
     }
 
+    .problem-card--locked h3 {
+        grid-column: 2;
+    }
+
     .problem-card__action {
         grid-column: 2;
         grid-row: 1;
         align-self: center;
+    }
+
+    .problem-card--locked .problem-card__action {
+        grid-column: 3;
     }
 
     .problem-card p {

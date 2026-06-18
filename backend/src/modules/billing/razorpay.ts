@@ -5,6 +5,7 @@ import {
   ServiceUnavailableError,
 } from "../../shared/http/errors.js";
 import type {
+  BillingAccountRepository,
   BillingCustomerRepository,
   PlanTier,
   SubscriptionStatus,
@@ -318,6 +319,7 @@ export class RazorpayWebhookVerifier {
 export class RazorpayWebhookService {
   constructor(
     private readonly config: AppConfig,
+    private readonly billingAccountRepository: BillingAccountRepository,
     private readonly billingCustomerRepository: BillingCustomerRepository,
     private readonly subscriptionRepository: UserSubscriptionRepository,
   ) {}
@@ -352,7 +354,7 @@ export class RazorpayWebhookService {
 
     const razorpayPlanId = readString(subscription.plan_id);
 
-    await this.subscriptionRepository.upsertFromRazorpay({
+    const subscriptionRecord = await this.subscriptionRepository.upsertFromRazorpay({
       cancelAtPeriodEnd: false,
       currentPeriodEnd: readUnixTimestamp(subscription.current_end),
       currentPeriodStart: readUnixTimestamp(subscription.current_start),
@@ -360,6 +362,12 @@ export class RazorpayWebhookService {
       razorpayPlanId,
       razorpaySubscriptionId,
       status: mapSubscriptionStatus(subscription.status),
+      userId,
+    });
+
+    await this.billingAccountRepository.syncFromSubscription({
+      planTier: subscriptionRecord.planTier,
+      status: subscriptionRecord.status,
       userId,
     });
   }

@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { stageIdSchema } from "../ai/contracts.js";
+import {
+  generateHintsResponseSchema,
+  stageIdSchema,
+  validateDesignResponseSchema,
+} from "../ai/contracts.js";
 
 export const problemIdParamsSchema = z.object({
   problemId: z.string().trim().min(1),
@@ -18,6 +22,22 @@ export const updateProblemProgressSchema = z
       path: ["isBookmarked"],
     },
   );
+
+const nullableProfileStringSchema = (maxLength: number) =>
+  z
+    .string()
+    .trim()
+    .max(maxLength)
+    .transform((value) => (value ? value : null))
+    .nullable()
+    .optional();
+
+export const appUserProfileSchema = z.object({
+  displayName: nullableProfileStringSchema(160),
+  email: nullableProfileStringSchema(320),
+  pictureUrl: nullableProfileStringSchema(2048),
+  username: nullableProfileStringSchema(160),
+});
 
 const systemDesignNodeKindSchema = z.enum([
   "dns",
@@ -86,11 +106,40 @@ const systemDesignDiagramSchema = z.object({
     .optional(),
 });
 
+const aiProviderMetaSchema = z.discriminatedUnion("provider", [
+  z.object({
+    configured: z.boolean(),
+    model: z.string().optional(),
+    orchestration: z.literal("openai-compatible"),
+    provider: z.literal("deepseek"),
+  }),
+  z.object({
+    configured: z.boolean(),
+    orchestration: z.literal("rule-engine"),
+    provider: z.literal("rule-engine"),
+    rubricVersion: z.string().optional(),
+  }),
+]);
+
+const persistedHintResultSchema = generateHintsResponseSchema.extend({
+  meta: aiProviderMetaSchema,
+  receivedAt: z.string().datetime(),
+  sourceDraft: z.string(),
+});
+
+const persistedValidationResultSchema = validateDesignResponseSchema.extend({
+  meta: aiProviderMetaSchema,
+  receivedAt: z.string().datetime(),
+  sourceDraft: z.string(),
+});
+
 const practiceStageDraftSchema = z.object({
   diagramJson: systemDesignDiagramSchema.nullable().optional(),
+  hintResult: persistedHintResultSchema.nullable().optional(),
   isComplete: z.boolean(),
   notesHtml: z.string(),
   updatedAt: z.string().datetime().nullable().optional(),
+  validationResult: persistedValidationResultSchema.nullable().optional(),
 });
 
 export const upsertPracticeSessionSchema = z.object({
@@ -109,6 +158,7 @@ export type ProblemIdParams = z.infer<typeof problemIdParamsSchema>;
 export type UpdateProblemProgressInput = z.infer<
   typeof updateProblemProgressSchema
 >;
+export type AppUserProfileInput = z.infer<typeof appUserProfileSchema>;
 export type UpsertPracticeSessionInput = z.infer<
   typeof upsertPracticeSessionSchema
 >;

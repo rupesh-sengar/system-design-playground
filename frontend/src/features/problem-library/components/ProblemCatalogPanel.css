@@ -59,6 +59,25 @@
     border: 1px solid rgba(41, 58, 61, 0.08);
 }
 
+.catalog-access-note {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    padding: 11px 13px;
+    border: 1px solid rgba(15, 122, 115, 0.14);
+    border-radius: 10px;
+    background: rgba(235, 248, 246, 0.76);
+    color: var(--muted);
+    font-size: 0.84rem;
+    line-height: 1.4;
+}
+
+.catalog-access-note strong {
+    color: var(--text);
+}
+
 .filter-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(180px, 0.5fr));

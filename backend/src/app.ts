@@ -3,12 +3,14 @@ import express, { type Express, type Request, type Response } from "express";
 import type { AppConfig } from "./config/env.js";
 import type { PostgresDatabase } from "./database/postgres.js";
 import {
+  BillingAccountRepository,
   BillingCustomerRepository,
   OnboardingProfileRepository,
   UsageEventRepository,
   UserSubscriptionRepository,
 } from "./modules/billing/billing.repository.js";
 import {
+  createBillingPlanRouter,
   createBillingRouter,
   createRazorpayWebhookRouter,
 } from "./modules/billing/billing.routes.js";
@@ -63,6 +65,7 @@ export const buildApp = (
 
   const llmProvider = createLlmProvider(config);
   const appUserRepository = new AppUserRepository(database);
+  const billingAccountRepository = new BillingAccountRepository(database);
   const billingCustomerRepository = new BillingCustomerRepository(database);
   const onboardingProfileRepository = new OnboardingProfileRepository(database);
   const problemProgressRepository = new ProblemProgressRepository(database);
@@ -72,6 +75,7 @@ export const buildApp = (
   const userSubscriptionRepository = new UserSubscriptionRepository(database);
   const billingAccessService = new BillingAccessService(
     config,
+    billingAccountRepository,
     userSubscriptionRepository,
     usageEventRepository,
   );
@@ -79,6 +83,7 @@ export const buildApp = (
   const razorpayWebhookVerifier = new RazorpayWebhookVerifier(config);
   const razorpayWebhookService = new RazorpayWebhookService(
     config,
+    billingAccountRepository,
     billingCustomerRepository,
     userSubscriptionRepository,
   );
@@ -92,6 +97,7 @@ export const buildApp = (
     }),
   );
   app.use(express.json({ limit: "1mb" }));
+  app.use("/v1/billing", createBillingPlanRouter({ config }));
 
   app.get(
     "/healthz",
@@ -115,7 +121,10 @@ export const buildApp = (
   app.use(
     "/v1/ai",
     ...createAuth0JwtMiddleware(config),
-    createCurrentAppUserMiddleware({ appUserRepository }),
+    createCurrentAppUserMiddleware({
+      appUserRepository,
+      billingAccountRepository,
+    }),
     createAiRouter({
       billingAccessService,
       llmProvider,
@@ -125,7 +134,10 @@ export const buildApp = (
   app.use(
     "/v1/billing",
     ...createAuth0JwtMiddleware(config),
-    createCurrentAppUserMiddleware({ appUserRepository }),
+    createCurrentAppUserMiddleware({
+      appUserRepository,
+      billingAccountRepository,
+    }),
     createBillingRouter({
       billingAccessService,
       config,
@@ -137,14 +149,22 @@ export const buildApp = (
   app.use(
     "/v1/onboarding",
     ...createAuth0JwtMiddleware(config),
-    createCurrentAppUserMiddleware({ appUserRepository }),
+    createCurrentAppUserMiddleware({
+      appUserRepository,
+      billingAccountRepository,
+    }),
     createOnboardingRouter({ onboardingProfileRepository }),
   );
   app.use(
     "/v1/persistence",
     ...createAuth0JwtMiddleware(config),
-    createCurrentAppUserMiddleware({ appUserRepository }),
+    createCurrentAppUserMiddleware({
+      appUserRepository,
+      billingAccountRepository,
+    }),
     createPersistenceRouter({
+      appUserRepository,
+      billingAccessService,
       practiceSessionRepository,
       problemProgressRepository,
     }),
@@ -152,8 +172,11 @@ export const buildApp = (
   app.use(
     "/v1/editorials",
     ...createAuth0JwtMiddleware(config),
-    createCurrentAppUserMiddleware({ appUserRepository }),
-    createEditorialsRouter({ stageEditorialRepository }),
+    createCurrentAppUserMiddleware({
+      appUserRepository,
+      billingAccountRepository,
+    }),
+    createEditorialsRouter({ billingAccessService, stageEditorialRepository }),
   );
 
   registerErrorHandler(app);

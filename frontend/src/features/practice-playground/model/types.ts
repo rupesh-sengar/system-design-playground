@@ -20,10 +20,12 @@ export interface PracticeStageDefinition {
 }
 
 export interface PracticeStageDraft {
+  hintResult: PracticeStageHintResult | null;
   notes: string;
   diagram: SystemDesignDiagram | null;
   isComplete: boolean;
   updatedAt: string | null;
+  validationResult: PracticeStageValidationResult | null;
 }
 
 export type PracticeStageDraftMap = Record<PracticeStageId, PracticeStageDraft>;
@@ -88,6 +90,37 @@ export interface PracticeStageValidationResult {
   summary: string;
 }
 
+export interface PracticeFullDesignStageReadiness {
+  notes: string;
+  stageId: PracticeStageId;
+  status: "strong" | "partial" | "missing";
+}
+
+export interface PracticeFullDesignReviewResult {
+  architectureRisks: string[];
+  crossStageInconsistencies: string[];
+  interviewerFollowUps: string[];
+  meta: PracticeAiMeta;
+  nextIterationPlan: string[];
+  readiness: "needs-work" | "solid" | "interview-ready";
+  receivedAt: string;
+  score: number;
+  sourceDraft: string;
+  stageReadiness: PracticeFullDesignStageReadiness[];
+  strengths: string[];
+  summary: string;
+  tradeoffCritique: string[];
+}
+
+export interface PracticeFullDesignReviewState {
+  canRequest: boolean;
+  error: PracticeAiRequestError | null;
+  isAvailable: boolean;
+  result: PracticeFullDesignReviewResult | null;
+  status: AsyncRequestStatus;
+  wordCount: number;
+}
+
 export interface PracticeCoachStageState {
   hintError: PracticeAiRequestError | null;
   hintResult: PracticeStageHintResult | null;
@@ -135,6 +168,7 @@ export interface PracticeSessionStorageState {
 export interface PracticeStageEditorialState {
   contentHtml: string | null;
   errorMessage: string | null;
+  isLocked: boolean;
   isLoading: boolean;
   title: string | null;
   updatedAt: string | null;
@@ -158,14 +192,19 @@ export interface PracticePlaygroundViewModel {
       reloadHints: () => Promise<void>;
       reloadValidation: () => Promise<void>;
       retryHints: () => Promise<void>;
+      retryFullDesignReview: () => Promise<void>;
       retryValidation: () => Promise<void>;
+      clearFullDesignReview: () => void;
       requestHints: () => Promise<void>;
+      requestFullDesignReview: () => Promise<void>;
       validateDraft: () => Promise<void>;
     };
     activeStageState: PracticeCoachStageState;
     canRequestHints: boolean;
     canValidateDraft: boolean;
+    currentDraft: string;
     draftWordCount: number;
+    fullDesignReview: PracticeFullDesignReviewState;
     hasAnyFeedback: boolean;
     isHintStale: boolean;
     isValidationStale: boolean;

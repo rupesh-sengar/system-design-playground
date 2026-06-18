@@ -13,16 +13,20 @@ import type {
   PracticeProblem,
   PracticeSession,
   PracticeSessionStore,
+  PracticeStageHintResult,
   PracticeStageDraftMap,
   PracticeStageId,
+  PracticeStageValidationResult,
   StageContextCard,
 } from "../model/types";
 
 export interface PersistedPracticeStageDraft {
   diagramJson: SystemDesignDiagram | null;
+  hintResult: PracticeStageHintResult | null;
   isComplete: boolean;
   notesHtml: string;
   updatedAt: string | null;
+  validationResult: PracticeStageValidationResult | null;
 }
 
 export type PersistedPracticeStageDraftMap = Record<
@@ -48,10 +52,12 @@ const countWords = (value: string): number =>
 export const createEmptyDrafts = (): PracticeStageDraftMap =>
   practiceStages.reduce<PracticeStageDraftMap>((drafts, stage) => {
     drafts[stage.id] = {
-      notes: "",
       diagram: null,
+      hintResult: null,
       isComplete: false,
+      notes: "",
       updatedAt: null,
+      validationResult: null,
     };
     return drafts;
   }, {} as PracticeStageDraftMap);
@@ -75,9 +81,11 @@ export const normalizePracticeSession = (
 
       drafts[stage.id] = {
         diagram: normalizeSystemDesignDiagram(draft.diagram),
+        hintResult: draft.hintResult ?? null,
         isComplete: Boolean(draft.isComplete),
         notes: sanitizeRichTextHtml(notes),
         updatedAt,
+        validationResult: draft.validationResult ?? null,
       };
 
       return drafts;
@@ -128,9 +136,11 @@ export const toPersistedPracticeSessionInput = (
       stageId,
       {
         diagramJson: draft.diagram,
+        hintResult: draft.hintResult,
         isComplete: draft.isComplete,
         notesHtml: sanitizeRichTextHtml(draft.notes),
         updatedAt: draft.updatedAt,
+        validationResult: draft.validationResult,
       },
     ]),
   ) as PersistedPracticeStageDraftMap,
@@ -150,9 +160,11 @@ export const fromPersistedPracticeSession = (
         stageId,
         {
           diagram: normalizeSystemDesignDiagram(draft.diagramJson),
+          hintResult: draft.hintResult ?? null,
           isComplete: draft.isComplete,
           notes: draft.notesHtml,
           updatedAt: draft.updatedAt,
+          validationResult: draft.validationResult ?? null,
         },
       ]),
     ) as PracticeStageDraftMap,
@@ -171,7 +183,9 @@ export const createPracticeSessionSnapshot = (
         {
           isComplete: session.stages[stage.id].isComplete,
           diagram: normalizeSystemDesignDiagram(session.stages[stage.id].diagram),
+          hintResult: session.stages[stage.id].hintResult,
           notes: sanitizeRichTextHtml(session.stages[stage.id].notes),
+          validationResult: session.stages[stage.id].validationResult,
         },
       ]),
     ),

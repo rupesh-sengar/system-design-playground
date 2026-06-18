@@ -1,9 +1,11 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import type { AppUserRecord, AppUserRepository } from "./persistence.repository.js";
 import { UnauthorizedRequestError } from "../../shared/http/errors.js";
+import type { BillingAccountRepository } from "../billing/billing.repository.js";
 
 interface CreateCurrentAppUserMiddlewareOptions {
   appUserRepository: AppUserRepository;
+  billingAccountRepository?: BillingAccountRepository;
 }
 
 declare global {
@@ -28,6 +30,44 @@ const readStringClaim = (
   return trimmedValue ? trimmedValue : null;
 };
 
+const readNamespacedStringClaim = (
+  request: Request,
+  claimName: string,
+): string | null => {
+  const claimSuffix = `/${claimName}`;
+
+  for (const [key, value] of Object.entries(request.auth?.payload ?? {})) {
+    if (!key.endsWith(claimSuffix) || typeof value !== "string") {
+      continue;
+    }
+
+    const trimmedValue = value.trim();
+
+    if (trimmedValue) {
+      return trimmedValue;
+    }
+  }
+
+  return null;
+};
+
+const readFirstStringClaim = (
+  request: Request,
+  claimNames: string[],
+): string | null => {
+  for (const claimName of claimNames) {
+    const claimValue =
+      readStringClaim(request, claimName) ??
+      readNamespacedStringClaim(request, claimName);
+
+    if (claimValue) {
+      return claimValue;
+    }
+  }
+
+  return null;
+};
+
 const resolveCurrentAppUserInput = (
   request: Request,
 ): {
@@ -35,6 +75,8 @@ const resolveCurrentAppUserInput = (
   authSubject: string;
   displayName: string | null;
   email: string | null;
+  pictureUrl: string | null;
+  username: string | null;
 } => {
   const authSubject = readStringClaim(request, "sub");
 
@@ -48,13 +90,21 @@ const resolveCurrentAppUserInput = (
     authProvider: "auth0",
     authSubject,
     displayName:
-      readStringClaim(request, "name") ?? readStringClaim(request, "nickname"),
-    email: readStringClaim(request, "email"),
+      readFirstStringClaim(request, ["name", "nickname", "preferred_username"]) ??
+      readFirstStringClaim(request, ["email"]),
+    email: readFirstStringClaim(request, ["email"]),
+    pictureUrl: readFirstStringClaim(request, ["picture"]),
+    username: readFirstStringClaim(request, [
+      "preferred_username",
+      "nickname",
+      "username",
+    ]),
   };
 };
 
 export const createCurrentAppUserMiddleware = ({
   appUserRepository,
+  billingAccountRepository,
 }: CreateCurrentAppUserMiddlewareOptions): RequestHandler => {
   return async (
     request: Request,
@@ -62,9 +112,11 @@ export const createCurrentAppUserMiddleware = ({
     next: NextFunction,
   ): Promise<void> => {
     try {
-      request.appUser = await appUserRepository.upsertByAuthIdentity(
+      const appUser = await appUserRepository.upsertByAuthIdentity(
         resolveCurrentAppUserInput(request),
       );
+      await billingAccountRepository?.ensureForUser(appUser.id);
+      request.appUser = appUser;
       next();
     } catch (error) {
       next(error);

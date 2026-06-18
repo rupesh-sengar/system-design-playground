@@ -12,6 +12,7 @@ interface PracticeAiReviewPanelProps {
   actionMode?: "full" | "clear-only" | "none";
   activeStageTitle: string;
   assistant: PracticePlaygroundViewModel["assistant"];
+  onOpenPricing?: () => void;
 }
 
 const formatTimestamp = (value: string): string => {
@@ -21,9 +22,11 @@ const formatTimestamp = (value: string): string => {
     return "Just now";
   }
 
-  return parsed.toLocaleTimeString([], {
+  return parsed.toLocaleString([], {
+    day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    month: "short",
   });
 };
 
@@ -34,6 +37,12 @@ const formatProviderLabel = (meta: PracticeAiMeta): string => {
 
   return `${meta.provider} / ${meta.model ?? "model"}`;
 };
+
+const formatReadinessLabel = (value: string): string =>
+  value
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 
 const FeedbackList = ({ items, title }: { items: string[]; title: string }) => {
   if (items.length === 0) {
@@ -49,6 +58,34 @@ const FeedbackList = ({ items, title }: { items: string[]; title: string }) => {
         ))}
       </ul>
     </section>
+  );
+};
+
+const DraftComparison = ({
+  currentDraft,
+  sourceDraft,
+}: {
+  currentDraft: string;
+  sourceDraft: string;
+}) => {
+  if (sourceDraft === currentDraft) {
+    return null;
+  }
+
+  return (
+    <details className="playground-ai__comparison">
+      <summary>Compare with current draft</summary>
+      <div className="playground-ai__comparison-grid">
+        <section className="playground-ai__comparison-pane">
+          <h5>Saved request</h5>
+          <pre>{sourceDraft.trim() || "No draft text was captured."}</pre>
+        </section>
+        <section className="playground-ai__comparison-pane">
+          <h5>Current draft</h5>
+          <pre>{currentDraft.trim() || "Current draft is empty."}</pre>
+        </section>
+      </div>
+    </details>
   );
 };
 
@@ -145,6 +182,7 @@ export const PracticeAiReviewPanel = ({
   actionMode = "full",
   activeStageTitle,
   assistant,
+  onOpenPricing,
 }: PracticeAiReviewPanelProps) => {
   const {
     authError,
@@ -160,7 +198,9 @@ export const PracticeAiReviewPanel = ({
     activeStageState,
     canRequestHints,
     canValidateDraft,
+    currentDraft,
     draftWordCount,
+    fullDesignReview,
     hasAnyFeedback,
     isHintStale,
     isValidationStale,
@@ -168,6 +208,7 @@ export const PracticeAiReviewPanel = ({
 
   const hintResult = activeStageState.hintResult;
   const validationResult = activeStageState.validationResult;
+  const fullReviewResult = fullDesignReview.result;
   const authReady = isApiAuthReady;
   const showSignInCta =
     actionMode === "full" &&
@@ -177,8 +218,11 @@ export const PracticeAiReviewPanel = ({
     !isLoading;
   const showRequestActions = actionMode === "full" && !showSignInCta;
   const showRecoveryActions = actionMode !== "none";
+  const showFullReviewAction = actionMode !== "none" && !showSignInCta;
   const showClearAction =
     hasAnyFeedback && (actionMode === "full" || actionMode === "clear-only");
+  const showClearFullReviewAction =
+    fullReviewResult !== null && actionMode !== "none";
   const helperText = !isConfigured
     ? "Configure Auth0 in the frontend before using protected AI routes."
     : !canRequestApiToken
@@ -190,13 +234,21 @@ export const PracticeAiReviewPanel = ({
           : canValidateDraft
             ? "Ready for structured review"
             : "Write at least 20 characters to validate";
+  const fullReviewHelperText = !fullDesignReview.isAvailable
+    ? "Pro unlocks full design review"
+    : fullDesignReview.wordCount < 80
+      ? "Write across stages to review the full design"
+      : "Ready for cross-stage review";
 
   const showEmptyState =
     !hasAnyFeedback &&
+    fullReviewResult === null &&
     activeStageState.hintStatus !== "loading" &&
     activeStageState.validationStatus !== "loading" &&
+    fullDesignReview.status !== "loading" &&
     !activeStageState.hintError &&
-    !activeStageState.validationError;
+    !activeStageState.validationError &&
+    !fullDesignReview.error;
 
   if (!frontendConfig.features.aiReview) {
     return (
@@ -257,6 +309,29 @@ export const PracticeAiReviewPanel = ({
             </>
           ) : null}
 
+          {showFullReviewAction ? (
+            fullDesignReview.isAvailable ? (
+              <button
+                className="secondary-action"
+                type="button"
+                disabled={!authReady || !fullDesignReview.canRequest}
+                onClick={() => void actions.requestFullDesignReview()}
+              >
+                {fullDesignReview.status === "loading"
+                  ? "Reviewing..."
+                  : "Review full design"}
+              </button>
+            ) : onOpenPricing ? (
+              <button
+                className="secondary-action"
+                type="button"
+                onClick={onOpenPricing}
+              >
+                Pro review
+              </button>
+            ) : null
+          ) : null}
+
           {showClearAction ? (
             <button
               className="secondary-action"
@@ -266,24 +341,17 @@ export const PracticeAiReviewPanel = ({
               Clear results
             </button>
           ) : null}
-        </div>
-      </div>
 
-      <div className="playground-ai__meta" aria-label="AI review KPIs">
-        <span className="playground-ai__kpi playground-ai__kpi--primary">
-          <strong>{draftWordCount}</strong>
-          <span>Draft words</span>
-        </span>
-        <span
-          className={`playground-ai__kpi ${
-            canValidateDraft
-              ? "playground-ai__kpi--ready"
-              : "playground-ai__kpi--warning"
-          }`}
-        >
-          <strong>{canValidateDraft ? "Ready" : "Pending"}</strong>
-          <span>{helperText}</span>
-        </span>
+          {showClearFullReviewAction ? (
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={actions.clearFullDesignReview}
+            >
+              Clear full review
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {authError ? (
@@ -305,6 +373,22 @@ export const PracticeAiReviewPanel = ({
         onRetry={actions.retryHints}
         requestLabel="Hints"
         status={activeStageState.hintStatus}
+      />
+
+      <AiRequestNotice
+        canReload={
+          showRecoveryActions && authReady && fullDesignReview.canRequest
+        }
+        canRetry={
+          showRecoveryActions && authReady && fullDesignReview.canRequest
+        }
+        error={fullDesignReview.error}
+        hasResult={fullReviewResult !== null}
+        loadingLabel="Reviewing the full design"
+        onReload={actions.requestFullDesignReview}
+        onRetry={actions.retryFullDesignReview}
+        requestLabel="Full design review"
+        status={fullDesignReview.status}
       />
 
       <AiRequestNotice
@@ -360,6 +444,13 @@ export const PracticeAiReviewPanel = ({
                 ) : null}
               </div>
             </div>
+
+            {isHintStale ? (
+              <DraftComparison
+                currentDraft={currentDraft}
+                sourceDraft={hintResult.sourceDraft}
+              />
+            ) : null}
 
             <div className="playground-ai__grid">
               <FeedbackList items={hintResult.hints} title="Next hints" />
@@ -427,6 +518,13 @@ export const PracticeAiReviewPanel = ({
 
             <p className="playground-ai__summary">{validationResult.summary}</p>
 
+            {isValidationStale ? (
+              <DraftComparison
+                currentDraft={currentDraft}
+                sourceDraft={validationResult.sourceDraft}
+              />
+            ) : null}
+
             <div className="playground-ai__grid">
               <FeedbackList
                 items={validationResult.strengths}
@@ -462,6 +560,91 @@ export const PracticeAiReviewPanel = ({
                     >
                       <div className="playground-ai__rubric-topline">
                         <strong>{item.criterion}</strong>
+                        <span
+                          className={`playground-ai__status-pill playground-ai__status-pill--${item.status}`}
+                        >
+                          {item.status}
+                        </span>
+                      </div>
+                      <p>{item.notes}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </article>
+        ) : null}
+
+        {fullReviewResult ? (
+          <article className="playground-ai__card">
+            <div className="playground-ai__card-head">
+              <div>
+                <p className="playground-ai__eyebrow">Pro Review</p>
+                <h4>Full design readiness</h4>
+              </div>
+              <div className="playground-ai__card-meta">
+                <div
+                  aria-label={`Full design score ${fullReviewResult.score} out of 10`}
+                  className="playground-ai__score-card"
+                >
+                  <strong>{fullReviewResult.score}</strong>
+                  <span>/10 score</span>
+                </div>
+                <div className="playground-ai__score-card playground-ai__score-card--secondary">
+                  <strong>
+                    {formatReadinessLabel(fullReviewResult.readiness)}
+                  </strong>
+                  <span>readiness</span>
+                </div>
+                <span className="playground-ai__chip">
+                  {formatProviderLabel(fullReviewResult.meta)}
+                </span>
+                <span className="playground-ai__chip">
+                  {formatTimestamp(fullReviewResult.receivedAt)}
+                </span>
+              </div>
+            </div>
+
+            <p className="playground-ai__summary">{fullReviewResult.summary}</p>
+
+            <div className="playground-ai__grid">
+              <FeedbackList
+                items={fullReviewResult.strengths}
+                title="Strengths"
+              />
+              <FeedbackList
+                items={fullReviewResult.crossStageInconsistencies}
+                title="Cross-stage inconsistencies"
+              />
+              <FeedbackList
+                items={fullReviewResult.tradeoffCritique}
+                title="Tradeoff critique"
+              />
+              <FeedbackList
+                items={fullReviewResult.architectureRisks}
+                title="Architecture risks"
+              />
+              <FeedbackList
+                items={fullReviewResult.interviewerFollowUps}
+                title="Interviewer follow-ups"
+              />
+              <FeedbackList
+                items={fullReviewResult.nextIterationPlan}
+                title="Next iteration plan"
+              />
+            </div>
+
+            {fullReviewResult.stageReadiness.length > 0 ? (
+              <section className="playground-ai__rubric">
+                <h4>Stage readiness</h4>
+                <div className="playground-ai__rubric-list">
+                  {fullReviewResult.stageReadiness.map((item) => (
+                    <article
+                      key={`${item.stageId}-${item.status}`}
+                      className="playground-ai__rubric-row"
+                    >
+                      <div className="playground-ai__rubric-topline">
+                        <strong>{item.stageId}</strong>
                         <span
                           className={`playground-ai__status-pill playground-ai__status-pill--${item.status}`}
                         >

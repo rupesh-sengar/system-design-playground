@@ -1,7 +1,9 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  AI_VALIDATION_PROVIDER: z.enum(["deepseek", "rule-engine"]).default("deepseek"),
+  AI_VALIDATION_PROVIDER: z
+    .enum(["deepseek", "rule-engine"])
+    .default("deepseek"),
   APP_NAME: z.string().min(1).default("system-design-platform"),
   AUTH0_AUDIENCE: z.string().min(1).optional(),
   AUTH0_DOMAIN: z.string().min(1).optional(),
@@ -11,7 +13,11 @@ const envSchema = z.object({
   DEEPSEEK_API_KEY: z.string().min(1).optional(),
   DEEPSEEK_BASE_URL: z.string().min(1).default("https://api.deepseek.com"),
   DEEPSEEK_MODEL: z.string().min(1).default("deepseek-v4-flash"),
-  DEEPSEEK_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
+  DEEPSEEK_REQUEST_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(120_000),
   EMBEDDING_DIMENSIONS: z.coerce.number().int().positive().default(768),
   EMBEDDING_PROVIDER: z.literal("ollama").default("ollama"),
   FRONTEND_BASE_URL: z.string().min(1).default("http://localhost:5173"),
@@ -21,10 +27,14 @@ const envSchema = z.object({
     .default("info"),
   MONTHLY_AI_FREE_QUOTA: z.coerce.number().int().nonnegative().default(10),
   MONTHLY_AI_PLUS_QUOTA: z.coerce.number().int().nonnegative().default(200),
-  MONTHLY_AI_PRO_QUOTA: z.coerce.number().int().nonnegative().default(1000),
+  MONTHLY_AI_PRO_QUOTA: z.coerce.number().int().nonnegative().default(600),
   OLLAMA_BASE_URL: z.string().min(1).default("http://localhost:11434"),
   OLLAMA_EMBEDDING_MODEL: z.string().min(1).default("nomic-embed-text"),
-  OLLAMA_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
+  OLLAMA_REQUEST_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(120_000),
   PORT: z.coerce.number().int().positive().default(8080),
   RAZORPAY_API_BASE_URL: z.string().min(1).default("https://api.razorpay.com"),
   RAZORPAY_KEY_ID: z.string().min(1).optional(),
@@ -95,11 +105,22 @@ export type AppConfig = z.infer<typeof envSchema> & {
 
 let cachedConfig: AppConfig | null = null;
 
-const toOriginList = (rawOrigins: string): string[] =>
+const toOriginList = (rawOrigins: string | undefined): string[] =>
   rawOrigins
-    .split(",")
+    ?.split(",")
     .map((origin) => origin.trim())
-    .filter(Boolean);
+    .filter(Boolean) ?? [];
+
+const resolveCorsOrigins = (rawOrigins: {
+  CORS_ORIGIN: string;
+  CORS_ORIGINS?: string | undefined;
+}): string[] => {
+  const corsOrigins = toOriginList(rawOrigins.CORS_ORIGINS);
+
+  return corsOrigins.length > 0
+    ? corsOrigins
+    : toOriginList(rawOrigins.CORS_ORIGIN);
+};
 
 const normalizeIssuerBaseUrl = (domain: string | undefined): string | null => {
   const trimmedDomain = domain?.trim();
@@ -155,7 +176,7 @@ export const getEnv = (): AppConfig => {
       issuerBaseUrl,
       requiredScopes,
     },
-    corsOrigins: toOriginList(parsed.CORS_ORIGIN),
+    corsOrigins: resolveCorsOrigins(parsed),
     deepseek: {
       apiKey: deepseekApiKey,
       baseUrl: parsed.DEEPSEEK_BASE_URL.trim().replace(/\/+$/, ""),

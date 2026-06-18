@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Layers,
+  LockKeyhole,
   Tag,
 } from "lucide-react";
 import { getDifficultyClassName } from "../lib/catalog";
@@ -12,6 +13,7 @@ import "./ProblemCard.css";
 
 interface ProblemCardProps {
   isBookmarked: boolean;
+  isLocked: boolean;
   isPracticed: boolean;
   problem: Problem;
   onSelect: () => void;
@@ -19,19 +21,30 @@ interface ProblemCardProps {
 
 export const ProblemCard = ({
   isBookmarked,
+  isLocked,
   isPracticed,
   problem,
   onSelect,
 }: ProblemCardProps) => (
   <button
-    aria-label={`${problem.title}. ${problem.difficulty}. ${problem.category}. ${problem.scale}. ${problem.summary}`}
-    className="problem-card"
-    title={problem.summary}
+    aria-label={`${isLocked ? "Locked. " : ""}${problem.title}. ${problem.difficulty}. ${problem.category}. ${problem.scale}. ${problem.summary}`}
+    className={`problem-card ${isLocked ? "problem-card--locked" : ""}`}
+    title={
+      isLocked ? "Upgrade to Plus or Pro to open this problem." : problem.summary
+    }
     type="button"
     onClick={onSelect}
   >
-    <span className="problem-card__icon">
-      <Layers aria-hidden="true" size={16} strokeWidth={1.9} />
+    <span
+      className={`problem-card__icon ${
+        isLocked ? "problem-card__icon--locked" : ""
+      }`}
+    >
+      {isLocked ? (
+        <LockKeyhole aria-hidden="true" size={16} strokeWidth={2} />
+      ) : (
+        <Layers aria-hidden="true" size={16} strokeWidth={1.9} />
+      )}
     </span>
 
     <h3>{problem.title}</h3>
@@ -49,8 +62,14 @@ export const ProblemCard = ({
       </span>
     </div>
 
-    {isBookmarked || isPracticed ? (
+    {isLocked || isBookmarked || isPracticed ? (
       <div className="state-row">
+        {isLocked ? (
+          <span className="state-chip state-chip--locked">
+            <LockKeyhole aria-hidden="true" size={12} strokeWidth={2} />
+            Locked
+          </span>
+        ) : null}
         {isBookmarked ? (
           <span className="state-chip">
             <Bookmark aria-hidden="true" size={12} strokeWidth={2} />

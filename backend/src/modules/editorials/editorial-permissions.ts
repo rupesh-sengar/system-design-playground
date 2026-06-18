@@ -50,15 +50,26 @@ const requireAnyPermission = (
   acceptedPermissions: string[],
   message: string,
 ): void => {
+  if (hasAnyPermission(request, acceptedPermissions)) {
+    return;
+  }
+
+  throw new ForbiddenRequestError(message);
+};
+
+const hasAnyPermission = (
+  request: Request,
+  acceptedPermissions: string[],
+): boolean => {
   const grantedPermissions = getGrantedPermissions(request);
-  const hasPermission = acceptedPermissions.some((permission) =>
+
+  return acceptedPermissions.some((permission) =>
     grantedPermissions.has(permission),
   );
-
-  if (!hasPermission) {
-    throw new ForbiddenRequestError(message);
-  }
 };
+
+export const hasStageEditorialReadPermission = (request: Request): boolean =>
+  hasAnyPermission(request, EDITORIAL_READ_PERMISSIONS);
 
 export const requireStageEditorialReadPermission = (
   request: Request,

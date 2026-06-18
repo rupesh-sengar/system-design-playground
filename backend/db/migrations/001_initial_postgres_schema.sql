@@ -17,11 +17,22 @@ CREATE TABLE app_users (
   auth_subject TEXT NOT NULL,
   email TEXT,
   display_name TEXT,
+  username TEXT,
+  picture_url TEXT,
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT app_users_auth_identity_unique UNIQUE (auth_provider, auth_subject),
   CONSTRAINT app_users_auth_subject_not_blank CHECK (btrim(auth_subject) <> '')
 );
+
+CREATE INDEX idx_app_users_email
+  ON app_users (lower(email))
+  WHERE email IS NOT NULL;
+
+CREATE INDEX idx_app_users_username
+  ON app_users (lower(username))
+  WHERE username IS NOT NULL;
 
 CREATE TABLE user_problem_progress (
   user_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,

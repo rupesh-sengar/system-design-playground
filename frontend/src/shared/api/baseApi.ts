@@ -8,6 +8,7 @@ export const baseApi = createApi({
   }),
   tagTypes: [
     "BillingAccount",
+    "BillingPlans",
     "OnboardingProfile",
     "ProblemProgress",
     "PracticeSession",

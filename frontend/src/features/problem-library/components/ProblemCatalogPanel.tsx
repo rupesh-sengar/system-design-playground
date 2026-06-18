@@ -21,10 +21,12 @@ import { FilterPill } from "@/shared/ui/FilterPill";
 import { ProblemCard } from "./ProblemCard";
 import "@/shared/ui/shared-ui.css";
 import "./ProblemCatalogPanel.css";
+import { isFreeStarterProblem } from "../lib/access";
 import type { DifficultyFilter, Problem } from "../model/problem-library";
 import type {
   CatalogFilters,
   DifficultyCounts,
+  ProblemLibraryAccessState,
   ProblemCatalogPagination,
   ProblemLibraryPersistenceState,
   ProblemLibraryMetrics,
@@ -38,6 +40,7 @@ interface DropdownOption<TValue extends string> {
 }
 
 interface ProblemCatalogPanelProps {
+  access: ProblemLibraryAccessState;
   bookmarkedIds: Set<string>;
   categories: string[];
   difficultyCounts: DifficultyCounts;
@@ -83,7 +86,7 @@ interface FilterDropdownProps<TValue extends string> {
   onChange: (value: TValue) => void;
 }
 
-const FilterDropdown = <TValue extends string,>({
+const FilterDropdown = <TValue extends string>({
   icon,
   id,
   label,
@@ -317,6 +320,7 @@ const buildPaginationItems = (
 };
 
 export const ProblemCatalogPanel = ({
+  access,
   bookmarkedIds,
   categories,
   difficultyCounts,
@@ -504,6 +508,9 @@ export const ProblemCatalogPanel = ({
             <ProblemCard
               key={problem.id}
               isBookmarked={bookmarkedIds.has(problem.id)}
+              isLocked={
+                !access.hasPremiumCatalog && !isFreeStarterProblem(problem.id)
+              }
               isPracticed={practicedIds.has(problem.id)}
               problem={problem}
               onSelect={() => onSelectProblem(problem.id)}

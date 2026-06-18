@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import {
   findProblemById,
+  isFreeStarterProblem,
   ProblemCatalogPanel,
   problems,
   useProblemLibrary,
@@ -55,6 +56,7 @@ export default function App() {
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const {
     actions,
+    access,
     bookmarkedIds,
     categories,
     difficultyCounts,
@@ -69,6 +71,8 @@ export default function App() {
   } = useProblemLibrary();
   const routeProblem =
     route.name === "playground" ? findProblemById(route.problemId) : null;
+  const isProblemLocked = (problemId: string): boolean =>
+    !access.hasPremiumCatalog && !isFreeStarterProblem(problemId);
 
   useEffect(() => {
     try {
@@ -90,11 +94,23 @@ export default function App() {
     const randomIndex = Math.floor(Math.random() * visibleProblems.length);
     const randomProblem = visibleProblems[randomIndex];
     actions.selectProblem(randomProblem.id);
+
+    if (isProblemLocked(randomProblem.id)) {
+      goToPricing();
+      return;
+    }
+
     goToPlayground(randomProblem.id);
   };
 
   const handleSelectProblem = (problemId: string): void => {
     actions.selectProblem(problemId);
+
+    if (isProblemLocked(problemId)) {
+      goToPricing();
+      return;
+    }
+
     goToPlayground(problemId);
   };
 
@@ -304,6 +320,7 @@ export default function App() {
 
             actions.togglePracticed(routeProblem.id);
           }}
+          onOpenPricing={goToPricing}
           onSaveStatusChange={setPlaygroundSaveStatus}
         />
         {renderOverlays()}
@@ -379,6 +396,7 @@ export default function App() {
 
       <main className="workspace workspace--library-only">
         <ProblemCatalogPanel
+          access={access}
           bookmarkedIds={bookmarkedIds}
           categories={categories}
           difficultyCounts={difficultyCounts}

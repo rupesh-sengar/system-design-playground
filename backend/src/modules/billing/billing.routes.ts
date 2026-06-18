@@ -17,6 +17,7 @@ import {
   razorpaySubscriptionVerificationSchema,
 } from "./contracts.js";
 import type { BillingAccessService } from "./entitlements.js";
+import { getBillingPlanCatalog } from "./plans.js";
 import type {
   RazorpayBillingClient,
   RazorpayWebhookService,
@@ -34,6 +35,10 @@ interface CreateBillingRouterOptions {
 interface CreateRazorpayWebhookRouterOptions {
   razorpayWebhookService: RazorpayWebhookService;
   razorpayWebhookVerifier: RazorpayWebhookVerifier;
+}
+
+interface CreateBillingPlanRouterOptions {
+  config: AppConfig;
 }
 
 const createAsyncHandler =
@@ -92,6 +97,22 @@ const getCheckoutDescription = (
   const planLabel = plan === "plus" ? "Plus" : "Pro";
 
   return `System Design Lab ${planLabel} ${interval} subscription`;
+};
+
+export const createBillingPlanRouter = ({
+  config,
+}: CreateBillingPlanRouterOptions): Router => {
+  const router = Router();
+
+  router.get("/plans", (_request, response) => {
+    response.json({
+      data: {
+        plans: getBillingPlanCatalog(config),
+      },
+    });
+  });
+
+  return router;
 };
 
 export const createBillingRouter = ({

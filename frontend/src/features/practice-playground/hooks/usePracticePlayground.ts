@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { frontendConfig } from "@/config/env";
 import { useAppAuth } from "@/features/auth/app-auth";
+import { useGetBillingAccountQuery } from "@/features/billing/api/billingApi";
 import { getApiErrorDetails } from "@/shared/api/http";
 import {
-  isRichTextEffectivelyEmpty,
   richTextToPlainText,
   sanitizeRichTextHtml,
 } from "@/shared/lib/richText";
@@ -15,6 +16,7 @@ import {
 import { useGetStageEditorialQuery } from "../api/stageEditorialApi";
 import {
   useGenerateStageHintsMutation,
+  useReviewFullDesignMutation,
   useValidateStageDraftMutation,
 } from "../api/coachApi";
 import {
@@ -39,16 +41,27 @@ import type {
   PracticeCoachStageState,
   PracticeCoachStageStateMap,
   PracticeAiRequestError,
+  PracticeFullDesignReviewResult,
   PracticeProblem,
   PracticeSession,
   PracticeSessionStorageState,
   PracticeSessionStore,
+  PracticeStageDraft,
+  PracticeStageDraftMap,
+  PracticeStageHintResult,
   PracticeStageId,
+  PracticeStageValidationResult,
 } from "../model/types";
 
 const STORAGE_KEY = "system-design-lab.practice-playground";
 
 type PracticeCoachStore = Record<string, PracticeCoachStageStateMap>;
+type PracticeFullDesignReviewRuntimeState = Pick<
+  PracticePlaygroundViewModel["assistant"]["fullDesignReview"],
+  "error" | "result" | "status"
+>;
+type PracticeFullDesignReviewStore =
+  Record<string, PracticeFullDesignReviewRuntimeState>;
 
 const createEmptyCoachStageState = (): PracticeCoachStageState => ({
   hintError: null,
@@ -65,8 +78,59 @@ const createEmptyCoachStateMap = (): PracticeCoachStageStateMap =>
     return coachState;
   }, {} as PracticeCoachStageStateMap);
 
+const createEmptyFullDesignReviewState =
+  (): PracticeFullDesignReviewRuntimeState => ({
+    error: null,
+    result: null,
+    status: "idle",
+  });
+
+const mergeCoachStateWithDraftFeedback = (
+  coachState: PracticeCoachStageStateMap,
+  drafts: PracticeStageDraftMap | null,
+): PracticeCoachStageStateMap =>
+  practiceStages.reduce<PracticeCoachStageStateMap>((mergedState, stage) => {
+    const currentStageState =
+      coachState[stage.id] ?? createEmptyCoachStageState();
+    const persistedHintResult = drafts?.[stage.id]?.hintResult ?? null;
+    const persistedValidationResult =
+      drafts?.[stage.id]?.validationResult ?? null;
+    const hintResult = currentStageState.hintResult ?? persistedHintResult;
+    const validationResult =
+      currentStageState.validationResult ?? persistedValidationResult;
+
+    mergedState[stage.id] = {
+      ...currentStageState,
+      hintResult,
+      hintStatus:
+        currentStageState.hintStatus === "idle" && hintResult
+          ? "success"
+          : currentStageState.hintStatus,
+      validationResult,
+      validationStatus:
+        currentStageState.validationStatus === "idle" && validationResult
+          ? "success"
+          : currentStageState.validationStatus,
+    };
+
+    return mergedState;
+  }, {} as PracticeCoachStageStateMap);
+
 const countWords = (value: string): number =>
   value.split(/\s+/).filter(Boolean).length;
+
+const buildStageDraftPlainText = (
+  stageId: PracticeStageId,
+  draft: PracticeStageDraft,
+): string =>
+  [
+    richTextToPlainText(draft.notes),
+    stageId === "high-level-design"
+      ? summarizeSystemDesignDiagram(draft.diagram)
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
 const toPracticeAiRequestError = (
   error: unknown,
@@ -89,6 +153,7 @@ export const usePracticePlayground = (
   const { isApiAuthReady } = useAppAuth();
   const toast = useToast();
   const [triggerGenerateStageHints] = useGenerateStageHintsMutation();
+  const [triggerFullDesignReview] = useReviewFullDesignMutation();
   const [triggerValidateStageDraft] = useValidateStageDraftMutation();
   const [deletePracticeSession, deletePracticeSessionState] =
     useDeletePracticeSessionMutation();
@@ -99,19 +164,34 @@ export const usePracticePlayground = (
   );
   const [coachStateByProblemId, setCoachStateByProblemId] =
     useState<PracticeCoachStore>({});
+  const [fullReviewStateByProblemId, setFullReviewStateByProblemId] =
+    useState<PracticeFullDesignReviewStore>({});
   const [remoteSession, setRemoteSession] = useState<PracticeSession | null>(
     null,
   );
   const [persistedRemoteSnapshot, setPersistedRemoteSnapshot] = useState<
     string | null
   >(null);
+  const { data: billingAccount } = useGetBillingAccountQuery(undefined, {
+    skip: !frontendConfig.features.billing || !isApiAuthReady,
+  });
+  const hasCloudSync =
+    !frontendConfig.features.billing ||
+    Boolean(billingAccount?.entitlements.cloudSync);
+  const hasEditorialAccess =
+    !frontendConfig.features.billing ||
+    Boolean(billingAccount?.entitlements.editorials);
+  const hasAdvancedReview =
+    !frontendConfig.features.billing ||
+    Boolean(billingAccount?.entitlements.advancedReview);
+  const shouldUseRemotePersistence = isApiAuthReady && hasCloudSync;
   const {
     data: persistedSession,
     error: persistedSessionError,
     isFetching: isPersistedSessionFetching,
     isLoading: isPersistedSessionLoading,
   } = useGetPracticeSessionQuery(problem?.id ?? "", {
-    skip: !isApiAuthReady || !problem,
+    skip: !shouldUseRemotePersistence || !problem,
   });
   const lastPersistedSessionErrorRef = useRef<string | null>(null);
   const lastSaveErrorRef = useRef<string | null>(null);
@@ -129,7 +209,7 @@ export const usePracticePlayground = (
   }, [problem, sessions]);
 
   useEffect(() => {
-    if (!isApiAuthReady) {
+    if (!shouldUseRemotePersistence) {
       setRemoteSession(null);
       setPersistedRemoteSnapshot(null);
       return;
@@ -143,10 +223,10 @@ export const usePracticePlayground = (
 
     setRemoteSession(null);
     setPersistedRemoteSnapshot(null);
-  }, [isApiAuthReady, problem?.id]);
+  }, [problem?.id, shouldUseRemotePersistence]);
 
   useEffect(() => {
-    if (!isApiAuthReady || !problem) {
+    if (!shouldUseRemotePersistence || !problem) {
       return;
     }
 
@@ -170,16 +250,16 @@ export const usePracticePlayground = (
     setRemoteSession(nextSession);
     setPersistedRemoteSnapshot(nextSnapshot);
   }, [
-    isApiAuthReady,
     isPersistedSessionFetching,
     isPersistedSessionLoading,
     persistedSession,
     problem,
     remoteSession,
+    shouldUseRemotePersistence,
   ]);
 
   useEffect(() => {
-    if (!isApiAuthReady || !persistedSessionError) {
+    if (!shouldUseRemotePersistence || !persistedSessionError) {
       lastPersistedSessionErrorRef.current = null;
       return;
     }
@@ -198,19 +278,19 @@ export const usePracticePlayground = (
       dedupeKey: "practice-session-load-error",
       title: "Session Load Failed",
     });
-  }, [isApiAuthReady, persistedSessionError, toast]);
+  }, [persistedSessionError, shouldUseRemotePersistence, toast]);
 
   const session = useMemo<PracticeSession | null>(() => {
     if (!problem) {
       return null;
     }
 
-    if (isApiAuthReady) {
+    if (shouldUseRemotePersistence) {
       return remoteSession;
     }
 
     return browserSession;
-  }, [browserSession, isApiAuthReady, problem, remoteSession]);
+  }, [browserSession, problem, remoteSession, shouldUseRemotePersistence]);
 
   const activeStage = useMemo(() => {
     if (!session) {
@@ -233,7 +313,7 @@ export const usePracticePlayground = (
       stageId: activeStage.id,
     },
     {
-      skip: !isApiAuthReady || !problem,
+      skip: !isApiAuthReady || !hasEditorialAccess || !problem,
     },
   );
 
@@ -266,8 +346,11 @@ export const usePracticePlayground = (
       return createEmptyCoachStateMap();
     }
 
-    return coachStateByProblemId[problem.id] ?? createEmptyCoachStateMap();
-  }, [coachStateByProblemId, problem]);
+    return mergeCoachStateWithDraftFeedback(
+      coachStateByProblemId[problem.id] ?? createEmptyCoachStateMap(),
+      session?.stages ?? null,
+    );
+  }, [coachStateByProblemId, problem, session?.stages]);
 
   const activeStageState = useMemo(
     () => coachState[activeStage.id],
@@ -275,20 +358,59 @@ export const usePracticePlayground = (
   );
 
   const activeStagePlainText = useMemo(
-    () =>
-      [
-        richTextToPlainText(activeStageDraft.notes),
-        activeStage.id === "high-level-design"
-          ? summarizeSystemDesignDiagram(activeStageDraft.diagram)
-          : "",
-      ]
-        .filter(Boolean)
-        .join("\n\n"),
-    [activeStage.id, activeStageDraft.diagram, activeStageDraft.notes],
+    () => buildStageDraftPlainText(activeStage.id, activeStageDraft),
+    [activeStage.id, activeStageDraft],
   );
   const draftWordCount = useMemo(
     () => countWords(activeStagePlainText),
     [activeStagePlainText],
+  );
+  const fullDesignStageSubmissions = useMemo(
+    () =>
+      session
+        ? practiceStages.map((stage) => ({
+            stageId: stage.id,
+            stageTitle: stage.title,
+            submission: buildStageDraftPlainText(stage.id, session.stages[stage.id]),
+          }))
+        : [],
+    [session],
+  );
+  const fullDesignSourceDraft = useMemo(
+    () =>
+      fullDesignStageSubmissions
+        .map((stage) =>
+          [
+            `${stage.stageTitle}:`,
+            stage.submission.trim() || "[empty]",
+          ].join("\n"),
+        )
+        .join("\n\n"),
+    [fullDesignStageSubmissions],
+  );
+  const fullDesignWordCount = useMemo(
+    () => countWords(fullDesignSourceDraft),
+    [fullDesignSourceDraft],
+  );
+  const fullDesignReviewRuntimeState = problem
+    ? (fullReviewStateByProblemId[problem.id] ??
+      createEmptyFullDesignReviewState())
+    : createEmptyFullDesignReviewState();
+  const fullDesignReview = useMemo(
+    () => ({
+      ...fullDesignReviewRuntimeState,
+      canRequest:
+        hasAdvancedReview &&
+        fullDesignWordCount >= 80 &&
+        fullDesignReviewRuntimeState.status !== "loading",
+      isAvailable: hasAdvancedReview,
+      wordCount: fullDesignWordCount,
+    }),
+    [
+      fullDesignReviewRuntimeState,
+      fullDesignWordCount,
+      hasAdvancedReview,
+    ],
   );
 
   const updateSession = (
@@ -298,7 +420,7 @@ export const usePracticePlayground = (
       return;
     }
 
-    if (isApiAuthReady) {
+    if (shouldUseRemotePersistence) {
       setRemoteSession((currentSession) =>
         normalizePracticeSession(updater(currentSession ?? createDefaultSession())),
       );
@@ -318,7 +440,12 @@ export const usePracticePlayground = (
   };
 
   useEffect(() => {
-    if (!isApiAuthReady || !problem || !remoteSession || !persistedRemoteSnapshot) {
+    if (
+      !shouldUseRemotePersistence ||
+      !problem ||
+      !remoteSession ||
+      !persistedRemoteSnapshot
+    ) {
       return;
     }
 
@@ -348,15 +475,15 @@ export const usePracticePlayground = (
       window.clearTimeout(timeoutId);
     };
   }, [
-    isApiAuthReady,
     persistedRemoteSnapshot,
     problem,
     remoteSession,
     savePracticeSession,
+    shouldUseRemotePersistence,
   ]);
 
   useEffect(() => {
-    if (!isApiAuthReady || !savePracticeSessionState.error) {
+    if (!shouldUseRemotePersistence || !savePracticeSessionState.error) {
       lastSaveErrorRef.current = null;
       return;
     }
@@ -375,7 +502,7 @@ export const usePracticePlayground = (
       dedupeKey: "practice-session-save-error",
       title: "Autosave Failed",
     });
-  }, [isApiAuthReady, savePracticeSessionState.error, toast]);
+  }, [savePracticeSessionState.error, shouldUseRemotePersistence, toast]);
 
   const updateCoachState = (
     stageId: PracticeStageId,
@@ -394,6 +521,55 @@ export const usePracticePlayground = (
         [problem.id]: {
           ...currentProblemState,
           [stageId]: updater(currentProblemState[stageId]),
+        },
+      };
+    });
+  };
+
+  const updateFullDesignReviewState = (
+    updater: (
+      current: PracticeFullDesignReviewRuntimeState,
+    ) => PracticeFullDesignReviewRuntimeState,
+  ): void => {
+    if (!problem) {
+      return;
+    }
+
+    setFullReviewStateByProblemId((currentState) => {
+      const currentProblemState =
+        currentState[problem.id] ?? createEmptyFullDesignReviewState();
+
+      return {
+        ...currentState,
+        [problem.id]: updater(currentProblemState),
+      };
+    });
+  };
+
+  const updateStageFeedback = (
+    stageId: PracticeStageId,
+    feedback: {
+      hintResult?: PracticeStageHintResult | null;
+      validationResult?: PracticeStageValidationResult | null;
+    },
+  ): void => {
+    updateSession((current) => {
+      const currentStageDraft = current.stages[stageId];
+
+      return {
+        ...current,
+        updatedAt: new Date().toISOString(),
+        stages: {
+          ...current.stages,
+          [stageId]: {
+            ...currentStageDraft,
+            ...(feedback.hintResult !== undefined
+              ? { hintResult: feedback.hintResult }
+              : {}),
+            ...(feedback.validationResult !== undefined
+              ? { validationResult: feedback.validationResult }
+              : {}),
+          },
         },
       };
     });
@@ -476,7 +652,7 @@ export const usePracticePlayground = (
     }
 
     const shouldReset = window.confirm(
-      isApiAuthReady
+      shouldUseRemotePersistence
         ? `Clear the saved playground notes for ${problem.title} from your account?`
         : `Clear the saved playground notes for ${problem.title}?`,
     );
@@ -485,7 +661,7 @@ export const usePracticePlayground = (
       return;
     }
 
-    if (isApiAuthReady) {
+    if (shouldUseRemotePersistence) {
       const nextSession = createDefaultSession();
       setRemoteSession(nextSession);
       setPersistedRemoteSnapshot(createPracticeSessionSnapshot(nextSession));
@@ -524,6 +700,11 @@ export const usePracticePlayground = (
       delete nextState[problem.id];
       return nextState;
     });
+    setFullReviewStateByProblemId((currentState) => {
+      const nextState = { ...currentState };
+      delete nextState[problem.id];
+      return nextState;
+    });
   };
 
   const storage = useMemo<PracticeSessionStorageState>(() => {
@@ -538,17 +719,17 @@ export const usePracticePlayground = (
         ).message
       : null;
     const hasPendingRemoteChanges =
-      isApiAuthReady &&
+      shouldUseRemotePersistence &&
       remoteSession !== null &&
       persistedRemoteSnapshot !== null &&
       createPracticeSessionSnapshot(remoteSession) !== persistedRemoteSnapshot;
     const isLoading =
-      isApiAuthReady &&
+      shouldUseRemotePersistence &&
       Boolean(problem) &&
       remoteSession === null &&
       (isPersistedSessionLoading || isPersistedSessionFetching);
     const isSaving =
-      isApiAuthReady &&
+      shouldUseRemotePersistence &&
       (savePracticeSessionState.isLoading ||
         deletePracticeSessionState.isLoading ||
         hasPendingRemoteChanges);
@@ -556,7 +737,7 @@ export const usePracticePlayground = (
     return {
       errorMessage,
       isLoading,
-      isRemote: isApiAuthReady,
+      isRemote: shouldUseRemotePersistence,
       isSaving,
       statusLabel: errorMessage
         ? "Save failed"
@@ -571,14 +752,13 @@ export const usePracticePlayground = (
           ? "loading"
           : isSaving
             ? "saving"
-            : isApiAuthReady
+            : shouldUseRemotePersistence
               ? "saved"
               : "local",
     };
   }, [
     deletePracticeSessionState.error,
     deletePracticeSessionState.isLoading,
-    isApiAuthReady,
     isPersistedSessionFetching,
     isPersistedSessionLoading,
     persistedSessionError,
@@ -587,6 +767,7 @@ export const usePracticePlayground = (
     remoteSession,
     savePracticeSessionState.error,
     savePracticeSessionState.isLoading,
+    shouldUseRemotePersistence,
   ]);
 
   if (!problem) {
@@ -605,9 +786,12 @@ export const usePracticePlayground = (
       assistant: {
         actions: {
           clearActiveStageFeedback: () => undefined,
+          clearFullDesignReview: () => undefined,
           reloadHints: async () => undefined,
           reloadValidation: async () => undefined,
+          requestFullDesignReview: async () => undefined,
           requestHints: async () => undefined,
+          retryFullDesignReview: async () => undefined,
           retryHints: async () => undefined,
           retryValidation: async () => undefined,
           validateDraft: async () => undefined,
@@ -615,7 +799,14 @@ export const usePracticePlayground = (
         activeStageState: createEmptyCoachStageState(),
         canRequestHints: false,
         canValidateDraft: false,
+        currentDraft: "",
         draftWordCount: 0,
+        fullDesignReview: {
+          ...createEmptyFullDesignReviewState(),
+          canRequest: false,
+          isAvailable: false,
+          wordCount: 0,
+        },
         hasAnyFeedback: false,
         isHintStale: false,
         isValidationStale: false,
@@ -623,6 +814,7 @@ export const usePracticePlayground = (
       editorial: {
         contentHtml: null,
         errorMessage: null,
+        isLocked: false,
         isLoading: false,
         title: null,
         updatedAt: null,
@@ -637,12 +829,12 @@ export const usePracticePlayground = (
   }
 
   const requestHints = async (): Promise<void> => {
-    if (!problem || isRichTextEffectivelyEmpty(activeStageDraft.notes)) {
+    if (!problem || activeStagePlainText.trim().length === 0) {
       return;
     }
 
     const stageId = activeStage.id;
-    const sourceDraft = richTextToPlainText(activeStageDraft.notes);
+    const sourceDraft = activeStagePlainText;
 
     updateCoachState(stageId, (current) => ({
       ...current,
@@ -656,18 +848,20 @@ export const usePracticePlayground = (
         problem,
         stageId,
       }).unwrap();
+      const hintResult: PracticeStageHintResult = {
+        ...response.data,
+        meta: response.meta,
+        receivedAt: new Date().toISOString(),
+        sourceDraft,
+      };
 
       updateCoachState(stageId, (current) => ({
         ...current,
         hintError: null,
-        hintResult: {
-          ...response.data,
-          meta: response.meta,
-          receivedAt: new Date().toISOString(),
-          sourceDraft,
-        },
+        hintResult,
         hintStatus: "success",
       }));
+      updateStageFeedback(stageId, { hintResult });
       toast.success("Stage hints are ready.", {
         title: "Hints Generated",
       });
@@ -709,18 +903,20 @@ export const usePracticePlayground = (
         stageId,
         submission: sourceDraft,
       }).unwrap();
+      const validationResult: PracticeStageValidationResult = {
+        ...response.data,
+        meta: response.meta,
+        receivedAt: new Date().toISOString(),
+        sourceDraft,
+      };
 
       updateCoachState(stageId, (current) => ({
         ...current,
         validationError: null,
-        validationResult: {
-          ...response.data,
-          meta: response.meta,
-          receivedAt: new Date().toISOString(),
-          sourceDraft,
-        },
+        validationResult,
         validationStatus: "success",
       }));
+      updateStageFeedback(stageId, { validationResult });
       toast.success("Structured draft feedback is ready.", {
         title: "Validation Complete",
       });
@@ -742,8 +938,63 @@ export const usePracticePlayground = (
     }
   };
 
+  const requestFullDesignReview = async (): Promise<void> => {
+    if (!problem || fullDesignWordCount < 80 || !hasAdvancedReview) {
+      return;
+    }
+
+    const sourceDraft = fullDesignSourceDraft;
+
+    updateFullDesignReviewState((current) => ({
+      ...current,
+      error: null,
+      status: "loading",
+    }));
+
+    try {
+      const response = await triggerFullDesignReview({
+        problem,
+        stages: fullDesignStageSubmissions,
+      }).unwrap();
+      const result: PracticeFullDesignReviewResult = {
+        ...response.data,
+        meta: response.meta,
+        receivedAt: new Date().toISOString(),
+        sourceDraft,
+      };
+
+      updateFullDesignReviewState(() => ({
+        error: null,
+        result,
+        status: "success",
+      }));
+      toast.success("Full design review is ready.", {
+        title: "Advanced Review Complete",
+      });
+    } catch (error) {
+      const reviewError = toPracticeAiRequestError(
+        error,
+        "Unable to review the full design right now.",
+      );
+
+      updateFullDesignReviewState((current) => ({
+        ...current,
+        error: reviewError,
+        status: "error",
+      }));
+      toast.error(reviewError.message, {
+        dedupeKey: "practice-full-design-review-error",
+        title: "Advanced Review Failed",
+      });
+    }
+  };
+
   const retryHints = async (): Promise<void> => {
     await requestHints();
+  };
+
+  const retryFullDesignReview = async (): Promise<void> => {
+    await requestFullDesignReview();
   };
 
   const retryValidation = async (): Promise<void> => {
@@ -760,6 +1011,14 @@ export const usePracticePlayground = (
 
   const clearActiveStageFeedback = (): void => {
     updateCoachState(activeStage.id, () => createEmptyCoachStageState());
+    updateStageFeedback(activeStage.id, {
+      hintResult: null,
+      validationResult: null,
+    });
+  };
+
+  const clearFullDesignReview = (): void => {
+    updateFullDesignReviewState(() => createEmptyFullDesignReviewState());
   };
 
   const hasAnyFeedback =
@@ -787,39 +1046,48 @@ export const usePracticePlayground = (
     assistant: {
       actions: {
         clearActiveStageFeedback,
+        clearFullDesignReview,
         reloadHints,
         reloadValidation,
+        requestFullDesignReview,
         requestHints,
+        retryFullDesignReview,
         retryHints,
         retryValidation,
         validateDraft,
       },
       activeStageState,
       canRequestHints:
-        !isRichTextEffectivelyEmpty(activeStageDraft.notes) &&
+        activeStagePlainText.trim().length > 0 &&
         activeStageState.hintStatus !== "loading",
       canValidateDraft:
         activeStagePlainText.length >= 20 &&
         activeStageState.validationStatus !== "loading",
+      currentDraft: activeStagePlainText,
       draftWordCount,
+      fullDesignReview,
       hasAnyFeedback,
       isHintStale,
       isValidationStale,
     },
     editorial: {
-      contentHtml: stageEditorial?.contentHtml ?? null,
+      contentHtml: hasEditorialAccess
+        ? (stageEditorial?.contentHtml ?? null)
+        : null,
       errorMessage: stageEditorialError
         ? getApiErrorDetails(
             stageEditorialError,
             "Unable to load the stage editorial.",
           ).message
         : null,
+      isLocked: !hasEditorialAccess,
       isLoading:
         isApiAuthReady &&
+        hasEditorialAccess &&
         Boolean(problem) &&
         (isStageEditorialLoading || isStageEditorialFetching),
-      title: stageEditorial?.title || null,
-      updatedAt: stageEditorial?.updatedAt ?? null,
+      title: hasEditorialAccess ? (stageEditorial?.title || null) : null,
+      updatedAt: hasEditorialAccess ? (stageEditorial?.updatedAt ?? null) : null,
     },
     metrics,
     session,

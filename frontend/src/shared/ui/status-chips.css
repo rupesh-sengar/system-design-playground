@@ -53,6 +53,11 @@
     color: var(--easy);
 }
 
+.state-chip--locked {
+    background: rgba(41, 58, 61, 0.08);
+    color: var(--muted);
+}
+
 :root[data-theme="dark"] .category-chip {
     background: rgba(66, 184, 174, 0.14);
     color: var(--accent-deep);
@@ -66,4 +71,9 @@
 :root[data-theme="dark"] .state-chip--done {
     background: rgba(71, 176, 122, 0.16);
     color: #8fe0b2;
+}
+
+:root[data-theme="dark"] .state-chip--locked {
+    background: rgba(143, 170, 176, 0.14);
+    color: var(--muted);
 }

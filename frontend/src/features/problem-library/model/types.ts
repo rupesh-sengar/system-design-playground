@@ -50,6 +50,13 @@ export interface ProblemLibraryPersistenceState {
   isSyncing: boolean;
 }
 
+export interface ProblemLibraryAccessState {
+  hasPremiumCatalog: boolean;
+  lockedProblemCount: number;
+  starterProblemCount: number;
+  totalProblemCount: number;
+}
+
 export const defaultCatalogFilters: CatalogFilters = {
   search: "",
   difficulty: "All",
