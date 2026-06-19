@@ -36,7 +36,7 @@ public record SignupCredentials(String email, String password) {
     }
 
     private static String generatedEmail() {
-        return DEFAULT_EMAIL_LOCAL_PART + "+system-design-lab-" + Instant.now().toEpochMilli() + "@" + DEFAULT_EMAIL_DOMAIN;
+        return DEFAULT_EMAIL_LOCAL_PART +"@" + DEFAULT_EMAIL_DOMAIN;
     }
 
     private static String generatedPassword() {
