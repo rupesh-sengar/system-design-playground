@@ -112,8 +112,9 @@
 }
 
 .app-toolbar__brand {
-    display: grid;
-    gap: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
     min-width: 0;
     border: 0;
     padding: 0;
@@ -122,14 +123,51 @@
     text-align: left;
 }
 
-.app-toolbar__brand span {
+.app-toolbar__brand-mark {
+    position: relative;
+    display: inline-grid;
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-soft);
+    color: var(--text);
+}
+
+.app-toolbar__brand-mark::before {
+    width: 27px;
+    height: 27px;
+    background: currentColor;
+    content: "";
+    mask: url("../../assests/system-design-park-icon-currentColor.svg") center / contain no-repeat;
+    -webkit-mask: url("../../assests/system-design-park-icon-currentColor.svg") center / contain no-repeat;
+}
+
+.app-toolbar__brand-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.app-toolbar__brand-name {
+    margin: 0;
+}
+
+.app-toolbar__brand-context {
     color: var(--muted);
     font-size: 0.84rem;
     font-weight: 600;
 }
 
-.app-toolbar__brand:hover span {
+.app-toolbar__brand:hover .app-toolbar__brand-context {
     color: var(--text);
+}
+
+.app-toolbar__brand:hover .app-toolbar__brand-mark {
+    border-color: var(--border-strong);
+    background: var(--surface-muted);
 }
 
 .app-toolbar__brand:focus-visible {
@@ -272,7 +310,17 @@
         min-width: 0;
     }
 
-    .app-toolbar__brand span {
+    .app-toolbar__brand-mark {
+        width: 38px;
+        height: 38px;
+    }
+
+    .app-toolbar__brand-mark::before {
+        width: 24px;
+        height: 24px;
+    }
+
+    .app-toolbar__brand-context {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;

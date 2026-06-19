@@ -1,0 +1,23 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="System Design Park icon adaptive">
+  <style>
+    .sdp-mark { color: #000000; }
+    @media (prefers-color-scheme: dark) {
+      .sdp-mark { color: #FFFFFF; }
+    }
+  </style>
+  <g class="sdp-mark">
+    <path d="M256 42L316 72L256 102L196 72L256 42Z" fill="currentColor"/>
+    <path d="M196 84L249 111V166L196 139V84Z" fill="currentColor"/>
+    <path d="M316 84L263 111V166L316 139V84Z" fill="currentColor"/>
+    <path d="M256 184V232" stroke="currentColor" stroke-width="18" stroke-linecap="round"/>
+    <path d="M150 272V251C150 240.5 158.5 232 169 232H343C353.5 232 362 240.5 362 251V272" stroke="currentColor" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M256 232V272" stroke="currentColor" stroke-width="18" stroke-linecap="round"/>
+    <rect x="112" y="272" width="68" height="68" rx="12" fill="currentColor"/>
+    <rect x="222" y="272" width="68" height="68" rx="12" fill="currentColor"/>
+    <rect x="332" y="272" width="68" height="68" rx="12" fill="currentColor"/>
+    <path d="M256 354V374" stroke="currentColor" stroke-width="18" stroke-linecap="round"/>
+    <path d="M256 354L334 393L256 432L178 393L256 354Z" fill="currentColor"/>
+    <path d="M178 422L256 461L334 422L354 432L256 486L158 432L178 422Z" fill="currentColor"/>
+    <path d="M178 457L256 496L334 457L354 467L256 521L158 467L178 457Z" fill="currentColor" transform="translate(0 -18)"/>
+  </g>
+</svg>

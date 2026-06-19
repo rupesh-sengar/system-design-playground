@@ -3,11 +3,14 @@ import {
   BookOpenCheck,
   CheckCircle2,
   ChevronRight,
+  Cloud,
   Database,
   GitBranch,
   Layers,
   Network,
   Route,
+  Search,
+  ShieldCheck,
   Shuffle,
   Target,
   Timer,
@@ -122,14 +125,36 @@ export const LandingPage = ({
 
           <div className="landing-hero__scene" aria-hidden="true">
             <div className="landing-map">
-              <span className="landing-map__line landing-map__line--one" />
-              <span className="landing-map__line landing-map__line--two" />
-              <span className="landing-map__line landing-map__line--three" />
-              <span className="landing-map__line landing-map__line--four" />
+              <svg
+                className="landing-map__connectors"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+              >
+                <path d="M25 31 C32 31 34 37 37 39" />
+                <path d="M40 22 C45 27 44 32 43 34" />
+                <path d="M31 58 C35 55 38 50 39 46" />
+                <path d="M52 36 C59 32 62 26 64 23" />
+                <path d="M52 41 C63 41 70 44 78 46" />
+                <path d="M49 47 C55 54 59 60 62 64" />
+                <path d="M61 73 C54 78 48 82 44 82" />
+                <path d="M71 71 C75 74 78 78 79 80" />
+              </svg>
 
               <div className="landing-map__node landing-map__node--client">
                 <Network size={16} strokeWidth={1.9} />
                 Client
+              </div>
+              <div
+                className="landing-map__node landing-map__node--compact landing-map__node--cdn"
+              >
+                <Cloud size={14} strokeWidth={1.9} />
+                CDN
+              </div>
+              <div
+                className="landing-map__node landing-map__node--compact landing-map__node--auth"
+              >
+                <ShieldCheck size={14} strokeWidth={1.9} />
+                Auth
               </div>
               <div className="landing-map__node landing-map__node--gateway">
                 <Route size={16} strokeWidth={1.9} />
@@ -150,6 +175,12 @@ export const LandingPage = ({
               <div className="landing-map__node landing-map__node--store">
                 <Database size={16} strokeWidth={1.9} />
                 Storage
+              </div>
+              <div
+                className="landing-map__node landing-map__node--compact landing-map__node--search"
+              >
+                <Search size={14} strokeWidth={1.9} />
+                Search
               </div>
             </div>
           </div>

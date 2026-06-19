@@ -184,8 +184,15 @@ export default function App() {
           type="button"
           onClick={goToHome}
         >
-          <p className="eyebrow">System Design Lab</p>
-          <span>{toolbarContext}</span>
+          <span className="app-toolbar__brand-mark" aria-hidden="true" />
+          <span className="app-toolbar__brand-copy">
+            <span className="eyebrow app-toolbar__brand-name">
+              System Design Lab
+            </span>
+            <span className="app-toolbar__brand-context">
+              {toolbarContext}
+            </span>
+          </span>
         </button>
       </div>
 

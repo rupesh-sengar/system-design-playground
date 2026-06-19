@@ -19,10 +19,10 @@
 
 .landing-hero__inner {
     display: grid;
-    grid-template-columns: minmax(0, 0.95fr) minmax(440px, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(500px, 0.84fr);
     align-items: center;
-    gap: clamp(28px, 4vw, 64px);
-    width: min(1440px, 100%);
+    gap: clamp(20px, 2.4vw, 36px);
+    width: min(1380px, 100%);
     margin-inline: auto;
 }
 
@@ -30,6 +30,7 @@
     position: relative;
     display: grid;
     align-items: center;
+    justify-items: start;
     min-width: 0;
     height: clamp(360px, 32vw, 460px);
     overflow: visible;
@@ -38,11 +39,32 @@
 
 .landing-map {
     position: relative;
-    justify-self: end;
-    width: min(700px, 100%);
-    height: 100%;
+    justify-self: start;
+    width: min(640px, 100%);
+    aspect-ratio: 1.55;
+    height: auto;
     min-height: 0;
     color: var(--muted-strong);
+}
+
+.landing-map__connectors {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.landing-map__connectors path {
+    fill: none;
+    stroke: var(--border-strong);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+    opacity: 0.68;
+    vector-effect: non-scaling-stroke;
 }
 
 .landing-map__node {
@@ -55,89 +77,69 @@
     padding: 10px 12px;
     border: 1px solid var(--border);
     border-radius: 8px;
-    background: color-mix(in srgb, var(--surface-strong) 86%, transparent);
+    background: var(--surface-strong);
     color: var(--text);
     font-size: 0.82rem;
     font-weight: 760;
+    white-space: nowrap;
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+    transform: translate(-50%, -50%);
+    z-index: 2;
+}
+
+.landing-map__node--compact {
+    min-width: 94px;
+    min-height: 36px;
+    gap: 7px;
+    padding: 8px 10px;
+    color: var(--muted-strong);
+    font-size: 0.75rem;
+    font-weight: 740;
 }
 
 .landing-map__node--client {
-    top: 10%;
-    left: 4%;
+    left: 15%;
+    top: 31%;
+}
+
+.landing-map__node--cdn {
+    left: 39%;
+    top: 16%;
+}
+
+.landing-map__node--auth {
+    left: 25%;
+    top: 58%;
 }
 
 .landing-map__node--gateway {
-    top: 34%;
-    left: 29%;
+    left: 44%;
+    top: 40%;
 }
 
 .landing-map__node--cache {
-    top: 4%;
-    left: 58%;
+    left: 70%;
+    top: 21%;
 }
 
 .landing-map__node--queue {
-    right: 3%;
-    top: 35%;
+    left: 85%;
+    top: 46%;
 }
 
 .landing-map__node--worker {
-    bottom: 13%;
-    left: 47%;
+    left: 66%;
+    top: 68%;
 }
 
 .landing-map__node--store {
-    bottom: 0;
-    left: 16%;
+    left: 38%;
+    top: 82%;
 }
 
-.landing-map__line {
-    position: absolute;
-    height: 2px;
-    border-radius: 999px;
-    background: var(--border-strong);
-    transform-origin: left center;
-}
-
-.landing-map__line::after {
-    position: absolute;
-    top: 50%;
-    right: -2px;
-    width: 7px;
-    height: 7px;
-    border-radius: 999px;
-    background: var(--accent);
-    content: "";
-    transform: translateY(-50%);
-}
-
-.landing-map__line--one {
-    top: 26%;
-    left: 22%;
-    width: 150px;
-    transform: rotate(22deg);
-}
-
-.landing-map__line--two {
-    top: 34%;
-    left: 48%;
-    width: 138px;
-    transform: rotate(-31deg);
-}
-
-.landing-map__line--three {
-    top: 49%;
-    left: 49%;
-    width: 154px;
-    transform: rotate(10deg);
-}
-
-.landing-map__line--four {
-    top: 63%;
-    left: 32%;
-    width: 170px;
-    transform: rotate(34deg);
+.landing-map__node--search {
+    left: 83%;
+    top: 80%;
 }
 
 .landing-hero__content {
@@ -454,6 +456,22 @@
         width: min(520px, 100%);
     }
 
+    .landing-map__node {
+        min-width: 104px;
+        min-height: 40px;
+        gap: 7px;
+        padding: 8px 10px;
+        font-size: 0.76rem;
+    }
+
+    .landing-map__node--compact {
+        min-width: 78px;
+        min-height: 32px;
+        gap: 6px;
+        padding: 7px 8px;
+        font-size: 0.68rem;
+    }
+
     .landing-hero h1 {
         max-width: 8ch;
         font-size: clamp(2.75rem, 15vw, 4.2rem);
@@ -511,26 +529,23 @@
 
 @media (max-width: 420px) {
     .landing-map__node {
-        min-width: 110px;
-        min-height: 38px;
+        min-width: 84px;
+        min-height: 36px;
         gap: 6px;
-        padding: 8px 9px;
-        font-size: 0.74rem;
+        padding: 7px 8px;
+        font-size: 0.68rem;
     }
 
-    .landing-map__line--one {
-        width: 122px;
+    .landing-map__node--compact {
+        min-width: 34px;
+        width: 34px;
+        min-height: 30px;
+        justify-content: center;
+        gap: 0;
+        padding: 6px;
+        overflow: hidden;
+        color: var(--text);
+        font-size: 0;
     }
 
-    .landing-map__line--two {
-        width: 112px;
-    }
-
-    .landing-map__line--three {
-        width: 124px;
-    }
-
-    .landing-map__line--four {
-        width: 136px;
-    }
 }

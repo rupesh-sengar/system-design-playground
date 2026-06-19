@@ -57,7 +57,8 @@
 
 .brand-loader__ring,
 .brand-loader__orb,
-.brand-loader__core {
+.brand-loader__core,
+.brand-loader__mark {
     position: absolute;
     border-radius: 999px;
 }
@@ -109,6 +110,16 @@
     box-shadow:
         0 0 0 7px rgba(255, 255, 255, 0.72),
         0 12px 24px rgba(65, 54, 36, 0.1);
+    animation: brand-loader-pulse 1.4s ease-in-out infinite;
+}
+
+.brand-loader__mark {
+    width: 48%;
+    height: 48%;
+    background: currentColor;
+    border-radius: 0;
+    mask: url("../../../assests/system-design-park-icon-currentColor.svg") center / contain no-repeat;
+    -webkit-mask: url("../../../assests/system-design-park-icon-currentColor.svg") center / contain no-repeat;
     animation: brand-loader-pulse 1.4s ease-in-out infinite;
 }
 
