@@ -84,10 +84,12 @@ const saveStoredIds = async (
 
 export interface PersistentIdSet {
   values: Set<string>;
+  add: (value: string) => void;
   clear: () => void;
   errorMessage: string | null;
   isLoading: boolean;
   isSaving: boolean;
+  remove: (value: string) => void;
   toggle: (value: string) => void;
 }
 
@@ -185,16 +187,40 @@ export const usePersistentIdSet = (storageKey: string): PersistentIdSet => {
     });
   };
 
+  const add = (value: string): void => {
+    setValues((current) => {
+      if (current.has(value)) {
+        return current;
+      }
+
+      return new Set([...current, value]);
+    });
+  };
+
+  const remove = (value: string): void => {
+    setValues((current) => {
+      if (!current.has(value)) {
+        return current;
+      }
+
+      const next = new Set(current);
+      next.delete(value);
+      return next;
+    });
+  };
+
   const clear = (): void => {
     setValues(new Set());
   };
 
   return {
     values,
+    add,
     clear,
     errorMessage,
     isLoading,
     isSaving,
+    remove,
     toggle,
   };
 };

@@ -47,6 +47,13 @@ const matchesStatus = (
     return progress.practicedIds.has(problem.id);
   }
 
+  if (status === "started") {
+    return (
+      progress.startedIds.has(problem.id) &&
+      !progress.practicedIds.has(problem.id)
+    );
+  }
+
   if (status === "unpracticed") {
     return !progress.practicedIds.has(problem.id);
   }
@@ -97,13 +104,18 @@ export const sortProblems = (
       return difficultySort || left.title.localeCompare(right.title);
     }
 
-    const bookmarkSort =
-      Number(progress.bookmarkedIds.has(right.id)) - Number(progress.bookmarkedIds.has(left.id));
     const practicedSort =
       Number(progress.practicedIds.has(left.id)) - Number(progress.practicedIds.has(right.id));
+    const startedSort =
+      Number(progress.startedIds.has(right.id)) - Number(progress.startedIds.has(left.id));
     const difficultySort = difficultyRank[left.difficulty] - difficultyRank[right.difficulty];
 
-    return bookmarkSort || practicedSort || difficultySort || left.title.localeCompare(right.title);
+    return (
+      practicedSort ||
+      startedSort ||
+      difficultySort ||
+      left.title.localeCompare(right.title)
+    );
   });
 };
 

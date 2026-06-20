@@ -24,10 +24,7 @@ import {
   resolveSelectedProblemId,
   sortProblems,
 } from "../lib/catalog";
-import {
-  difficultyLevels,
-  problems,
-} from "../model/problem-library";
+import { difficultyLevels, problems } from "../model/problem-library";
 import type { DifficultyFilter, Problem } from "../model/problem-library";
 import {
   defaultCatalogFilters,
@@ -46,6 +43,7 @@ import { usePersistentIdSet } from "./usePersistentIdSet";
 const STORAGE_KEYS = {
   bookmarked: "system-design-lab.bookmarked",
   practiced: "system-design-lab.practiced",
+  started: "system-design-lab.started",
 } as const;
 
 const PROBLEMS_PER_PAGE = 8;
@@ -61,6 +59,7 @@ interface ProblemLibraryActions {
   setSearch: (search: string) => void;
   setSortBy: (sortBy: SortMode) => void;
   setStatus: (status: StatusFilter) => void;
+  setStarted: (problemId: string, isStarted: boolean) => void;
   toggleBookmark: (problemId: string) => void;
   togglePracticed: (problemId: string) => void;
 }
@@ -80,6 +79,7 @@ export interface ProblemLibraryViewModel {
   practicedIds: Set<string>;
   selectedProblem: Problem | null;
   selectedProblemId: string | null;
+  startedIds: Set<string>;
   visibleProblems: Problem[];
 }
 
@@ -96,6 +96,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
   const deferredSearch = useDeferredValue(filters.search);
   const bookmarked = usePersistentIdSet(STORAGE_KEYS.bookmarked);
   const practiced = usePersistentIdSet(STORAGE_KEYS.practiced);
+  const started = usePersistentIdSet(STORAGE_KEYS.started);
   const { data: billingAccount } = useGetBillingAccountQuery(undefined, {
     skip: !frontendConfig.features.billing || !isApiAuthReady,
   });
@@ -123,7 +124,8 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
       hasPremiumCatalog,
       lockedProblemCount: hasPremiumCatalog
         ? 0
-        : problems.filter((problem) => !isFreeStarterProblem(problem.id)).length,
+        : problems.filter((problem) => !isFreeStarterProblem(problem.id))
+            .length,
       starterProblemCount: problems.filter((problem) =>
         isFreeStarterProblem(problem.id),
       ).length,
@@ -160,6 +162,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
   const remoteProgress = useMemo<ProblemProgress>(() => {
     const bookmarkedIds = new Set<string>();
     const practicedIds = new Set<string>();
+    const startedIds = new Set<string>();
 
     for (const entry of remoteProgressEntries) {
       if (entry.isBookmarked) {
@@ -169,11 +172,16 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
       if (entry.isPracticed) {
         practicedIds.add(entry.problemId);
       }
+
+      if (entry.isStarted) {
+        startedIds.add(entry.problemId);
+      }
     }
 
     return {
       bookmarkedIds,
       practicedIds,
+      startedIds,
     };
   }, [remoteProgressEntries]);
 
@@ -185,12 +193,14 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
     return {
       bookmarkedIds: bookmarked.values,
       practicedIds: practiced.values,
+      startedIds: started.values,
     };
   }, [
     bookmarked.values,
     practiced.values,
     remoteProgress,
     shouldUseRemoteProgress,
+    started.values,
   ]);
 
   useEffect(() => {
@@ -312,6 +322,9 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
       baseFilteredCount: baseFilteredProblems.length,
       visibleCount: visibleProblems.length,
       practicedCount: progress.practicedIds.size,
+      startedCount: [...progress.startedIds].filter(
+        (problemId) => !progress.practicedIds.has(problemId),
+      ).length,
       bookmarkedCount: progress.bookmarkedIds.size,
       visibleCategoryCount: getVisibleCategoryCount(visibleProblems),
       totalDifficultyCounts,
@@ -323,6 +336,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
       difficultyCounts,
       progress.bookmarkedIds.size,
       progress.practicedIds.size,
+      progress.startedIds,
       totalDifficultyCounts,
       visibleProblems,
       visibleProblems.length,
@@ -412,6 +426,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
     nextProgress: {
       isBookmarked?: boolean;
       isPracticed?: boolean;
+      isStarted?: boolean;
     },
   ): Promise<void> => {
     try {
@@ -421,12 +436,6 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
       }).unwrap();
 
       if (nextProgress.isBookmarked !== undefined) {
-        toast.success(
-          nextProgress.isBookmarked ? "Bookmark saved." : "Bookmark removed.",
-          {
-            title: "Library Updated",
-          },
-        );
         return;
       }
 
@@ -473,11 +482,31 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
     });
   };
 
+  const setStarted = (problemId: string, isStarted: boolean): void => {
+    if (progress.startedIds.has(problemId) === isStarted) {
+      return;
+    }
+
+    if (!shouldUseRemoteProgress) {
+      if (isStarted) {
+        started.add(problemId);
+      } else {
+        started.remove(problemId);
+      }
+
+      return;
+    }
+
+    void toggleRemoteProgress(problemId, {
+      isStarted,
+    });
+  };
+
   const resetProgress = async (): Promise<void> => {
     const shouldReset = window.confirm(
       shouldUseRemoteProgress
-        ? "Clear bookmarked and practiced progress saved to your account?"
-        : "Clear bookmarked and practiced progress for this browser?",
+        ? "Clear saved, started, and done progress saved to your account?"
+        : "Clear saved, started, and done progress for this browser?",
     );
 
     if (!shouldReset) {
@@ -487,6 +516,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
     if (!shouldUseRemoteProgress) {
       bookmarked.clear();
       practiced.clear();
+      started.clear();
       return;
     }
 
@@ -517,7 +547,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
       )
     : null;
   const browserPersistenceErrorMessage =
-    bookmarked.errorMessage ?? practiced.errorMessage;
+    bookmarked.errorMessage ?? practiced.errorMessage ?? started.errorMessage;
   const persistence = useMemo<ProblemLibraryPersistenceState>(
     () => ({
       errorMessage: shouldUseRemoteProgress
@@ -525,13 +555,13 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
         : browserPersistenceErrorMessage,
       isLoading: shouldUseRemoteProgress
         ? isRemoteProgressLoading || isRemoteProgressFetching
-        : bookmarked.isLoading || practiced.isLoading,
+        : bookmarked.isLoading || practiced.isLoading || started.isLoading,
       isRemote: shouldUseRemoteProgress,
       isSyncing:
         updateProblemProgressState.isLoading ||
         resetProblemProgressState.isLoading ||
         (!shouldUseRemoteProgress &&
-          (bookmarked.isSaving || practiced.isSaving)),
+          (bookmarked.isSaving || practiced.isSaving || started.isSaving)),
     }),
     [
       bookmarked.errorMessage,
@@ -546,6 +576,9 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
       remotePersistenceErrorMessage,
       resetProblemProgressState.isLoading,
       shouldUseRemoteProgress,
+      started.errorMessage,
+      started.isLoading,
+      started.isSaving,
       updateProblemProgressState.isLoading,
     ],
   );
@@ -562,6 +595,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
       setSearch,
       setSortBy,
       setStatus,
+      setStarted,
       toggleBookmark,
       togglePracticed,
     },
@@ -578,6 +612,7 @@ export const useProblemLibrary = (): ProblemLibraryViewModel => {
     practicedIds: progress.practicedIds,
     selectedProblem,
     selectedProblemId,
+    startedIds: progress.startedIds,
     visibleProblems,
   };
 };

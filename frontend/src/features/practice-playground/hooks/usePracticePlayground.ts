@@ -162,8 +162,13 @@ const toPracticeAiRequestError = (
   };
 };
 
+interface UsePracticePlaygroundOptions {
+  onSessionReset?: () => void;
+}
+
 export const usePracticePlayground = (
   problem: PracticeProblem | null,
+  options: UsePracticePlaygroundOptions = {},
 ): PracticePlaygroundViewModel => {
   const { isApiAuthReady } = useAppAuth();
   const toast = useToast();
@@ -766,6 +771,8 @@ export const usePracticePlayground = (
     if (!shouldReset) {
       return;
     }
+
+    options.onSessionReset?.();
 
     if (shouldUseRemotePersistence) {
       const nextSession = createDefaultSession();

@@ -10,14 +10,23 @@ import {
 import {
   ArrowUpDown,
   BookOpenCheck,
+  Bookmark,
+  Check,
   ChevronDown,
+  CircleCheck,
+  CircleDashed,
+  CirclePlay,
   Folders,
+  Gauge,
   ListFilter,
   RotateCcw,
   Search,
   Shuffle,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
 } from "lucide-react";
-import { FilterPill } from "@/shared/ui/FilterPill";
+import { FilterPill, type FilterPillColor } from "@/shared/ui/FilterPill";
 import { ProblemCard } from "./ProblemCard";
 import "@/shared/ui/shared-ui.css";
 import "./ProblemCatalogPanel.css";
@@ -51,6 +60,7 @@ interface ProblemCatalogPanelProps {
   paginatedProblems: Problem[];
   persistence: ProblemLibraryPersistenceState;
   practicedIds: Set<string>;
+  startedIds: Set<string>;
   onCategoryChange: (category: string) => void;
   onClearFilters: () => void;
   onDifficultyChange: (difficulty: DifficultyFilter) => void;
@@ -61,14 +71,52 @@ interface ProblemCatalogPanelProps {
   onSelectProblem: (problemId: string) => void;
   onSortChange: (sortBy: SortMode) => void;
   onStatusChange: (status: StatusFilter) => void;
+  onToggleBookmark: (problemId: string) => void;
 }
 
 const statusOptions: Array<{ id: StatusFilter; label: string }> = [
   { id: "all", label: "All" },
   { id: "bookmarked", label: "Saved" },
+  { id: "started", label: "Started" },
   { id: "practiced", label: "Done" },
   { id: "unpracticed", label: "Open" },
 ];
+
+const filterIconProps = {
+  "aria-hidden": true,
+  size: 14,
+  strokeWidth: 2.25,
+} as const;
+
+const difficultyIcons: Record<DifficultyFilter, ReactNode> = {
+  All: <Gauge {...filterIconProps} />,
+  Easy: <SignalLow {...filterIconProps} />,
+  Medium: <SignalMedium {...filterIconProps} />,
+  Hard: <SignalHigh {...filterIconProps} />,
+};
+
+const difficultyColors: Record<DifficultyFilter, FilterPillColor> = {
+  All: "neutral",
+  Easy: "easy",
+  Medium: "medium",
+  Hard: "hard",
+};
+
+const statusIcons: Record<StatusFilter, ReactNode> = {
+  all: <ListFilter {...filterIconProps} />,
+  bookmarked: <Bookmark {...filterIconProps} />,
+  started: <CirclePlay {...filterIconProps} />,
+  practiced: <CircleCheck {...filterIconProps} />,
+  unpracticed: <CircleDashed {...filterIconProps} />,
+};
+
+const statusColors: Record<StatusFilter, FilterPillColor> = {
+  all: "neutral",
+  bookmarked: "saved",
+  started: "started",
+  practiced: "done",
+  unpracticed: "open",
+};
 
 const sortOptions: Array<DropdownOption<SortMode>> = [
   { label: "Recommended", value: "recommended" },
@@ -275,7 +323,17 @@ const FilterDropdown = <TValue extends string>({
                 onClick={() => selectOption(index)}
                 onMouseEnter={() => setActiveIndex(index)}
               >
-                {option.label}
+                <span className="field-dropdown__option-label">
+                  {option.label}
+                </span>
+                {option.value === value ? (
+                  <Check
+                    aria-hidden="true"
+                    className="field-dropdown__option-check"
+                    size={14}
+                    strokeWidth={2.5}
+                  />
+                ) : null}
               </button>
             ))}
           </div>
@@ -331,6 +389,7 @@ export const ProblemCatalogPanel = ({
   paginatedProblems,
   persistence,
   practicedIds,
+  startedIds,
   onCategoryChange,
   onClearFilters,
   onDifficultyChange,
@@ -341,11 +400,18 @@ export const ProblemCatalogPanel = ({
   onSelectProblem,
   onSortChange,
   onStatusChange,
+  onToggleBookmark,
 }: ProblemCatalogPanelProps) => {
   const completionPercent =
     metrics.totalProblems === 0
       ? 0
       : Math.round((metrics.practicedCount / metrics.totalProblems) * 100);
+  const problemRangeLabel =
+    pagination.totalItems === 0
+      ? "No problems"
+      : pagination.pageStart === pagination.pageEnd
+        ? `Problem ${pagination.pageStart} of ${pagination.totalItems}`
+        : `Problems ${pagination.pageStart}-${pagination.pageEnd} of ${pagination.totalItems}`;
 
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>): void => {
     onSearchChange(event.target.value);
@@ -367,18 +433,28 @@ export const ProblemCatalogPanel = ({
             <div className="catalog-title__text">
               <h2>Problems</h2>
               <div className="catalog-summary" aria-label="Library summary">
+                <span className="catalog-summary__range">
+                  {problemRangeLabel}
+                </span>
+
                 <span>{metrics.visibleCount} shown</span>
+                <span>{metrics.startedCount} started</span>
                 <span>{metrics.practicedCount} done</span>
                 <span>{metrics.bookmarkedCount} saved</span>
                 <div
-                  aria-label={`${completionPercent}% complete`}
+                  aria-label={`${completionPercent}% of problems practiced`}
                   aria-valuemax={100}
                   aria-valuemin={0}
                   aria-valuenow={completionPercent}
                   className="catalog-summary__meter"
                   role="meter"
                 >
-                  <span style={{ width: `${completionPercent}%` }} />
+                  <span
+                    style={{
+                      minWidth: completionPercent > 0 ? 6 : undefined,
+                      width: `${completionPercent}%`,
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -478,6 +554,8 @@ export const ProblemCatalogPanel = ({
                       ? metrics.baseFilteredCount
                       : difficultyCounts[level]
                   }
+                  color={difficultyColors[level]}
+                  icon={difficultyIcons[level]}
                   label={level}
                   onClick={() => onDifficultyChange(level)}
                 />
@@ -492,6 +570,8 @@ export const ProblemCatalogPanel = ({
                 <FilterPill
                   key={status.id}
                   active={filters.status === status.id}
+                  color={statusColors[status.id]}
+                  icon={statusIcons[status.id]}
                   label={status.label}
                   tone="muted"
                   onClick={() => onStatusChange(status.id)}
@@ -512,8 +592,10 @@ export const ProblemCatalogPanel = ({
                 !access.hasPremiumCatalog && !isFreeStarterProblem(problem.id)
               }
               isPracticed={practicedIds.has(problem.id)}
+              isStarted={startedIds.has(problem.id)}
               problem={problem}
               onSelect={() => onSelectProblem(problem.id)}
+              onToggleBookmark={() => onToggleBookmark(problem.id)}
             />
           ))
         ) : (

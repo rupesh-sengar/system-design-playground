@@ -49,6 +49,7 @@ export interface ProblemProgressRecord {
   createdAt: string;
   isBookmarked: boolean;
   isPracticed: boolean;
+  isStarted: boolean;
   problemId: string;
   updatedAt: string;
 }
@@ -119,6 +120,7 @@ const mapProblemProgressRecord = (
     created_at: IsoDateValue;
     is_bookmarked: boolean;
     is_practiced: boolean;
+    is_started: boolean;
     problem_id: string;
     updated_at: IsoDateValue;
   },
@@ -126,6 +128,7 @@ const mapProblemProgressRecord = (
   createdAt: toIsoString(row.created_at),
   isBookmarked: row.is_bookmarked,
   isPracticed: row.is_practiced,
+  isStarted: row.is_started,
   problemId: row.problem_id,
   updatedAt: toIsoString(row.updated_at),
 });
@@ -265,12 +268,14 @@ export class ProblemProgressRepository {
       created_at: IsoDateValue;
       is_bookmarked: boolean;
       is_practiced: boolean;
+      is_started: boolean;
       problem_id: string;
       updated_at: IsoDateValue;
     }>(
       `
         select
           problem_id,
+          is_started,
           is_bookmarked,
           is_practiced,
           created_at,
@@ -294,6 +299,7 @@ export class ProblemProgressRepository {
       created_at: IsoDateValue;
       is_bookmarked: boolean;
       is_practiced: boolean;
+      is_started: boolean;
       problem_id: string;
       updated_at: IsoDateValue;
     }>(
@@ -301,23 +307,32 @@ export class ProblemProgressRepository {
         insert into user_problem_progress (
           user_id,
           problem_id,
+          is_started,
           is_bookmarked,
           is_practiced
         )
-        values ($1, $2, coalesce($3, false), coalesce($4, false))
+        values ($1, $2, coalesce($3, false), coalesce($4, false), coalesce($5, false))
         on conflict (user_id, problem_id)
         do update set
-          is_bookmarked = coalesce($3, user_problem_progress.is_bookmarked),
-          is_practiced = coalesce($4, user_problem_progress.is_practiced),
+          is_started = coalesce($3, user_problem_progress.is_started),
+          is_bookmarked = coalesce($4, user_problem_progress.is_bookmarked),
+          is_practiced = coalesce($5, user_problem_progress.is_practiced),
           updated_at = now()
         returning
           problem_id,
+          is_started,
           is_bookmarked,
           is_practiced,
           created_at,
           updated_at
       `,
-      [userId, problemId, input.isBookmarked ?? null, input.isPracticed ?? null],
+      [
+        userId,
+        problemId,
+        input.isStarted ?? null,
+        input.isBookmarked ?? null,
+        input.isPracticed ?? null,
+      ],
     );
 
     const progressRecord = mapProblemProgressRecord(
@@ -327,7 +342,11 @@ export class ProblemProgressRepository {
       ),
     );
 
-    if (!progressRecord.isBookmarked && !progressRecord.isPracticed) {
+    if (
+      !progressRecord.isStarted &&
+      !progressRecord.isBookmarked &&
+      !progressRecord.isPracticed
+    ) {
       await this.database.query(
         `
           delete from user_problem_progress

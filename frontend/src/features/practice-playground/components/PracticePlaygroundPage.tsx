@@ -3,6 +3,7 @@ import {
   type KeyboardEvent,
   type PointerEvent,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import {
@@ -47,10 +48,13 @@ export type PlaygroundSaveStatus = Pick<
 
 interface PracticePlaygroundPageProps {
   isPracticed: boolean;
+  isStarted: boolean;
   onBack: () => void;
   onMarkPracticed: () => void;
+  onMarkStarted: () => void;
   onOpenPricing: () => void;
   onSaveStatusChange?: (status: PlaygroundSaveStatus) => void;
+  onUnmarkStarted: () => void;
   problem: PracticeProblem | null;
 }
 
@@ -87,9 +91,14 @@ const lowerFirst = (value: string): string =>
   value.length > 0 ? `${value[0].toLocaleLowerCase()}${value.slice(1)}` : value;
 
 export const PracticePlaygroundPage = ({
+  isPracticed,
+  isStarted,
   onBack,
+  onMarkPracticed,
+  onMarkStarted,
   onOpenPricing,
   onSaveStatusChange,
+  onUnmarkStarted,
   problem,
 }: PracticePlaygroundPageProps) => {
   const { isApiAuthReady } = useAppAuth();
@@ -105,7 +114,9 @@ export const PracticePlaygroundPage = ({
     storage,
     stageContextCards,
     stages,
-  } = usePracticePlayground(problem);
+  } = usePracticePlayground(problem, {
+    onSessionReset: onUnmarkStarted,
+  });
   const [activeSidebarTab, setActiveSidebarTab] =
     useState<SidebarTab>("overview");
   const [sidebarWidth, setSidebarWidth] = useState(MAX_SIDEBAR_WIDTH);
@@ -113,6 +124,8 @@ export const PracticePlaygroundPage = ({
   const [isStageboardExpanded, setIsStageboardExpanded] = useState(false);
   const [activeDesignSurface, setActiveDesignSurface] =
     useState<HighLevelDesignSurface>("diagram");
+  const autoMarkedPracticedProblemIdRef = useRef<string | null>(null);
+  const autoMarkedStartedProblemIdRef = useRef<string | null>(null);
   const authReady = isApiAuthReady;
   const showLoadingOverlay = storage.isLoading;
   const fallbackDrafts = createDefaultSession().stages;
@@ -167,6 +180,83 @@ export const PracticePlaygroundPage = ({
       statusTone: storage.statusTone,
     });
   }, [onSaveStatusChange, storage.statusLabel, storage.statusTone]);
+
+  useEffect(() => {
+    const problemId = problem?.id ?? null;
+
+    if (!problemId) {
+      autoMarkedPracticedProblemIdRef.current = null;
+      return;
+    }
+
+    if (metrics.completedCount < metrics.totalCount) {
+      if (autoMarkedPracticedProblemIdRef.current === problemId) {
+        autoMarkedPracticedProblemIdRef.current = null;
+      }
+
+      return;
+    }
+
+    if (
+      isPracticed ||
+      autoMarkedPracticedProblemIdRef.current === problemId
+    ) {
+      return;
+    }
+
+    autoMarkedPracticedProblemIdRef.current = problemId;
+    onMarkPracticed();
+  }, [
+    isPracticed,
+    metrics.completedCount,
+    metrics.totalCount,
+    onMarkPracticed,
+    problem?.id,
+  ]);
+
+  useEffect(() => {
+    const problemId = problem?.id ?? null;
+    const firstStageId = stages[0]?.id ?? null;
+    const hasStartedSession = Boolean(
+      session &&
+        (metrics.completedCount > 0 ||
+          metrics.notesWordCount > 0 ||
+          (firstStageId && session.activeStageId !== firstStageId)),
+    );
+
+    if (!problemId) {
+      autoMarkedStartedProblemIdRef.current = null;
+      return;
+    }
+
+    if (!hasStartedSession) {
+      if (autoMarkedStartedProblemIdRef.current === problemId) {
+        autoMarkedStartedProblemIdRef.current = null;
+      }
+
+      return;
+    }
+
+    if (
+      isPracticed ||
+      isStarted ||
+      autoMarkedStartedProblemIdRef.current === problemId
+    ) {
+      return;
+    }
+
+    autoMarkedStartedProblemIdRef.current = problemId;
+    onMarkStarted();
+  }, [
+    isPracticed,
+    isStarted,
+    metrics.completedCount,
+    metrics.notesWordCount,
+    onMarkStarted,
+    problem?.id,
+    session,
+    stages,
+  ]);
 
   useEffect(() => {
     if (!isSidebarExpanded && !isStageboardExpanded) {

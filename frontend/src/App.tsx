@@ -67,6 +67,7 @@ export default function App() {
     pagination,
     persistence,
     practicedIds,
+    startedIds,
     visibleProblems,
   } = useProblemLibrary();
   const routeProblem =
@@ -318,6 +319,7 @@ export default function App() {
 
         <PracticePlaygroundPage
           isPracticed={routeProblem ? practicedIds.has(routeProblem.id) : false}
+          isStarted={routeProblem ? startedIds.has(routeProblem.id) : false}
           problem={routeProblem}
           onBack={goToLibrary}
           onMarkPracticed={() => {
@@ -326,6 +328,20 @@ export default function App() {
             }
 
             actions.togglePracticed(routeProblem.id);
+          }}
+          onMarkStarted={() => {
+            if (!routeProblem || startedIds.has(routeProblem.id)) {
+              return;
+            }
+
+            actions.setStarted(routeProblem.id, true);
+          }}
+          onUnmarkStarted={() => {
+            if (!routeProblem || !startedIds.has(routeProblem.id)) {
+              return;
+            }
+
+            actions.setStarted(routeProblem.id, false);
           }}
           onOpenPricing={goToPricing}
           onSaveStatusChange={setPlaygroundSaveStatus}
@@ -414,6 +430,7 @@ export default function App() {
           pagination={pagination}
           persistence={persistence}
           practicedIds={practicedIds}
+          startedIds={startedIds}
           onCategoryChange={actions.setCategory}
           onClearFilters={actions.clearFilters}
           onDifficultyChange={actions.setDifficulty}
@@ -424,6 +441,7 @@ export default function App() {
           onSelectProblem={handleSelectProblem}
           onSortChange={actions.setSortBy}
           onStatusChange={actions.setStatus}
+          onToggleBookmark={actions.toggleBookmark}
         />
       </main>
       {renderOverlays()}

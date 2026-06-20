@@ -6,16 +6,47 @@
 }
 
 .pill {
+    --pill-bg: rgba(255, 255, 255, 0.74);
+    --pill-border: rgba(41, 58, 61, 0.08);
+    --pill-color: var(--muted-strong);
+    --pill-hover-bg: var(--surface-muted);
+    --pill-hover-border: var(--border-strong);
+    --pill-hover-color: var(--text);
+    --pill-active-bg: var(--accent);
+    --pill-active-border: var(--accent);
+    --pill-active-color: var(--page);
+
     border: 1px solid rgba(41, 58, 61, 0.08);
-    background: rgba(255, 255, 255, 0.74);
-    color: var(--text);
+    border-color: var(--pill-border);
+    background: var(--pill-bg);
+    color: var(--pill-color);
     border-radius: 999px;
-    padding: 8px 12px;
+    min-height: 32px;
+    padding: 7px 11px;
     display: inline-flex;
     gap: 8px;
     align-items: center;
-    font-weight: 700;
-    font-size: 0.84rem;
+    font-weight: 720;
+    font-size: 0.82rem;
+    line-height: 1;
+    transition:
+        background-color 140ms ease,
+        border-color 140ms ease,
+        color 140ms ease;
+}
+
+.pill:hover {
+    border-color: var(--pill-hover-border);
+    background: var(--pill-hover-bg);
+    color: var(--pill-hover-color);
+}
+
+.pill__icon {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    color: currentColor;
 }
 
 .pill strong {
@@ -24,22 +55,116 @@
 }
 
 .pill--muted {
-    background: rgba(246, 238, 225, 0.9);
+    background: var(--pill-bg);
 }
 
 .pill--active {
-    background: linear-gradient(
-        135deg,
-        rgba(15, 122, 115, 0.12),
-        rgba(215, 107, 63, 0.12)
-    );
-    border-color: rgba(15, 122, 115, 0.28);
+    border-color: var(--pill-active-border);
+    background: var(--pill-active-bg);
+    box-shadow: none;
+    color: var(--pill-active-color);
+}
+
+.pill--active:hover {
+    border-color: var(--pill-active-border);
+    background: var(--pill-active-bg);
+    color: var(--pill-active-color);
+}
+
+.pill--active strong {
+    color: inherit;
+    opacity: 0.72;
+}
+
+.pill--color-neutral {
+    --pill-bg: transparent;
+    --pill-border: var(--border);
+    --pill-color: var(--muted-strong);
+    --pill-hover-bg: var(--surface-muted);
+    --pill-hover-border: var(--border-strong);
+    --pill-hover-color: var(--text);
+    --pill-active-bg: var(--text);
+    --pill-active-border: var(--text);
+    --pill-active-color: var(--page);
+}
+
+.pill--color-easy,
+.pill--color-done {
+    --pill-bg: rgba(38, 126, 83, 0.08);
+    --pill-border: rgba(38, 126, 83, 0.2);
+    --pill-color: var(--easy);
+    --pill-hover-bg: rgba(38, 126, 83, 0.12);
+    --pill-hover-border: rgba(38, 126, 83, 0.32);
+    --pill-hover-color: var(--easy);
+    --pill-active-bg: var(--easy);
+    --pill-active-border: var(--easy);
+    --pill-active-color: #fff;
+}
+
+.pill--color-medium {
+    --pill-bg: rgba(154, 107, 22, 0.09);
+    --pill-border: rgba(154, 107, 22, 0.22);
+    --pill-color: var(--medium);
+    --pill-hover-bg: rgba(154, 107, 22, 0.14);
+    --pill-hover-border: rgba(154, 107, 22, 0.34);
+    --pill-hover-color: var(--medium);
+    --pill-active-bg: var(--medium);
+    --pill-active-border: var(--medium);
+    --pill-active-color: #fff;
+}
+
+.pill--color-hard {
+    --pill-bg: rgba(173, 64, 64, 0.08);
+    --pill-border: rgba(173, 64, 64, 0.22);
+    --pill-color: var(--hard);
+    --pill-hover-bg: rgba(173, 64, 64, 0.13);
+    --pill-hover-border: rgba(173, 64, 64, 0.34);
+    --pill-hover-color: var(--hard);
+    --pill-active-bg: var(--hard);
+    --pill-active-border: var(--hard);
+    --pill-active-color: #fff;
+}
+
+.pill--color-saved {
+    --pill-bg: rgba(152, 117, 26, 0.09);
+    --pill-border: rgba(152, 117, 26, 0.22);
+    --pill-color: var(--accent-gold);
+    --pill-hover-bg: rgba(152, 117, 26, 0.14);
+    --pill-hover-border: rgba(152, 117, 26, 0.34);
+    --pill-hover-color: var(--accent-gold);
+    --pill-active-bg: var(--accent-gold);
+    --pill-active-border: var(--accent-gold);
+    --pill-active-color: #fff;
+}
+
+.pill--color-started {
+    --pill-bg: var(--warning-surface);
+    --pill-border: rgba(176, 111, 47, 0.22);
+    --pill-color: var(--accent-warm);
+    --pill-hover-bg: rgba(176, 111, 47, 0.16);
+    --pill-hover-border: rgba(176, 111, 47, 0.34);
+    --pill-hover-color: var(--accent-warm);
+    --pill-active-bg: var(--accent-warm);
+    --pill-active-border: var(--accent-warm);
+    --pill-active-color: #fff;
+}
+
+.pill--color-open {
+    --pill-bg: rgba(41, 58, 61, 0.06);
+    --pill-border: rgba(41, 58, 61, 0.12);
+    --pill-color: var(--muted-strong);
+    --pill-hover-bg: rgba(41, 58, 61, 0.1);
+    --pill-hover-border: rgba(41, 58, 61, 0.18);
+    --pill-hover-color: var(--text);
+    --pill-active-bg: var(--muted-strong);
+    --pill-active-border: var(--muted-strong);
+    --pill-active-color: var(--page);
 }
 
 :root[data-theme="dark"] .pill {
-    border-color: rgba(143, 170, 176, 0.14);
-    background: rgba(19, 29, 37, 0.9);
-    color: var(--text);
+    border-color: var(--pill-border);
+    background: var(--pill-bg);
+    color: var(--pill-color);
 }
 
 :root[data-theme="dark"] .pill strong {
@@ -47,14 +172,102 @@
 }
 
 :root[data-theme="dark"] .pill--muted {
-    background: rgba(28, 39, 48, 0.92);
+    background: var(--pill-bg);
 }
 
 :root[data-theme="dark"] .pill--active {
-    border-color: rgba(66, 184, 174, 0.28);
-    background: linear-gradient(
-        180deg,
-        rgba(18, 29, 36, 0.96),
-        rgba(16, 39, 40, 0.88)
-    );
+    border-color: var(--pill-active-border);
+    background: var(--pill-active-bg);
+    box-shadow: none;
+    color: var(--pill-active-color);
+}
+
+:root[data-theme="dark"] .pill--active strong {
+    color: inherit;
+    opacity: 0.72;
+}
+
+:root[data-theme="dark"] .pill--color-neutral {
+    --pill-bg: transparent;
+    --pill-border: var(--border);
+    --pill-color: var(--muted-strong);
+    --pill-hover-bg: var(--surface-muted);
+    --pill-hover-border: var(--border-strong);
+    --pill-hover-color: var(--text);
+    --pill-active-bg: var(--text);
+    --pill-active-border: var(--text);
+    --pill-active-color: var(--page);
+}
+
+:root[data-theme="dark"] .pill--color-easy,
+:root[data-theme="dark"] .pill--color-done {
+    --pill-bg: rgba(82, 190, 126, 0.1);
+    --pill-border: rgba(82, 190, 126, 0.24);
+    --pill-color: #8fe0b2;
+    --pill-hover-bg: rgba(82, 190, 126, 0.16);
+    --pill-hover-border: rgba(82, 190, 126, 0.36);
+    --pill-hover-color: #8fe0b2;
+    --pill-active-bg: #8fe0b2;
+    --pill-active-border: #8fe0b2;
+    --pill-active-color: #07150e;
+}
+
+:root[data-theme="dark"] .pill--color-medium {
+    --pill-bg: rgba(216, 188, 115, 0.11);
+    --pill-border: rgba(216, 188, 115, 0.25);
+    --pill-color: #d8bc73;
+    --pill-hover-bg: rgba(216, 188, 115, 0.17);
+    --pill-hover-border: rgba(216, 188, 115, 0.36);
+    --pill-hover-color: #d8bc73;
+    --pill-active-bg: #d8bc73;
+    --pill-active-border: #d8bc73;
+    --pill-active-color: #171102;
+}
+
+:root[data-theme="dark"] .pill--color-hard {
+    --pill-bg: rgba(236, 116, 116, 0.1);
+    --pill-border: rgba(236, 116, 116, 0.24);
+    --pill-color: #ec7474;
+    --pill-hover-bg: rgba(236, 116, 116, 0.16);
+    --pill-hover-border: rgba(236, 116, 116, 0.36);
+    --pill-hover-color: #ec7474;
+    --pill-active-bg: #ec7474;
+    --pill-active-border: #ec7474;
+    --pill-active-color: #210808;
+}
+
+:root[data-theme="dark"] .pill--color-saved {
+    --pill-bg: rgba(216, 188, 115, 0.11);
+    --pill-border: rgba(216, 188, 115, 0.25);
+    --pill-color: #d8bc73;
+    --pill-hover-bg: rgba(216, 188, 115, 0.17);
+    --pill-hover-border: rgba(216, 188, 115, 0.36);
+    --pill-hover-color: #d8bc73;
+    --pill-active-bg: #d8bc73;
+    --pill-active-border: #d8bc73;
+    --pill-active-color: #171102;
+}
+
+:root[data-theme="dark"] .pill--color-started {
+    --pill-bg: rgba(243, 138, 93, 0.12);
+    --pill-border: rgba(243, 138, 93, 0.26);
+    --pill-color: #ffb287;
+    --pill-hover-bg: rgba(243, 138, 93, 0.18);
+    --pill-hover-border: rgba(243, 138, 93, 0.38);
+    --pill-hover-color: #ffb287;
+    --pill-active-bg: #ffb287;
+    --pill-active-border: #ffb287;
+    --pill-active-color: #211006;
+}
+
+:root[data-theme="dark"] .pill--color-open {
+    --pill-bg: rgba(143, 170, 176, 0.1);
+    --pill-border: rgba(143, 170, 176, 0.2);
+    --pill-color: var(--muted-strong);
+    --pill-hover-bg: rgba(143, 170, 176, 0.16);
+    --pill-hover-border: rgba(143, 170, 176, 0.3);
+    --pill-hover-color: var(--text);
+    --pill-active-bg: var(--muted-strong);
+    --pill-active-border: var(--muted-strong);
+    --pill-active-color: #050505;
 }

@@ -37,6 +37,7 @@ CREATE INDEX idx_app_users_username
 CREATE TABLE user_problem_progress (
   user_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
   problem_id TEXT NOT NULL,
+  is_started BOOLEAN NOT NULL DEFAULT false,
   is_bookmarked BOOLEAN NOT NULL DEFAULT false,
   is_practiced BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -69,6 +70,10 @@ CREATE TABLE practice_stage_drafts (
 
 CREATE INDEX idx_user_problem_progress_user_updated_at
   ON user_problem_progress (user_id, updated_at DESC);
+
+CREATE INDEX idx_user_problem_progress_started
+  ON user_problem_progress (user_id, updated_at DESC)
+  WHERE is_started;
 
 CREATE INDEX idx_user_problem_progress_bookmarked
   ON user_problem_progress (user_id, updated_at DESC)

@@ -144,15 +144,11 @@ export const LandingPage = ({
                 <Network size={16} strokeWidth={1.9} />
                 Client
               </div>
-              <div
-                className="landing-map__node landing-map__node--compact landing-map__node--cdn"
-              >
+              <div className="landing-map__node landing-map__node--compact landing-map__node--cdn">
                 <Cloud size={14} strokeWidth={1.9} />
                 CDN
               </div>
-              <div
-                className="landing-map__node landing-map__node--compact landing-map__node--auth"
-              >
+              <div className="landing-map__node landing-map__node--compact landing-map__node--auth">
                 <ShieldCheck size={14} strokeWidth={1.9} />
                 Auth
               </div>
@@ -176,9 +172,7 @@ export const LandingPage = ({
                 <Database size={16} strokeWidth={1.9} />
                 Storage
               </div>
-              <div
-                className="landing-map__node landing-map__node--compact landing-map__node--search"
-              >
+              <div className="landing-map__node landing-map__node--compact landing-map__node--search">
                 <Search size={14} strokeWidth={1.9} />
                 Search
               </div>
@@ -186,122 +180,6 @@ export const LandingPage = ({
           </div>
         </div>
       </section>
-
-      {/*<div className="landing-content">
-        <section className="landing-stats" aria-label="Practice summary">
-          <article className="landing-stat">
-            <span>{metrics.totalProblems}</span>
-            <strong>Problems</strong>
-          </article>
-          <article className="landing-stat">
-            <span>{domainCount}</span>
-            <strong>Domains</strong>
-          </article>
-          <article className="landing-stat">
-            <span>{metrics.practicedCount}</span>
-            <strong>Practiced</strong>
-          </article>
-          <article className="landing-stat">
-            <span>{metrics.totalDifficultyCounts.Hard}</span>
-            <strong>Advanced</strong>
-          </article>
-        </section>
-
-        <section className="landing-section landing-section--split">
-          <div className="landing-section__copy">
-            <p className="section-label">Practice flow</p>
-            <h2>Move from prompt to tradeoffs without losing the thread.</h2>
-          </div>
-
-          <div className="landing-flow">
-            {practiceFlow.map((step) => {
-              const Icon = step.icon;
-
-              return (
-                <article key={step.label} className="landing-flow__item">
-                  <span className="landing-flow__icon">
-                    <Icon aria-hidden="true" size={18} strokeWidth={1.9} />
-                  </span>
-                  <h3>{step.label}</h3>
-                  <p>{step.copy}</p>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="landing-section">
-          <div className="landing-section__head">
-            <div>
-              <p className="section-label">Library coverage</p>
-              <h2>Practice across the systems interview surface.</h2>
-            </div>
-            <button
-              className="secondary-action landing-section__action"
-              type="button"
-              onClick={onOpenLibrary}
-            >
-              Open Library
-              <ChevronRight aria-hidden="true" size={16} strokeWidth={2} />
-            </button>
-          </div>
-
-          <div className="landing-category-grid">
-            {visibleCategories.map((category) => (
-              <span key={category} className="landing-category">
-                {category}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        <section className="landing-section">
-          <div className="landing-section__head">
-            <div>
-              <p className="section-label">Start point</p>
-              <h2>Jump into a representative prompt.</h2>
-            </div>
-          </div>
-
-          <div className="landing-problem-grid">
-            {featuredProblems.map((problem) => (
-              <button
-                key={problem.id}
-                className="landing-problem"
-                type="button"
-                onClick={() => onSelectProblem(problem.id)}
-              >
-                <span className="landing-problem__meta">
-                  {problem.difficulty} / {problem.category}
-                </span>
-                <h3>{problem.title}</h3>
-                <p>{problem.summary}</p>
-                <span className="landing-problem__footer">
-                  {practicedIds.has(problem.id) ? (
-                    <>
-                      <CheckCircle2
-                        aria-hidden="true"
-                        size={15}
-                        strokeWidth={2}
-                      />
-                      Practiced
-                    </>
-                  ) : (
-                    <>
-                      Start
-                      <ChevronRight
-                        aria-hidden="true"
-                        size={15}
-                        strokeWidth={2}
-                      />
-                    </>
-                  )}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      </div>*/}
     </main>
   );
 };

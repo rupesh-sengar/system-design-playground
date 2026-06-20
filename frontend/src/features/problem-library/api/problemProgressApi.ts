@@ -5,6 +5,7 @@ export interface ProblemProgressEntry {
   createdAt: string;
   isBookmarked: boolean;
   isPracticed: boolean;
+  isStarted: boolean;
   problemId: string;
   updatedAt: string;
 }
@@ -117,6 +118,7 @@ export const problemProgressApi = baseApi.injectEndpoints({
       {
         isBookmarked?: boolean;
         isPracticed?: boolean;
+        isStarted?: boolean;
         problemId: string;
       }
     >({
@@ -135,6 +137,7 @@ export const problemProgressApi = baseApi.injectEndpoints({
                   createdAt: new Date().toISOString(),
                   isBookmarked: arg.isBookmarked ?? false,
                   isPracticed: arg.isPracticed ?? false,
+                  isStarted: arg.isStarted ?? false,
                   problemId: arg.problemId,
                   updatedAt: new Date().toISOString(),
                 });
@@ -153,9 +156,17 @@ export const problemProgressApi = baseApi.injectEndpoints({
                   entry.isPracticed = arg.isPracticed;
                 }
 
+                if (arg.isStarted !== undefined) {
+                  entry.isStarted = arg.isStarted;
+                }
+
                 entry.updatedAt = new Date().toISOString();
 
-                if (!entry.isBookmarked && !entry.isPracticed) {
+                if (
+                  !entry.isStarted &&
+                  !entry.isBookmarked &&
+                  !entry.isPracticed
+                ) {
                   draft.splice(entryIndex, 1);
                 }
               }

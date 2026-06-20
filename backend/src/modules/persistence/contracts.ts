@@ -13,13 +13,16 @@ export const updateProblemProgressSchema = z
   .object({
     isBookmarked: z.boolean().optional(),
     isPracticed: z.boolean().optional(),
+    isStarted: z.boolean().optional(),
   })
   .refine(
     (value) =>
-      value.isBookmarked !== undefined || value.isPracticed !== undefined,
+      value.isBookmarked !== undefined ||
+      value.isPracticed !== undefined ||
+      value.isStarted !== undefined,
     {
       message: "At least one progress field must be provided.",
-      path: ["isBookmarked"],
+      path: ["isStarted"],
     },
   );
 

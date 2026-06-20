@@ -2,7 +2,12 @@ import type { Difficulty, DifficultyFilter, Problem } from "./problem-library";
 
 export type { Difficulty, DifficultyFilter, Problem };
 
-export type StatusFilter = "all" | "bookmarked" | "practiced" | "unpracticed";
+export type StatusFilter =
+  | "all"
+  | "bookmarked"
+  | "practiced"
+  | "started"
+  | "unpracticed";
 export type SortMode = "recommended" | "difficulty" | "title" | "category";
 
 export interface ProblemQuery {
@@ -19,6 +24,7 @@ export interface CatalogFilters extends ProblemQuery {
 export interface ProblemProgress {
   bookmarkedIds: Set<string>;
   practicedIds: Set<string>;
+  startedIds: Set<string>;
 }
 
 export type DifficultyCounts = Record<Difficulty, number>;
@@ -37,6 +43,7 @@ export interface ProblemLibraryMetrics {
   baseFilteredCount: number;
   visibleCount: number;
   practicedCount: number;
+  startedCount: number;
   bookmarkedCount: number;
   visibleCategoryCount: number;
   totalDifficultyCounts: DifficultyCounts;

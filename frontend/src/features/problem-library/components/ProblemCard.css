@@ -1,4 +1,6 @@
 .problem-card {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) max-content max-content 22px;
     width: 100%;
     border: 1px solid rgba(41, 58, 61, 0.08);
     border-radius: 18px;
@@ -6,6 +8,43 @@
     background: rgba(255, 255, 255, 0.66);
     text-align: left;
     box-shadow: 0 8px 18px rgba(36, 30, 18, 0.05);
+}
+
+.problem-card__main {
+    display: contents;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+}
+
+.problem-card__main:focus-visible {
+    outline: none;
+}
+
+.problem-card__save {
+    display: inline-flex;
+    grid-column: 4;
+    grid-row: 1;
+    gap: 5px;
+    align-items: center;
+    justify-self: end;
+    min-height: 30px;
+    border: 1px solid rgba(41, 58, 61, 0.12);
+    border-radius: 8px;
+    padding: 5px 8px;
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--text);
+    font-size: 0.74rem;
+    font-weight: 760;
+}
+
+.problem-card__save--active {
+    border-color: rgba(215, 107, 63, 0.2);
+    background: rgba(215, 107, 63, 0.1);
+    color: var(--accent-warm);
 }
 
 .problem-card--active {
@@ -31,12 +70,15 @@
     margin-top: 6px;
 }
 
-.problem-card h3 {
+.problem-card h3,
+.problem-card__title {
     margin: 12px 0 6px;
     font-size: 1.05rem;
+    font-weight: 760;
 }
 
-.problem-card p {
+.problem-card p,
+.problem-card__summary {
     margin: 0;
     color: var(--muted);
     line-height: 1.65;
@@ -74,7 +116,8 @@
     color: #f3c874;
 }
 
-:root[data-theme="dark"] .problem-card p {
+:root[data-theme="dark"] .problem-card p,
+:root[data-theme="dark"] .problem-card__summary {
     color: var(--muted);
 }
 
@@ -82,10 +125,22 @@
     color: var(--text);
 }
 
+:root[data-theme="dark"] .problem-card__save {
+    border-color: rgba(143, 170, 176, 0.18);
+    background: rgba(18, 29, 36, 0.86);
+    color: var(--text);
+}
+
+:root[data-theme="dark"] .problem-card__save--active {
+    border-color: rgba(243, 138, 93, 0.22);
+    background: rgba(243, 138, 93, 0.14);
+    color: #ffb287;
+}
+
 @media (max-width: 560px) {
     .problem-card {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) max-content 22px;
         gap: 7px 10px;
         min-height: 0;
         padding: 12px;
@@ -97,7 +152,7 @@
     }
 
     .problem-card--locked {
-        grid-template-columns: 28px minmax(0, 1fr) auto;
+        grid-template-columns: 28px minmax(0, 1fr) max-content 22px;
     }
 
     .problem-card--locked .problem-card__icon {
@@ -107,7 +162,8 @@
         align-self: center;
     }
 
-    .problem-card h3 {
+    .problem-card h3,
+    .problem-card__title {
         grid-column: 1;
         grid-row: 1;
         align-self: center;
@@ -116,21 +172,29 @@
         line-height: 1.25;
     }
 
-    .problem-card--locked h3 {
+    .problem-card--locked h3,
+    .problem-card--locked .problem-card__title {
         grid-column: 2;
     }
 
     .problem-card__action {
-        grid-column: 2;
+        grid-column: 3;
         grid-row: 1;
         align-self: center;
     }
 
-    .problem-card--locked .problem-card__action {
-        grid-column: 3;
+    .problem-card__save {
+        grid-column: 2;
+        grid-row: 3;
+        align-self: center;
     }
 
-    .problem-card p {
+    .problem-card--locked .problem-card__action {
+        grid-column: 4;
+    }
+
+    .problem-card p,
+    .problem-card__summary {
         grid-column: 1 / -1;
         grid-row: 2;
         line-height: 1.45;
@@ -147,4 +211,20 @@
         grid-column: 1 / -1;
         grid-row: 4;
     }
+}
+
+.problem-card__title-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.problem-card__bookmark-icon {
+    flex: 0 0 auto;
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.problem-card__bookmark-icon--active {
+    color: var(--accent-warm);
 }
