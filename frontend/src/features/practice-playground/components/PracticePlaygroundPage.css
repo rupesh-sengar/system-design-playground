@@ -154,11 +154,22 @@
     font-size: clamp(2rem, 3.6vw, 3.8rem);
 }
 
+.playground-sidebar--expanded .playground-problem-description h1 {
+    max-width: none;
+    font-size: clamp(2rem, 3.6vw, 3.8rem);
+}
+
 .playground-sidebar--expanded .playground-sidebar__problem p,
 .playground-sidebar--expanded .playground-sidebar__stage p,
 .playground-sidebar--expanded .playground-sidebar__fact dd,
 .playground-sidebar--expanded .playground-sidebar__anchor-card p,
 .playground-sidebar--expanded .playground-sidebar__ai-copy {
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+.playground-sidebar--expanded .playground-problem-description__body p,
+.playground-sidebar--expanded .playground-problem-description__examples li {
     font-size: 1rem;
     line-height: 1.7;
 }
@@ -212,6 +223,109 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
+}
+
+.playground-problem-description {
+    display: grid;
+    align-content: start;
+    gap: 16px;
+}
+
+.playground-problem-description__header {
+    display: grid;
+    gap: 10px;
+}
+
+.playground-problem-description h1 {
+    margin: 0;
+    color: var(--text);
+    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    font-size: clamp(1.45rem, 1.65vw, 1.85rem);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1.04;
+    max-width: none;
+    text-wrap: wrap;
+}
+
+.playground-problem-description__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.playground-problem-description__tags span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 5px 9px;
+    border: 1px solid rgba(15, 122, 115, 0.12);
+    border-radius: 999px;
+    background: rgba(15, 122, 115, 0.08);
+    color: var(--muted-strong);
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+}
+
+.playground-problem-description__body {
+    display: grid;
+    gap: 14px;
+    color: var(--text);
+}
+
+.playground-problem-description__body p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.94rem;
+    line-height: 1.72;
+}
+
+.playground-problem-description__body > p:first-child {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.playground-problem-description__examples {
+    display: grid;
+    gap: 10px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(41, 58, 61, 0.1);
+}
+
+.playground-problem-description__examples h2 {
+    margin: 0;
+    color: var(--text);
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1.25;
+    text-transform: uppercase;
+}
+
+.playground-problem-description__examples ul {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding-left: 18px;
+}
+
+.playground-problem-description__examples li {
+    padding-left: 2px;
+    color: var(--muted);
+    line-height: 1.62;
+}
+
+.playground-problem-description__examples li::marker {
+    color: var(--accent-deep);
+}
+
+.playground-problem-description__examples strong {
+    display: block;
+    margin-bottom: 2px;
+    color: var(--text);
+    font-size: 0.92rem;
 }
 
 .playground-sidebar__problem h1,
@@ -997,6 +1111,20 @@
 .playground-stageboard__actions .secondary-action {
     width: 100%;
     border-radius: 16px;
+    min-width: 0;
+    line-height: 1.2;
+    white-space: normal;
+}
+
+.playground-stageboard__completion-action {
+    border-color: rgba(15, 122, 115, 0.16);
+    background: rgba(255, 255, 255, 0.62);
+}
+
+.playground-stageboard__completion-action--complete {
+    border-color: rgba(45, 132, 88, 0.24);
+    background: rgba(238, 250, 244, 0.9);
+    color: #266245;
 }
 
 .playground-sidebar__panel,
@@ -1820,6 +1948,27 @@
     background: rgba(66, 184, 174, 0.12);
 }
 
+:root[data-theme="dark"] .playground-problem-description__examples {
+    border-top-color: rgba(143, 170, 176, 0.16);
+}
+
+:root[data-theme="dark"] .playground-problem-description__tags span {
+    border-color: rgba(66, 184, 174, 0.18);
+    background: rgba(66, 184, 174, 0.12);
+    color: var(--text);
+}
+
+:root[data-theme="dark"] .playground-stageboard__completion-action {
+    border-color: rgba(66, 184, 174, 0.18);
+    background: rgba(19, 29, 37, 0.9);
+}
+
+:root[data-theme="dark"] .playground-stageboard__completion-action--complete {
+    border-color: rgba(82, 190, 126, 0.22);
+    background: rgba(18, 47, 32, 0.76);
+    color: #8fe0b2;
+}
+
 :root[data-theme="dark"]
     .playground-sidebar__section-summary
     > span:last-of-type {
@@ -1966,6 +2115,12 @@
     }
 
     .playground-sidebar__problem h1 {
+        max-width: none;
+        font-size: 1.35rem;
+        line-height: 1.08;
+    }
+
+    .playground-problem-description h1 {
         max-width: none;
         font-size: 1.35rem;
         line-height: 1.08;

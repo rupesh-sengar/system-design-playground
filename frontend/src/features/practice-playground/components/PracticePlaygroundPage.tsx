@@ -6,20 +6,15 @@ import {
   useState,
 } from "react";
 import {
-  Activity,
   ArrowLeft,
   BookOpen,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   CircleDashed,
-  ClipboardCheck,
   FileText,
-  Gauge,
   LayoutDashboard,
-  Lightbulb,
   ListChecks,
-  LogIn,
   Maximize2,
   Minimize2,
   RotateCcw,
@@ -29,7 +24,6 @@ import {
   Target,
 } from "lucide-react";
 import { useAppAuth } from "@/features/auth/app-auth";
-import { getDifficultyClassName } from "@/features/problem-library/lib/catalog";
 import { sanitizeRichTextHtml } from "@/shared/lib/richText";
 import { Loader } from "@/shared/ui/Loader";
 import { RichTextEditor } from "@/shared/ui/RichTextEditor";
@@ -70,22 +64,35 @@ type HighLevelDesignSurface = "diagram" | "notes";
 const clampSidebarWidth = (value: number): number =>
   Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, value));
 
+const formatInlineList = (items: string[]): string => {
+  if (items.length === 0) {
+    return "";
+  }
+
+  if (items.length === 1) {
+    return items[0];
+  }
+
+  if (items.length === 2) {
+    return `${items[0]} and ${items[1]}`;
+  }
+
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+};
+
+const stripTerminalPeriod = (value: string): string =>
+  value.endsWith(".") ? value.slice(0, -1) : value;
+
+const lowerFirst = (value: string): string =>
+  value.length > 0 ? `${value[0].toLocaleLowerCase()}${value.slice(1)}` : value;
+
 export const PracticePlaygroundPage = ({
-  isPracticed,
   onBack,
-  onMarkPracticed,
   onOpenPricing,
   onSaveStatusChange,
   problem,
 }: PracticePlaygroundPageProps) => {
-  const {
-    canRequestApiToken,
-    isApiAuthReady,
-    isAuthenticated,
-    isConfigured,
-    isLoading,
-    login,
-  } = useAppAuth();
+  const { isApiAuthReady } = useAppAuth();
   const {
     actions,
     activeStage,
@@ -106,7 +113,6 @@ export const PracticePlaygroundPage = ({
   const [isStageboardExpanded, setIsStageboardExpanded] = useState(false);
   const [activeDesignSurface, setActiveDesignSurface] =
     useState<HighLevelDesignSurface>("diagram");
-  const canMarkPracticed = metrics.completedCount === metrics.totalCount;
   const authReady = isApiAuthReady;
   const showLoadingOverlay = storage.isLoading;
   const fallbackDrafts = createDefaultSession().stages;
@@ -123,6 +129,9 @@ export const PracticePlaygroundPage = ({
   const sanitizedEditorialHtml = editorial.contentHtml
     ? sanitizeRichTextHtml(editorial.contentHtml)
     : "";
+  const focusAreaText = formatInlineList(problem?.focusAreas ?? []);
+  const pitfallText = formatInlineList(problem?.pitfalls ?? []);
+  const scaleText = stripTerminalPeriod(problem?.scale ?? "");
 
   useEffect(() => {
     const storedWidth = window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
@@ -228,16 +237,6 @@ export const PracticePlaygroundPage = ({
 
   const focusAiTab = (): void => {
     setActiveSidebarTab("ai");
-  };
-
-  const handleRequestHints = (): void => {
-    focusAiTab();
-
-    if (!authReady) {
-      return;
-    }
-
-    void assistant.actions.requestHints();
   };
 
   const handleValidateDraft = (): void => {
@@ -407,148 +406,71 @@ export const PracticePlaygroundPage = ({
 
           <div className="playground-sidebar__panel">
             {activeSidebarTab === "overview" ? (
-              <>
-                <div className="playground-sidebar__problem">
-                  <p className="section-label">Practice Playground</p>
-                  <h1>{problem.title}</h1>
-                  <p className="playground-sidebar__summary">
-                    {problem.summary}
-                  </p>
-                  <div className="detail-meta">
-                    {"difficulty" in problem ? (
-                      <span
-                        className={`badge badge--${getDifficultyClassName(
-                          problem.difficulty,
-                        )}`}
-                      >
-                        {problem.difficulty}
-                      </span>
-                    ) : null}
-                    <span className="category-chip">{problem.category}</span>
-                    {isPracticed ? (
-                      <span className="playground-sidebar__status">
-                        <CheckCircle2
-                          aria-hidden="true"
-                          size={12}
-                          strokeWidth={2}
-                        />
-                        Practiced
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="playground-sidebar__stage">
-                  <div className="playground-sidebar__stage-head">
-                    <div>
-                      <span className="playground-sidebar__stage-kicker">
-                        Step {activeStage.step} of {metrics.totalCount}
-                      </span>
-                      <h2>{activeStage.title}</h2>
-                    </div>
-                    <span className="playground-sidebar__stage-state">
-                      {activeStageDraft.isComplete ? (
-                        <CheckCircle2
-                          aria-hidden="true"
-                          size={12}
-                          strokeWidth={2}
-                        />
-                      ) : (
-                        <CircleDashed
-                          aria-hidden="true"
-                          size={12}
-                          strokeWidth={2}
-                        />
-                      )}
-                      {activeStageDraft.isComplete ? "Complete" : "In progress"}
-                    </span>
-                  </div>
-
-                  <p>{activeStage.objective}</p>
-
-                  <div className="playground-sidebar__deliverable">
-                    <span>
-                      <ClipboardCheck
-                        aria-hidden="true"
-                        size={12}
-                        strokeWidth={2}
-                      />
-                      Deliverable
-                    </span>
-                    <p>{activeStage.deliverable}</p>
-                  </div>
-                </div>
-
-                <dl
-                  aria-label="Practice progress"
-                  className="playground-sidebar__metrics"
-                >
-                  <div className="playground-sidebar__metric">
-                    <dt>
-                      <Activity aria-hidden="true" size={12} strokeWidth={2} />
-                      Progress
-                    </dt>
-                    <dd>
-                      {metrics.completedCount}/{metrics.totalCount}
-                    </dd>
-                  </div>
-                  <div className="playground-sidebar__metric">
-                    <dt>
-                      <FileText aria-hidden="true" size={12} strokeWidth={2} />
-                      Draft
-                    </dt>
-                    <dd>{metrics.notesWordCount} words</dd>
-                  </div>
-                  <div className="playground-sidebar__metric">
-                    <dt>
-                      <Gauge aria-hidden="true" size={12} strokeWidth={2} />
-                      Ready
-                    </dt>
-                    <dd>{metrics.readinessLabel}</dd>
-                  </div>
-                </dl>
-
-                <div className="playground-sidebar__actions">
-                  <button
-                    className="secondary-action playground-sidebar__action-quiet"
-                    type="button"
-                    onClick={() => actions.toggleStageComplete(activeStage.id)}
+              <article
+                aria-labelledby="playground-problem-description-title"
+                className="playground-problem-description"
+              >
+                <header className="playground-problem-description__header">
+                  <p className="section-label">Problem Description</p>
+                  <h1 id="playground-problem-description-title">
+                    {problem.title}
+                  </h1>
+                  <div
+                    aria-label="Problem tags"
+                    className="playground-problem-description__tags"
                   >
-                    {activeStageDraft.isComplete ? (
-                      <CircleDashed
-                        aria-hidden="true"
-                        size={15}
-                        strokeWidth={2}
-                      />
-                    ) : (
-                      <CheckCircle2
-                        aria-hidden="true"
-                        size={15}
-                        strokeWidth={2}
-                      />
-                    )}
-                    {activeStageDraft.isComplete
-                      ? "Mark stage incomplete"
-                      : "Mark stage complete"}
-                  </button>
+                    {[
+                      problem.difficulty,
+                      problem.category,
+                      ...problem.focusAreas,
+                    ].map((tag, index) => (
+                      <span key={`${tag}-${index}`}>{tag}</span>
+                    ))}
+                  </div>
+                </header>
 
-                  {!isPracticed ? (
-                    <button
-                      className="primary-action"
-                      type="button"
-                      disabled={!canMarkPracticed}
-                      onClick={onMarkPracticed}
-                    >
-                      <CheckCircle2
-                        aria-hidden="true"
-                        size={15}
-                        strokeWidth={2}
-                      />
-                      Mark practiced
-                    </button>
-                  ) : null}
+                <div className="playground-problem-description__body">
+                  <p>{problem.summary}</p>
+                  <p>
+                    Design this as a production system, not a single feature.
+                    Assume the system must handle {scaleText}. Your answer
+                    should define the users, core workflows, primary entities,
+                    public interfaces, storage choices, read and write paths,
+                    caching or indexing strategy, and the failure modes that
+                    matter at this scale.
+                  </p>
+                  <p>
+                    Ground the design in concrete examples. For this problem,
+                    strong examples usually involve {focusAreaText}. When you
+                    describe an example, name the request or event, the entities
+                    it touches, the data store or cache involved, and the
+                    response the user or downstream system observes.
+                  </p>
+                  <p>
+                    Also make the tradeoffs explicit. Call out how the design
+                    avoids {pitfallText}, what consistency guarantees are
+                    realistic, and how the system behaves during traffic
+                    spikes, retries, partial outages, and delayed background
+                    processing.
+                  </p>
+                  <div className="playground-problem-description__examples">
+                    <h2>Example Scenarios</h2>
+                    <ul>
+                      {problem.interviewVariants.map((variant) => (
+                        <li key={variant}>
+                          <strong>{variant}</strong>
+                          <span>
+                            Explain how the system would{" "}
+                            {lowerFirst(stripTerminalPeriod(variant))}, what
+                            changes in the API or data model, and which
+                            tradeoff keeps the core path reliable.
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-              </>
+              </article>
             ) : null}
 
             {activeSidebarTab === "guides" ? (
@@ -682,40 +604,8 @@ export const PracticePlaygroundPage = ({
 
             {activeSidebarTab === "ai" ? (
               <div className="playground-sidebar__tab-sections playground-sidebar__tab-sections--ai">
-                {!authReady ? (
-                  <section className="playground-sidebar__section playground-sidebar__section--ai">
-                    <div className="playground-sidebar__section-head">
-                      <p className="section-label">
-                        <Sparkles
-                          aria-hidden="true"
-                          size={12}
-                          strokeWidth={2}
-                        />
-                        AI Setup
-                      </p>
-                    </div>
-                    <p className="playground-sidebar__ai-copy">
-                      Sign in to unlock hinting and draft validation for the
-                      current stage.
-                    </p>
-                    {isConfigured && canRequestApiToken && !isAuthenticated ? (
-                      <button
-                        className="primary-action"
-                        type="button"
-                        disabled={isLoading}
-                        onClick={() => void login()}
-                      >
-                        <LogIn aria-hidden="true" size={15} strokeWidth={2} />
-                        {isLoading
-                          ? "Checking session..."
-                          : "Sign in to use AI"}
-                      </button>
-                    ) : null}
-                  </section>
-                ) : null}
-
                 <PracticeAiReviewPanel
-                  actionMode="clear-only"
+                  actionMode="hints-only"
                   activeStageTitle={activeStage.title}
                   assistant={assistant}
                   onOpenPricing={onOpenPricing}
@@ -878,15 +768,22 @@ export const PracticePlaygroundPage = ({
                 Previous
               </button>
               <button
-                className="secondary-action"
+                className={`secondary-action playground-stageboard__completion-action ${
+                  activeStageDraft.isComplete
+                    ? "playground-stageboard__completion-action--complete"
+                    : ""
+                }`}
                 type="button"
-                disabled={authReady ? !assistant.canRequestHints : false}
-                onClick={handleRequestHints}
+                onClick={() => actions.toggleStageComplete(activeStage.id)}
               >
-                <Lightbulb aria-hidden="true" size={15} strokeWidth={2} />
-                {assistant.activeStageState.hintStatus === "loading"
-                  ? "Generating hints..."
-                  : "Get hints"}
+                {activeStageDraft.isComplete ? (
+                  <CircleDashed aria-hidden="true" size={15} strokeWidth={2} />
+                ) : (
+                  <CheckCircle2 aria-hidden="true" size={15} strokeWidth={2} />
+                )}
+                {activeStageDraft.isComplete
+                  ? "Mark stage incomplete"
+                  : "Mark stage complete"}
               </button>
               <button
                 className="primary-action"

@@ -38,6 +38,7 @@
 .catalog h2,
 .detail h2,
 .app-header__copy h1,
+.playground-problem-description h1,
 .playground-sidebar__problem h1,
 .playground-sidebar__stage h2,
 .playground-page__topbar-title h1,
@@ -357,6 +358,8 @@
 .catalog-sync-note,
 .detail-section p,
 .detail-empty p,
+.playground-problem-description__body p,
+.playground-problem-description__examples li,
 .playground-sidebar__problem p,
 .playground-sidebar__stage p,
 .playground-sidebar__anchor-card p,
@@ -467,11 +470,13 @@
     color: var(--text);
 }
 
+.playground-problem-description,
 .playground-sidebar__problem,
 .playground-sidebar__stage {
     border-color: var(--border);
 }
 
+.playground-problem-description h1,
 .playground-sidebar__problem h1 {
     width: 100%;
     max-width: none;
@@ -908,6 +913,8 @@
 :root[data-theme="dark"] .guidance,
 :root[data-theme="dark"] .scale-note,
 :root[data-theme="dark"] .playground-sidebar__tab,
+:root[data-theme="dark"] .playground-problem-description__body p,
+:root[data-theme="dark"] .playground-problem-description__examples li,
 :root[data-theme="dark"] .playground-sidebar__problem p,
 :root[data-theme="dark"] .playground-sidebar__stage p,
 :root[data-theme="dark"] .playground-sidebar__anchor-card p,
@@ -924,6 +931,54 @@
 
 :root[data-theme="dark"] .badge {
     color: var(--text);
+}
+
+:root[data-theme="dark"] .playground-ai {
+    border: 0;
+    background: transparent;
+}
+
+:root[data-theme="dark"] .playground-ai__command-surface {
+    border-color: rgba(66, 184, 174, 0.2);
+    background:
+        linear-gradient(
+            180deg,
+            rgba(16, 46, 48, 0.82),
+            rgba(15, 22, 28, 0.86)
+        ),
+        var(--flow-surface-inset);
+}
+
+:root[data-theme="dark"] .playground-ai__masthead-icon {
+    border-color: rgba(66, 184, 174, 0.22);
+    background: rgba(66, 184, 174, 0.12);
+    color: var(--accent-deep);
+}
+
+:root[data-theme="dark"] .playground-ai__command-bar {
+    border-top-color: rgba(143, 170, 176, 0.14);
+}
+
+:root[data-theme="dark"] .playground-ai__command-copy p {
+    color: var(--muted);
+}
+
+:root[data-theme="dark"] .playground-ai__status-chip {
+    border-color: rgba(143, 170, 176, 0.14);
+    background: rgba(19, 29, 37, 0.9);
+    color: var(--muted);
+}
+
+:root[data-theme="dark"] .playground-ai__status-chip--ready {
+    border-color: rgba(82, 190, 126, 0.2);
+    background: var(--success-surface);
+    color: var(--easy);
+}
+
+:root[data-theme="dark"] .playground-ai__status-chip--attention {
+    border-color: rgba(216, 188, 115, 0.18);
+    background: var(--warning-surface);
+    color: var(--accent-gold);
 }
 
 :root[data-theme="dark"] .badge--easy,
@@ -1249,6 +1304,7 @@
 }
 
 .playground-sidebar__panel,
+.playground-problem-description,
 .playground-sidebar__problem,
 .playground-sidebar__stage,
 .playground-sidebar__section,
@@ -1330,18 +1386,63 @@
     border-radius: 8px;
 }
 
+.playground-stageboard__completion-action {
+    border-color: rgba(15, 122, 115, 0.16);
+    background: var(--surface-strong);
+    color: var(--text);
+}
+
+.playground-stageboard__completion-action--complete {
+    border-color: rgba(38, 126, 83, 0.18);
+    background: var(--success-surface);
+    color: var(--easy);
+}
+
 .playground-ai {
     align-content: start;
     align-items: stretch;
-    gap: 10px;
-    padding: 12px;
-    border: 1px solid var(--border);
-    background: var(--surface-strong);
+    gap: 12px;
+    padding: 0;
+    border: 0;
+    background: transparent;
 }
 
 .playground-sidebar__tab-sections--ai {
     align-content: start;
     align-items: start;
+}
+
+.playground-ai__command-surface {
+    display: grid;
+    gap: 13px;
+    padding: 14px;
+    border: 1px solid rgba(15, 122, 115, 0.16);
+    border-radius: 12px;
+    background:
+        linear-gradient(
+            180deg,
+            rgba(235, 248, 246, 0.82),
+            rgba(255, 255, 255, 0.78)
+        ),
+        var(--surface-strong);
+}
+
+.playground-ai__masthead {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+}
+
+.playground-ai__masthead-icon {
+    display: inline-grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 1px solid rgba(15, 122, 115, 0.16);
+    border-radius: 10px;
+    background: rgba(15, 122, 115, 0.1);
+    color: var(--accent-deep);
 }
 
 .playground-ai__header {
@@ -1363,14 +1464,98 @@
     line-height: 1.45;
 }
 
+.playground-ai__status-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.playground-ai__status-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 5px 8px;
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+    background: var(--surface-strong);
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.playground-ai__status-chip--ready {
+    border-color: rgba(38, 126, 83, 0.18);
+    background: var(--success-surface);
+    color: var(--easy);
+}
+
+.playground-ai__status-chip--attention {
+    border-color: rgba(176, 111, 47, 0.16);
+    background: var(--warning-surface);
+    color: var(--accent-warm);
+}
+
+.playground-ai__command-bar {
+    display: grid;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+
+.playground-ai__command-copy {
+    display: grid;
+    gap: 3px;
+}
+
+.playground-ai__command-copy span {
+    color: var(--accent-deep);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1.1;
+    text-transform: uppercase;
+}
+
+.playground-ai__command-copy strong {
+    color: var(--text);
+    font-size: 0.98rem;
+    line-height: 1.2;
+}
+
+.playground-ai__command-copy p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+
 .playground-ai__actions {
     justify-content: stretch;
+}
+
+.playground-ai__command-bar .playground-ai__actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
 }
 
 .playground-ai__actions .primary-action,
 .playground-ai__actions .secondary-action {
     min-height: 34px;
     border-radius: 8px;
+}
+
+.playground-ai__command-bar .primary-action,
+.playground-ai__command-bar .secondary-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    justify-content: center;
+    line-height: 1.2;
+    white-space: normal;
 }
 
 .playground-ai__meta {
@@ -2569,6 +2754,7 @@
         font-size: 0.76rem;
     }
 
+    .playground-problem-description h1,
     .playground-sidebar__problem h1 {
         max-width: none;
         font-size: 1.35rem;
