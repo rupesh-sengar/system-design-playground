@@ -471,14 +471,14 @@ export const ProblemCatalogPanel = ({
               <Shuffle aria-hidden="true" size={15} strokeWidth={2} />
               Random
             </button>
-            <button
+            {/*<button
               className="secondary-action"
               type="button"
               onClick={onResetProgress}
             >
               <RotateCcw aria-hidden="true" size={15} strokeWidth={2} />
               Reset
-            </button>
+            </button>*/}
           </div>
         </div>
       </div>

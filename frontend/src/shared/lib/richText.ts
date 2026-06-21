@@ -12,6 +12,8 @@ const ALLOWED_TAGS = new Set([
   "LI",
   "OL",
   "P",
+  "PRE",
+  "CODE",
   "SPAN",
   "STRONG",
   "U",

@@ -37,6 +37,9 @@
     --shadow: 0 16px 38px rgba(0, 0, 0, 0.06);
     --page-gutter: clamp(12px, 1.4vw, 32px);
     --section-gap: clamp(14px, 1.1vw, 24px);
+    --motion-fast: 140ms;
+    --motion-base: 220ms;
+    --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
@@ -55,6 +58,29 @@ body {
     color: var(--text);
     background: var(--page);
     overflow-x: clip;
+}
+
+@keyframes app-scale-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes app-soft-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 16%, transparent);
+    }
+
+    50% {
+        box-shadow: 0 0 0 7px transparent;
+    }
 }
 
 button,
@@ -112,4 +138,17 @@ button:disabled {
     --medium: #d8bc73;
     --hard: #ec7474;
     --shadow: 0 18px 48px rgba(0, 0, 0, 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-delay: 0ms !important;
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-delay: 0ms !important;
+        transition-duration: 1ms !important;
+    }
 }

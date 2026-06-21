@@ -95,17 +95,6 @@ export const ProblemCard = ({
               Locked
             </span>
           ) : null}
-          {isBookmarked ? (
-            <span className="state-chip">
-              <Bookmark
-                aria-hidden="true"
-                fill="currentColor"
-                size={12}
-                strokeWidth={2}
-              />
-              Saved
-            </span>
-          ) : null}
           {isPracticed ? (
             <span className="state-chip state-chip--done">
               <CheckCircle2 aria-hidden="true" size={12} strokeWidth={2} />

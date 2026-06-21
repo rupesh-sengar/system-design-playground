@@ -13,6 +13,7 @@ import {
   FileText,
   LayoutDashboard,
   ListChecks,
+  ScrollText,
   Search,
   Sparkles,
   Target,
@@ -30,6 +31,7 @@ interface NewUserTutorialProps {
 }
 
 interface TutorialStep {
+  activateTarget?: boolean;
   actionLabel: string;
   description: string;
   icon: typeof BookOpenCheck;
@@ -107,8 +109,8 @@ const tutorialSteps: TutorialStep[] = [
       "The sidebar keeps the current prompt, objective, deliverable, and progress visible while the user drafts an answer.",
     points: [
       "Overview shows the active stage and expected output.",
-      "Guides surface prompts, review checks, and problem anchors.",
-      "AI is available for hints and validation when sign-in is ready.",
+      "Guides surface stage prompts, review checks, and problem anchors.",
+      "Solution and AI stay separate: one is the reference answer, the other is coaching.",
     ],
     actionLabel: "Show playground",
     icon: Target,
@@ -128,6 +130,23 @@ const tutorialSteps: TutorialStep[] = [
     ],
     actionLabel: "Show stages",
     icon: ListChecks,
+  },
+  {
+    id: "playground-solution",
+    route: "playground",
+    target: "playground-solution",
+    kicker: "Solution",
+    title: "Compare your draft against the reference solution",
+    description:
+      "The Solution tab is the worked stage answer. It is for review after the user has tried the stage, not a hint stream.",
+    points: [
+      "Read it as the expected answer for the active stage.",
+      "Use it to compare requirements, entities, APIs, flows, architecture, and deep dives.",
+      "Keep AI hints for nudges while drafting; use Solution for the full reference.",
+    ],
+    actionLabel: "Show solution",
+    activateTarget: true,
+    icon: ScrollText,
   },
   {
     id: "playground-workspace",
@@ -154,7 +173,7 @@ const tutorialSteps: TutorialStep[] = [
     description:
       "Hints and validation help users iterate, while completion controls make practice progress explicit across the app.",
     points: [
-      "Get hints when a stage needs a push.",
+      "Get hints when a stage needs a push before opening the reference solution.",
       "Validate the draft to reveal gaps before moving on.",
       "Mark stages complete, then mark the full problem practiced.",
     ],
@@ -244,6 +263,10 @@ export const NewUserTutorial = ({
       const target = document.querySelector<HTMLElement>(
         `[data-tour-target="${activeStep.target}"]`,
       );
+
+      if (activeStep.activateTarget) {
+        target?.click();
+      }
 
       target?.scrollIntoView({
         behavior: "smooth",

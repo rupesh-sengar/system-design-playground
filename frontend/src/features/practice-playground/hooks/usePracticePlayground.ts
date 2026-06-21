@@ -410,7 +410,7 @@ export const usePracticePlayground = (
     );
   }, [session]);
   const {
-    data: stageEditorial,
+    currentData: currentStageEditorial,
     error: stageEditorialError,
     isFetching: isStageEditorialFetching,
     isLoading: isStageEditorialLoading,
@@ -1189,7 +1189,7 @@ export const usePracticePlayground = (
     },
     editorial: {
       contentHtml: hasEditorialAccess
-        ? (stageEditorial?.contentHtml ?? null)
+        ? (currentStageEditorial?.contentHtml ?? null)
         : null,
       errorMessage: stageEditorialError
         ? getApiErrorDetails(
@@ -1202,9 +1202,14 @@ export const usePracticePlayground = (
         isApiAuthReady &&
         hasEditorialAccess &&
         Boolean(problem) &&
-        (isStageEditorialLoading || isStageEditorialFetching),
-      title: hasEditorialAccess ? (stageEditorial?.title || null) : null,
-      updatedAt: hasEditorialAccess ? (stageEditorial?.updatedAt ?? null) : null,
+        (isStageEditorialLoading ||
+          (isStageEditorialFetching && !currentStageEditorial)),
+      title: hasEditorialAccess
+        ? (currentStageEditorial?.title || null)
+        : null,
+      updatedAt: hasEditorialAccess
+        ? (currentStageEditorial?.updatedAt ?? null)
+        : null,
     },
     metrics,
     session,

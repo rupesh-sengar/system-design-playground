@@ -19,6 +19,7 @@ import {
   OnboardingPage,
   type TutorialRouteTarget,
 } from "@/features/onboarding";
+import { useAppAuth } from "@/features/auth/app-auth";
 import { AuthReturnNotice } from "@/features/auth/components/AuthReturnNotice";
 import { AuthSessionControl } from "@/features/auth/components/AuthSessionControl";
 import { ThemeModeControl } from "@/features/theme/components/ThemeModeControl";
@@ -39,6 +40,7 @@ const DEVELOPMENT_NOTICE_LABEL = "This site is still in development";
 
 export default function App() {
   const { features } = frontendConfig;
+  const { isAuthenticated } = useAppAuth();
   const {
     goToAccount,
     goToHome,
@@ -76,6 +78,11 @@ export default function App() {
     !access.hasPremiumCatalog && !isFreeStarterProblem(problemId);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setIsTutorialOpen(false);
+      return;
+    }
+
     try {
       if (window.localStorage.getItem(NEW_USER_TUTORIAL_STORAGE_KEY)) {
         return;
@@ -85,21 +92,22 @@ export default function App() {
     } catch {
       setIsTutorialOpen(true);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const handlePickRandomProblem = (): void => {
-    if (visibleProblems.length === 0) {
+    const randomProblemCandidates = visibleProblems.filter(
+      (problem) => !isProblemLocked(problem.id),
+    );
+
+    if (randomProblemCandidates.length === 0) {
       return;
     }
 
-    const randomIndex = Math.floor(Math.random() * visibleProblems.length);
-    const randomProblem = visibleProblems[randomIndex];
+    const randomIndex = Math.floor(
+      Math.random() * randomProblemCandidates.length,
+    );
+    const randomProblem = randomProblemCandidates[randomIndex];
     actions.selectProblem(randomProblem.id);
-
-    if (isProblemLocked(randomProblem.id)) {
-      goToPricing();
-      return;
-    }
 
     goToPlayground(randomProblem.id);
   };
@@ -224,14 +232,16 @@ export default function App() {
             Pricing
           </button>
         ) : null}
-        <button
-          className="secondary-action app-toolbar__tutorial"
-          type="button"
-          onClick={() => setIsTutorialOpen(true)}
-        >
-          <BookOpenCheck aria-hidden="true" size={15} strokeWidth={2} />
-          Guide
-        </button>
+        {isAuthenticated ? (
+          <button
+            className="secondary-action app-toolbar__tutorial"
+            type="button"
+            onClick={() => setIsTutorialOpen(true)}
+          >
+            <BookOpenCheck aria-hidden="true" size={15} strokeWidth={2} />
+            Guide
+          </button>
+        ) : null}
         {route.name !== "playground" && persistence.errorMessage ? (
           <span
             aria-label={persistence.errorMessage}
@@ -246,6 +256,7 @@ export default function App() {
         <ThemeModeControl />
         <AuthSessionControl
           onOpenAccount={features.billing ? goToAccount : undefined}
+          showGuestSignupPrompt={route.name === "home"}
         />
       </div>
     </div>
@@ -267,7 +278,7 @@ export default function App() {
           ? route.name
           : "home"
       }
-      isOpen={isTutorialOpen && !isDevelopmentNoticeOpen}
+      isOpen={isAuthenticated && isTutorialOpen && !isDevelopmentNoticeOpen}
       onClose={handleCloseTutorial}
       onNavigate={handleTutorialNavigate}
     />

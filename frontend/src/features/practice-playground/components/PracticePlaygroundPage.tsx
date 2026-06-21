@@ -90,6 +90,38 @@ const stripTerminalPeriod = (value: string): string =>
 const lowerFirst = (value: string): string =>
   value.length > 0 ? `${value[0].toLocaleLowerCase()}${value.slice(1)}` : value;
 
+const SolutionLoadingSkeleton = () => (
+  <div
+    aria-label="Loading solution"
+    aria-live="polite"
+    className="playground-sidebar__editorial-loading"
+    role="status"
+  >
+    <div className="playground-sidebar__editorial-loading-title">
+      <span />
+      <span className="playground-sidebar__editorial-loading-heading" />
+    </div>
+    <div className="playground-sidebar__editorial-loading-body">
+      <span />
+      <span />
+      <span />
+      <span />
+    </div>
+    <div className="playground-sidebar__editorial-loading-code">
+      <span />
+      <span />
+      <span />
+      <span />
+      <span />
+    </div>
+    <div className="playground-sidebar__editorial-loading-body playground-sidebar__editorial-loading-body--short">
+      <span />
+      <span />
+      <span />
+    </div>
+  </div>
+);
+
 export const PracticePlaygroundPage = ({
   isPracticed,
   isStarted,
@@ -415,12 +447,13 @@ export const PracticePlaygroundPage = ({
             ? "playground-sidebar__tab--active"
             : ""
         }`}
+        data-tour-target="playground-solution"
         role="tab"
         type="button"
         onClick={() => setActiveSidebarTab("editorial")}
       >
         <ScrollText aria-hidden="true" size={14} strokeWidth={2} />
-        Editorial
+        Solution
       </button>
       <button
         aria-selected={activeSidebarTab === "ai"}
@@ -642,16 +675,16 @@ export const PracticePlaygroundPage = ({
                       />
                       Expected Solution
                     </p>
-                    {editorial.updatedAt ? (
-                      <span>
-                        {new Date(editorial.updatedAt).toLocaleDateString()}
-                      </span>
-                    ) : null}
+                    <span className="playground-sidebar__section-date">
+                      {editorial.updatedAt
+                        ? new Date(editorial.updatedAt).toLocaleDateString()
+                        : ""}
+                    </span>
                   </div>
                   <div className="playground-sidebar__editorial">
                     {editorial.isLocked ? (
                       <>
-                        <p>Upgrade to Plus or Pro to view stage editorials.</p>
+                        <p>Upgrade to Plus or Pro to view stage solutions.</p>
                         <button
                           className="primary-action"
                           type="button"
@@ -661,9 +694,9 @@ export const PracticePlaygroundPage = ({
                         </button>
                       </>
                     ) : !authReady ? (
-                      <p>Sign in to view protected editorials.</p>
+                      <p>Sign in to view protected solutions.</p>
                     ) : editorial.isLoading ? (
-                      <p>Loading editorial...</p>
+                      <SolutionLoadingSkeleton />
                     ) : editorial.errorMessage ? (
                       <p>{editorial.errorMessage}</p>
                     ) : sanitizedEditorialHtml ? (
@@ -685,7 +718,7 @@ export const PracticePlaygroundPage = ({
                         />
                       </div>
                     ) : (
-                      <p>No editorial has been added for this stage yet.</p>
+                      <p>No solution has been added for this stage yet.</p>
                     )}
                   </div>
                 </section>
@@ -724,9 +757,16 @@ export const PracticePlaygroundPage = ({
             className="playground-stage-strip"
             data-tour-target="playground-stages"
           >
-            {stages.map((stage) => {
+            {stages.map((stage, stageIndex) => {
               const stageDraft = stageDrafts[stage.id];
+              const nextStage = stages[stageIndex + 1];
+              const nextStageDraft = nextStage
+                ? stageDrafts[nextStage.id]
+                : null;
               const isActive = activeStage.id === stage.id;
+              const hasIncomingProgress =
+                stageIndex > 0 && stageDraft.isComplete;
+              const hasOutgoingProgress = Boolean(nextStageDraft?.isComplete);
 
               return (
                 <button
@@ -737,10 +777,26 @@ export const PracticePlaygroundPage = ({
                     stageDraft.isComplete
                       ? "playground-stage-step--complete"
                       : ""
+                  } ${
+                    hasIncomingProgress
+                      ? "playground-stage-step--incoming-complete"
+                      : ""
+                  } ${
+                    hasOutgoingProgress
+                      ? "playground-stage-step--outgoing-complete"
+                      : ""
                   }`}
                   type="button"
                   onClick={() => actions.setActiveStage(stage.id)}
                 >
+                  <span
+                    aria-hidden="true"
+                    className="playground-stage-step__progress playground-stage-step__progress--incoming"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="playground-stage-step__progress playground-stage-step__progress--outgoing"
+                  />
                   <span className="playground-stage-step__node">
                     {stage.step}
                   </span>

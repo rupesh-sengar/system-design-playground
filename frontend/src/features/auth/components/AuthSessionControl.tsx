@@ -1,4 +1,4 @@
-import { LogOut } from "lucide-react";
+import { LogIn, LogOut, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { frontendConfig } from "@/config/env";
 import { useGetBillingAccountQuery } from "@/features/billing/api/billingApi";
@@ -8,7 +8,23 @@ import "./auth-session-control.css";
 
 interface AuthSessionControlProps {
   onOpenAccount?: () => void;
+  showGuestSignupPrompt?: boolean;
 }
+
+const GUEST_SIGNUP_PROMPT_DISMISSED_KEY =
+  "system-design-lab.guest-signup-prompt.dismissed.v1";
+
+const hasDismissedGuestSignupPrompt = (): boolean => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    return window.sessionStorage.getItem(GUEST_SIGNUP_PROMPT_DISMISSED_KEY) === "true";
+  } catch {
+    return false;
+  }
+};
 
 const buildInitials = (value: string | null): string => {
   if (!value) {
@@ -72,6 +88,7 @@ const isEmailVerificationNotice = (message: string | null): boolean => {
 
 export const AuthSessionControl = ({
   onOpenAccount,
+  showGuestSignupPrompt = false,
 }: AuthSessionControlProps) => {
   const {
     authError,
@@ -93,6 +110,10 @@ export const AuthSessionControl = ({
     status,
   } = useBackendHealth(isAuthenticated);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [
+    isGuestSignupPromptDismissed,
+    setIsGuestSignupPromptDismissed,
+  ] = useState(hasDismissedGuestSignupPrompt);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const {
     data: billingAccount,
@@ -139,6 +160,18 @@ export const AuthSessionControl = ({
       ? "Protected API tokens are disabled until the Auth0 audience is configured."
       : null;
   const isEmailVerificationPending = isEmailVerificationNotice(authError);
+  const shouldShowGuestSignupPrompt =
+    showGuestSignupPrompt && !isGuestSignupPromptDismissed;
+
+  const dismissGuestSignupPrompt = (): void => {
+    setIsGuestSignupPromptDismissed(true);
+
+    try {
+      window.sessionStorage.setItem(GUEST_SIGNUP_PROMPT_DISMISSED_KEY, "true");
+    } catch {
+      // The prompt can still hide for this render if session storage is unavailable.
+    }
+  };
 
   useEffect(() => {
     if (!isAuthenticated && !isEmailVerificationPending) {
@@ -266,17 +299,54 @@ export const AuthSessionControl = ({
   if (!isAuthenticated) {
     return (
       <div className="session-nav session-nav--guest">
-        <button
-          className="session-nav__signin"
-          disabled={isLoading}
-          type="button"
-          onClick={() => {
-            void login();
-          }}
-        >
-          {isLoading ? "Loading..." : "Sign in"}
-        </button>
+        <div className="session-nav__auth-actions">
+          <button
+            className="session-nav__signin"
+            disabled={isLoading}
+            type="button"
+            onClick={() => {
+              void login();
+            }}
+          >
+            <LogIn aria-hidden="true" size={15} strokeWidth={2} />
+            {isLoading ? "Loading..." : "Sign in"}
+          </button>
+          <button
+            className="session-nav__signin session-nav__signin--signup"
+            disabled={isLoading}
+            type="button"
+            onClick={() => {
+              dismissGuestSignupPrompt();
+              void login({ intent: "signup" });
+            }}
+          >
+            <UserPlus aria-hidden="true" size={15} strokeWidth={2} />
+            {isLoading ? "Loading..." : "Sign up"}
+          </button>
+        </div>
 
+        {shouldShowGuestSignupPrompt ? (
+          <aside
+            className="session-nav__signup-popout"
+            aria-label="Signup invitation"
+          >
+            <span className="session-nav__signup-popout-title">
+              New here?
+            </span>
+            <button
+              aria-label="Dismiss signup invitation"
+              className="session-nav__signup-popout-close"
+              type="button"
+              onClick={dismissGuestSignupPrompt}
+            >
+              <X aria-hidden="true" size={14} strokeWidth={2} />
+            </button>
+            <span className="session-nav__signup-popout-copy">
+              Create a free account to save progress and keep your practice
+              history.
+            </span>
+          </aside>
+        ) : null}
       </div>
     );
   }

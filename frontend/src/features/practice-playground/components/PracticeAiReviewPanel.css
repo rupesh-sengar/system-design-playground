@@ -354,6 +354,15 @@
     border-radius: 10px;
     border: 1px solid rgba(41, 58, 61, 0.08);
     background: rgba(255, 255, 255, 0.82);
+    transition:
+        border-color var(--motion-fast) ease,
+        background-color var(--motion-fast) ease,
+        transform var(--motion-fast) var(--motion-ease);
+}
+
+.playground-ai__card:hover {
+    transform: translateY(-1px);
+    border-color: rgba(15, 122, 115, 0.14);
 }
 
 .playground-ai__inline-action {

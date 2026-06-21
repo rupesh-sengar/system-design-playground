@@ -230,8 +230,7 @@ export const PracticeAiReviewPanel = ({
   const showRecoveryActions = actionMode !== "none";
   const showFullReviewAction = actionMode === "full" && !showSignInCta;
   const showFullReviewContent = actionMode === "full";
-  const showClearAction =
-    hasAnyFeedback && actionMode !== "none";
+  const showClearAction = hasAnyFeedback && actionMode !== "none";
   const showClearFullReviewAction =
     showFullReviewContent && fullReviewResult !== null;
   const authStatusLabel = !isConfigured
@@ -496,10 +495,6 @@ export const PracticeAiReviewPanel = ({
         requestLabel="Validation"
         status={activeStageState.validationStatus}
       />
-
-      {showEmptyState ? (
-        <p className="playground-ai__empty">{emptyStateText}</p>
-      ) : null}
 
       <div className="playground-ai__results">
         {hintResult ? (

@@ -57,6 +57,12 @@
     background: var(--warning-surface);
     padding: 0;
     color: var(--medium);
+    transition:
+        background-color var(--motion-fast) ease,
+        border-color var(--motion-fast) ease,
+        color var(--motion-fast) ease,
+        transform var(--motion-fast) var(--motion-ease),
+        box-shadow var(--motion-fast) ease;
 }
 
 .app-toolbar__warning-button:hover,
@@ -66,6 +72,7 @@
     color: var(--medium);
     outline: none;
     box-shadow: 0 0 0 3px var(--focus);
+    transform: translateY(-1px);
 }
 
 .app-toolbar__warning-tooltip {
@@ -134,6 +141,10 @@
     border-radius: 10px;
     background: var(--surface-soft);
     color: var(--text);
+    transition:
+        background-color var(--motion-fast) ease,
+        border-color var(--motion-fast) ease,
+        transform var(--motion-fast) var(--motion-ease);
 }
 
 .app-toolbar__brand-mark::before {
@@ -168,6 +179,7 @@
 .app-toolbar__brand:hover .app-toolbar__brand-mark {
     border-color: var(--border-strong);
     background: var(--surface-muted);
+    transform: translateY(-1px) scale(1.02);
 }
 
 .app-toolbar__brand:focus-visible {
@@ -207,6 +219,11 @@
 .app-toolbar__save-status--saving,
 .app-toolbar__save-status--loading {
     color: #c47418;
+}
+
+.app-toolbar__save-status--saving::before,
+.app-toolbar__save-status--loading::before {
+    animation: app-soft-pulse 1.35s ease-in-out infinite;
 }
 
 .app-toolbar__save-status--error {

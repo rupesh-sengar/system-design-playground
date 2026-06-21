@@ -509,6 +509,10 @@
     background: var(--border-strong);
 }
 
+.playground-stage-step__progress {
+    background: color-mix(in srgb, var(--easy) 62%, transparent);
+}
+
 .playground-studio__divider::after {
     background: var(--accent-muted);
     box-shadow: none;
@@ -535,10 +539,6 @@
     border-color: var(--border-strong);
     background: var(--accent-soft);
     color: var(--text);
-}
-
-.playground-stage-step--complete::before {
-    background: rgba(38, 126, 83, 0.26);
 }
 
 .playground-stage-step--complete .playground-stage-step__node {
@@ -1057,6 +1057,10 @@
 :root[data-theme="dark"] .playground-stage-step::before,
 :root[data-theme="dark"] .playground-studio__divider::before {
     background: var(--border-strong);
+}
+
+:root[data-theme="dark"] .playground-stage-step__progress {
+    background: color-mix(in srgb, var(--easy) 58%, transparent);
 }
 
 :root[data-theme="dark"] .playground-stageboard--expanded,
@@ -2680,6 +2684,90 @@
 :root[data-theme="dark"] .session-nav__trigger:focus-visible {
     border-color: transparent;
     background: transparent;
+}
+
+.primary-action,
+.secondary-action,
+.pill,
+.problem-card,
+.catalog-pagination__page,
+.field__control,
+.field-dropdown__option,
+.theme-control__button,
+.playground-sidebar__tab,
+.playground-workbench__surface-tab,
+.playground-sidebar__expand-toggle,
+.playground-stageboard__expand-toggle,
+.playground-ai__inline-action {
+    transition:
+        transform var(--motion-fast) var(--motion-ease),
+        border-color var(--motion-fast) ease,
+        background-color var(--motion-fast) ease,
+        color var(--motion-fast) ease,
+        box-shadow var(--motion-fast) ease;
+}
+
+.primary-action:hover:not(:disabled),
+.secondary-action:hover:not(:disabled),
+.pill:hover,
+.catalog-pagination__page:hover,
+.field__control:hover,
+.theme-control__button:hover,
+.playground-sidebar__tab:hover,
+.playground-workbench__surface-tab:hover,
+.playground-sidebar__expand-toggle:hover,
+.playground-stageboard__expand-toggle:hover,
+.playground-ai__inline-action:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.primary-action:active:not(:disabled),
+.secondary-action:active:not(:disabled),
+.pill:active,
+.catalog-pagination__page:active,
+.theme-control__button:active,
+.playground-sidebar__tab:active,
+.playground-workbench__surface-tab:active,
+.playground-sidebar__expand-toggle:active,
+.playground-stageboard__expand-toggle:active,
+.playground-ai__inline-action:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+}
+
+.field-dropdown__menu {
+    transform-origin: top center;
+    animation: app-scale-in var(--motion-base) var(--motion-ease) both;
+}
+
+.problem-card:hover,
+.problem-card:focus-within {
+    transform: translateY(-2px);
+    border-color: var(--flow-line-strong);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.055);
+}
+
+.problem-card__icon,
+.problem-card__action,
+.problem-card__bookmark-icon {
+    transition:
+        transform var(--motion-fast) var(--motion-ease),
+        color var(--motion-fast) ease,
+        background-color var(--motion-fast) ease,
+        border-color var(--motion-fast) ease;
+}
+
+.problem-card:hover .problem-card__icon,
+.problem-card:focus-within .problem-card__icon {
+    transform: scale(1.05);
+}
+
+.problem-card__bookmark-icon:hover {
+    transform: scale(1.18);
+}
+
+:root[data-theme="dark"] .problem-card:hover,
+:root[data-theme="dark"] .problem-card:focus-within {
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
 }
 
 @media (max-width: 760px) {
