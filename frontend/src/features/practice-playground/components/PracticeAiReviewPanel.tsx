@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { frontendConfig } from "@/config/env";
 import { useAppAuth } from "@/features/auth/app-auth";
+import { Loader } from "@/shared/ui/Loader";
 import "@/shared/ui/shared-ui.css";
 import "./PracticeAiReviewPanel.css";
 import type {
@@ -17,9 +18,16 @@ import type {
 } from "../model/types";
 
 interface PracticeAiReviewPanelProps {
-  actionMode?: "full" | "hints-only" | "clear-only" | "none";
+  actionMode?:
+    | "full"
+    | "hints-only"
+    | "hints-results"
+    | "button-only"
+    | "clear-only"
+    | "none";
   activeStageTitle: string;
   assistant: PracticePlaygroundViewModel["assistant"];
+  onBeforeRequestHints?: () => void;
   onOpenPricing?: () => void;
 }
 
@@ -126,7 +134,11 @@ const AiRequestNotice = ({
         aria-live="polite"
         className="playground-ai__banner playground-ai__banner--info playground-ai__banner--loading"
       >
-        <span aria-hidden="true" className="playground-ai__loader" />
+        <Loader
+          className="playground-ai__brand-loader"
+          label={loadingLabel}
+          size="sm"
+        />
         <div className="playground-ai__banner-copy">
           <strong>{loadingLabel}</strong>
           <p>
@@ -190,6 +202,7 @@ export const PracticeAiReviewPanel = ({
   actionMode = "full",
   activeStageTitle,
   assistant,
+  onBeforeRequestHints,
   onOpenPricing,
 }: PracticeAiReviewPanelProps) => {
   const {
@@ -218,7 +231,9 @@ export const PracticeAiReviewPanel = ({
   const fullReviewResult = fullDesignReview.result;
   const authReady = isApiAuthReady;
   const canRequestStageActions =
-    actionMode === "full" || actionMode === "hints-only";
+    actionMode === "full" ||
+    actionMode === "hints-only" ||
+    actionMode === "button-only";
   const showSignInCta =
     canRequestStageActions &&
     isConfigured &&
@@ -227,12 +242,24 @@ export const PracticeAiReviewPanel = ({
     !isLoading;
   const showRequestActions = canRequestStageActions && !showSignInCta;
   const showValidationAction = actionMode === "full";
-  const showRecoveryActions = actionMode !== "none";
+  const showHintContent =
+    actionMode === "full" ||
+    actionMode === "hints-only" ||
+    actionMode === "hints-results";
+  const showValidationContent = actionMode === "full";
+  const showCommandSurface = actionMode !== "hints-results";
+  const showRecoveryActions =
+    actionMode !== "none" && actionMode !== "button-only";
   const showFullReviewAction = actionMode === "full" && !showSignInCta;
   const showFullReviewContent = actionMode === "full";
-  const showClearAction = hasAnyFeedback && actionMode !== "none";
+  const showClearAction = hasAnyFeedback && actionMode === "full";
   const showClearFullReviewAction =
     showFullReviewContent && fullReviewResult !== null;
+  const canUseHintAction =
+    frontendConfig.features.aiReview &&
+    (showSignInCta || (authReady && canRequestHints));
+  const hintActionLabel =
+    activeStageState.hintStatus === "loading" ? "Generating" : "Get hints";
   const authStatusLabel = !isConfigured
     ? "Setup required"
     : !canRequestApiToken
@@ -293,7 +320,33 @@ export const PracticeAiReviewPanel = ({
     !activeStageState.hintError &&
     !activeStageState.validationError;
 
+  const handleRequestHints = (): void => {
+    if (showSignInCta) {
+      void login();
+      return;
+    }
+
+    onBeforeRequestHints?.();
+    void actions.requestHints();
+  };
+
+  const renderHintRequestButton = (className = "") => (
+    <button
+      className={`primary-action playground-ai__primary-action ${className}`.trim()}
+      type="button"
+      disabled={!canUseHintAction}
+      onClick={handleRequestHints}
+    >
+      <Lightbulb aria-hidden="true" size={15} strokeWidth={2} />
+      {hintActionLabel}
+    </button>
+  );
+
   if (!frontendConfig.features.aiReview) {
+    if (actionMode === "button-only") {
+      return renderHintRequestButton("playground-ai__single-action");
+    }
+
     return (
       <section className="playground-ai">
         <div className="playground-ai__header">
@@ -307,143 +360,143 @@ export const PracticeAiReviewPanel = ({
     );
   }
 
+  if (actionMode === "button-only") {
+    return renderHintRequestButton("playground-ai__single-action");
+  }
+
   return (
     <section className="playground-ai">
-      <div className="playground-ai__command-surface">
-        <div className="playground-ai__masthead">
-          <span aria-hidden="true" className="playground-ai__masthead-icon">
-            <Sparkles size={18} strokeWidth={2} />
-          </span>
-          <div className="playground-ai__title">
-            <p className="section-label">AI Coach</p>
-            <h3>{activeStageTitle}</h3>
-          </div>
-        </div>
-
-        <div className="playground-ai__status-row" aria-label="AI status">
-          <span
-            className={`playground-ai__status-chip ${
-              authReady && isAuthenticated
-                ? "playground-ai__status-chip--ready"
-                : "playground-ai__status-chip--attention"
-            }`}
-          >
-            {authStatusLabel}
-          </span>
-          <span
-            className={`playground-ai__status-chip ${
-              canRequestHints
-                ? "playground-ai__status-chip--ready"
-                : "playground-ai__status-chip--muted"
-            }`}
-          >
-            {draftStatusLabel}
-          </span>
-          <span
-            className={`playground-ai__status-chip ${
-              hintResult && !isHintStale
-                ? "playground-ai__status-chip--ready"
-                : "playground-ai__status-chip--muted"
-            }`}
-          >
-            {hintStatusLabel}
-          </span>
-        </div>
-
-        <div className="playground-ai__command-bar">
-          <div className="playground-ai__command-copy">
-            <span>Next action</span>
-            <strong>{commandTitle}</strong>
-            <p>{helperText}</p>
+      {showCommandSurface ? (
+        <div className="playground-ai__command-surface">
+          <div className="playground-ai__masthead">
+            <span aria-hidden="true" className="playground-ai__masthead-icon">
+              <Sparkles size={18} strokeWidth={2} />
+            </span>
+            <div className="playground-ai__title">
+              <p className="section-label">AI Coach</p>
+              <h3>{activeStageTitle}</h3>
+            </div>
           </div>
 
-          <div className="playground-ai__actions">
-            {showSignInCta ? (
-              <button
-                className="primary-action playground-ai__primary-action"
-                type="button"
-                onClick={() => void login()}
-              >
-                <LogIn aria-hidden="true" size={15} strokeWidth={2} />
-                Sign in
-              </button>
-            ) : showRequestActions ? (
-              <>
+          <div className="playground-ai__status-row" aria-label="AI status">
+            <span
+              className={`playground-ai__status-chip ${
+                authReady && isAuthenticated
+                  ? "playground-ai__status-chip--ready"
+                  : "playground-ai__status-chip--attention"
+              }`}
+            >
+              {authStatusLabel}
+            </span>
+            <span
+              className={`playground-ai__status-chip ${
+                canRequestHints
+                  ? "playground-ai__status-chip--ready"
+                  : "playground-ai__status-chip--muted"
+              }`}
+            >
+              {draftStatusLabel}
+            </span>
+            <span
+              className={`playground-ai__status-chip ${
+                hintResult && !isHintStale
+                  ? "playground-ai__status-chip--ready"
+                  : "playground-ai__status-chip--muted"
+              }`}
+            >
+              {hintStatusLabel}
+            </span>
+          </div>
+
+          <div className="playground-ai__command-bar">
+            <div className="playground-ai__command-copy">
+              <span>Next action</span>
+              <strong>{commandTitle}</strong>
+              <p>{helperText}</p>
+            </div>
+
+            <div className="playground-ai__actions">
+              {showSignInCta ? (
                 <button
                   className="primary-action playground-ai__primary-action"
                   type="button"
-                  disabled={!authReady || !canRequestHints}
-                  onClick={() => void actions.requestHints()}
+                  onClick={() => void login()}
                 >
-                  <Lightbulb aria-hidden="true" size={15} strokeWidth={2} />
-                  {activeStageState.hintStatus === "loading"
-                    ? "Generating"
-                    : "Get hints"}
+                  <LogIn aria-hidden="true" size={15} strokeWidth={2} />
+                  Sign in
                 </button>
-                {showValidationAction ? (
+              ) : showRequestActions ? (
+                <>
+                  {renderHintRequestButton()}
+                  {showValidationAction ? (
+                    <button
+                      className="secondary-action"
+                      type="button"
+                      disabled={!authReady || !canValidateDraft}
+                      onClick={() => void actions.validateDraft()}
+                    >
+                      <ShieldCheck
+                        aria-hidden="true"
+                        size={15}
+                        strokeWidth={2}
+                      />
+                      {activeStageState.validationStatus === "loading"
+                        ? "Validating"
+                        : "Validate"}
+                    </button>
+                  ) : null}
+                </>
+              ) : null}
+
+              {showFullReviewAction ? (
+                fullDesignReview.isAvailable ? (
                   <button
                     className="secondary-action"
                     type="button"
-                    disabled={!authReady || !canValidateDraft}
-                    onClick={() => void actions.validateDraft()}
+                    disabled={!authReady || !fullDesignReview.canRequest}
+                    onClick={() => void actions.requestFullDesignReview()}
                   >
-                    <ShieldCheck aria-hidden="true" size={15} strokeWidth={2} />
-                    {activeStageState.validationStatus === "loading"
-                      ? "Validating"
-                      : "Validate"}
+                    <Sparkles aria-hidden="true" size={15} strokeWidth={2} />
+                    {fullDesignReview.status === "loading"
+                      ? "Reviewing"
+                      : "Full review"}
                   </button>
-                ) : null}
-              </>
-            ) : null}
+                ) : onOpenPricing ? (
+                  <button
+                    className="secondary-action"
+                    type="button"
+                    onClick={onOpenPricing}
+                  >
+                    Pro review
+                  </button>
+                ) : null
+              ) : null}
 
-            {showFullReviewAction ? (
-              fullDesignReview.isAvailable ? (
+              {showClearAction ? (
                 <button
                   className="secondary-action"
                   type="button"
-                  disabled={!authReady || !fullDesignReview.canRequest}
-                  onClick={() => void actions.requestFullDesignReview()}
+                  onClick={actions.clearActiveStageFeedback}
                 >
-                  <Sparkles aria-hidden="true" size={15} strokeWidth={2} />
-                  {fullDesignReview.status === "loading"
-                    ? "Reviewing"
-                    : "Full review"}
+                  <Trash2 aria-hidden="true" size={15} strokeWidth={2} />
+                  Clear
                 </button>
-              ) : onOpenPricing ? (
+              ) : null}
+
+              {showClearFullReviewAction ? (
                 <button
                   className="secondary-action"
                   type="button"
-                  onClick={onOpenPricing}
+                  onClick={actions.clearFullDesignReview}
                 >
-                  Pro review
+                  <RotateCcw aria-hidden="true" size={15} strokeWidth={2} />
+                  Reset review
                 </button>
-              ) : null
-            ) : null}
-
-            {showClearAction ? (
-              <button
-                className="secondary-action"
-                type="button"
-                onClick={actions.clearActiveStageFeedback}
-              >
-                <Trash2 aria-hidden="true" size={15} strokeWidth={2} />
-                Clear
-              </button>
-            ) : null}
-
-            {showClearFullReviewAction ? (
-              <button
-                className="secondary-action"
-                type="button"
-                onClick={actions.clearFullDesignReview}
-              >
-                <RotateCcw aria-hidden="true" size={15} strokeWidth={2} />
-                Reset review
-              </button>
-            ) : null}
+              ) : null}
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
       {authError ? (
         <div className="playground-ai__banner playground-ai__banner--error">
@@ -454,17 +507,19 @@ export const PracticeAiReviewPanel = ({
         </div>
       ) : null}
 
-      <AiRequestNotice
-        canReload={showRecoveryActions && authReady && canRequestHints}
-        canRetry={showRecoveryActions && authReady && canRequestHints}
-        error={activeStageState.hintError}
-        hasResult={hintResult !== null}
-        loadingLabel="Generating hints"
-        onReload={actions.reloadHints}
-        onRetry={actions.retryHints}
-        requestLabel="Hints"
-        status={activeStageState.hintStatus}
-      />
+      {showHintContent ? (
+        <AiRequestNotice
+          canReload={showRecoveryActions && authReady && canRequestHints}
+          canRetry={showRecoveryActions && authReady && canRequestHints}
+          error={activeStageState.hintError}
+          hasResult={hintResult !== null}
+          loadingLabel="Generating hints"
+          onReload={actions.reloadHints}
+          onRetry={actions.retryHints}
+          requestLabel="Hints"
+          status={activeStageState.hintStatus}
+        />
+      ) : null}
 
       {showFullReviewContent ? (
         <AiRequestNotice
@@ -484,20 +539,22 @@ export const PracticeAiReviewPanel = ({
         />
       ) : null}
 
-      <AiRequestNotice
-        canReload={showRecoveryActions && authReady && canValidateDraft}
-        canRetry={showRecoveryActions && authReady && canValidateDraft}
-        error={activeStageState.validationError}
-        hasResult={validationResult !== null}
-        loadingLabel="Validating the current draft"
-        onReload={actions.reloadValidation}
-        onRetry={actions.retryValidation}
-        requestLabel="Validation"
-        status={activeStageState.validationStatus}
-      />
+      {showValidationContent ? (
+        <AiRequestNotice
+          canReload={showRecoveryActions && authReady && canValidateDraft}
+          canRetry={showRecoveryActions && authReady && canValidateDraft}
+          error={activeStageState.validationError}
+          hasResult={validationResult !== null}
+          loadingLabel="Validating the current draft"
+          onReload={actions.reloadValidation}
+          onRetry={actions.retryValidation}
+          requestLabel="Validation"
+          status={activeStageState.validationStatus}
+        />
+      ) : null}
 
       <div className="playground-ai__results">
-        {hintResult ? (
+        {showHintContent && hintResult ? (
           <article className="playground-ai__card">
             <div className="playground-ai__card-head">
               <div>
@@ -562,7 +619,7 @@ export const PracticeAiReviewPanel = ({
           </article>
         ) : null}
 
-        {validationResult ? (
+        {showValidationContent && validationResult ? (
           <article className="playground-ai__card">
             <div className="playground-ai__card-head">
               <div>

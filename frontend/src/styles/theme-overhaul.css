@@ -578,11 +578,6 @@
     background: var(--danger-surface);
 }
 
-.playground-ai__loader {
-    border-color: var(--accent-muted);
-    border-top-color: var(--accent);
-}
-
 .playground-ai__status-pill {
     border: 1px solid transparent;
 }

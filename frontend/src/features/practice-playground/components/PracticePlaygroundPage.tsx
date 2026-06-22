@@ -16,6 +16,7 @@ import {
   FileText,
   LayoutDashboard,
   ListChecks,
+  Lock,
   Maximize2,
   Minimize2,
   RotateCcw,
@@ -152,6 +153,7 @@ export const PracticePlaygroundPage = ({
   const [activeSidebarTab, setActiveSidebarTab] =
     useState<SidebarTab>("overview");
   const [sidebarWidth, setSidebarWidth] = useState(MAX_SIDEBAR_WIDTH);
+  const [isGuideHintsOpen, setIsGuideHintsOpen] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [isStageboardExpanded, setIsStageboardExpanded] = useState(false);
   const [activeDesignSurface, setActiveDesignSurface] =
@@ -204,6 +206,7 @@ export const PracticePlaygroundPage = ({
   useEffect(() => {
     setIsStageboardExpanded(false);
     setIsSidebarExpanded(false);
+    setIsGuideHintsOpen(false);
   }, [problem?.id]);
 
   useEffect(() => {
@@ -359,6 +362,11 @@ export const PracticePlaygroundPage = ({
 
   const focusAiTab = (): void => {
     setActiveSidebarTab("ai");
+  };
+
+  const openGuideHints = (): void => {
+    setActiveSidebarTab("guides");
+    setIsGuideHintsOpen(true);
   };
 
   const handleValidateDraft = (): void => {
@@ -522,219 +530,304 @@ export const PracticePlaygroundPage = ({
           className={`playground-sidebar ${
             isSidebarExpanded ? "playground-sidebar--expanded" : ""
           }`}
+          aria-label={isSidebarExpanded ? "Problem reference" : undefined}
+          aria-modal={isSidebarExpanded ? true : undefined}
           data-tour-target="playground-overview"
+          role={isSidebarExpanded ? "dialog" : undefined}
+          onClick={
+            isSidebarExpanded
+              ? () => setIsSidebarExpanded(false)
+              : undefined
+          }
         >
-          {renderSidebarUtility()}
-          {renderSidebarTabs()}
+          <div
+            className="playground-sidebar__modal-surface"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {renderSidebarUtility()}
+            {renderSidebarTabs()}
 
-          <div className="playground-sidebar__panel">
-            {activeSidebarTab === "overview" ? (
-              <article
-                aria-labelledby="playground-problem-description-title"
-                className="playground-problem-description"
-              >
-                <header className="playground-problem-description__header">
-                  <p className="section-label">Problem Description</p>
-                  <h1 id="playground-problem-description-title">
-                    {problem.title}
-                  </h1>
-                  <div
-                    aria-label="Problem tags"
-                    className="playground-problem-description__tags"
-                  >
-                    {[
-                      problem.difficulty,
-                      problem.category,
-                      ...problem.focusAreas,
-                    ].map((tag, index) => (
-                      <span key={`${tag}-${index}`}>{tag}</span>
-                    ))}
-                  </div>
-                </header>
-
-                <div className="playground-problem-description__body">
-                  <p>{problem.summary}</p>
-                  <p>
-                    Design this as a production system, not a single feature.
-                    Assume the system must handle {scaleText}. Your answer
-                    should define the users, core workflows, primary entities,
-                    public interfaces, storage choices, read and write paths,
-                    caching or indexing strategy, and the failure modes that
-                    matter at this scale.
-                  </p>
-                  <p>
-                    Ground the design in concrete examples. For this problem,
-                    strong examples usually involve {focusAreaText}. When you
-                    describe an example, name the request or event, the entities
-                    it touches, the data store or cache involved, and the
-                    response the user or downstream system observes.
-                  </p>
-                  <p>
-                    Also make the tradeoffs explicit. Call out how the design
-                    avoids {pitfallText}, what consistency guarantees are
-                    realistic, and how the system behaves during traffic
-                    spikes, retries, partial outages, and delayed background
-                    processing.
-                  </p>
-                  <div className="playground-problem-description__examples">
-                    <h2>Example Scenarios</h2>
-                    <ul>
-                      {problem.interviewVariants.map((variant) => (
-                        <li key={variant}>
-                          <strong>{variant}</strong>
-                          <span>
-                            Explain how the system would{" "}
-                            {lowerFirst(stripTerminalPeriod(variant))}, what
-                            changes in the API or data model, and which
-                            tradeoff keeps the core path reliable.
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </article>
-            ) : null}
-
-            {activeSidebarTab === "guides" ? (
-              <div className="playground-sidebar__tab-sections playground-sidebar__tab-sections--guides">
-                <details
-                  className="playground-sidebar__section playground-sidebar__section--compact"
-                  open
+            <div
+              className={`playground-sidebar__panel ${
+                activeSidebarTab === "editorial" && editorial.isLocked
+                  ? "playground-sidebar__panel--locked"
+                  : ""
+              }`}
+            >
+              {activeSidebarTab === "overview" ? (
+                <article
+                  aria-labelledby="playground-problem-description-title"
+                  className="playground-problem-description"
                 >
-                  <summary className="playground-sidebar__section-summary">
-                    <span className="section-label">
-                      <BookOpen aria-hidden="true" size={12} strokeWidth={2} />
-                      Prompt Yourself
-                    </span>
-                    <span>{activeStage.prompts.length}</span>
-                  </summary>
-                  <ul className="token-list">
-                    {activeStage.prompts.map((prompt) => (
-                      <li key={prompt}>{prompt}</li>
-                    ))}
-                  </ul>
-                </details>
+                  <header className="playground-problem-description__header">
+                    <p className="section-label">Problem Description</p>
+                    <h1 id="playground-problem-description-title">
+                      {problem.title}
+                    </h1>
+                    <div
+                      aria-label="Problem tags"
+                      className="playground-problem-description__tags"
+                    >
+                      {[
+                        problem.difficulty,
+                        problem.category,
+                        ...problem.focusAreas,
+                      ].map((tag, index) => (
+                        <span key={`${tag}-${index}`}>{tag}</span>
+                      ))}
+                    </div>
+                  </header>
 
-                <details className="playground-sidebar__section playground-sidebar__section--compact">
-                  <summary className="playground-sidebar__section-summary">
-                    <span className="section-label">
-                      <ListChecks
-                        aria-hidden="true"
-                        size={12}
-                        strokeWidth={2}
-                      />
-                      Review Checks
-                    </span>
-                    <span>{activeStage.reviewChecks.length}</span>
-                  </summary>
-                  <ul className="token-list token-list--warning">
-                    {activeStage.reviewChecks.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </details>
-
-                <details className="playground-sidebar__section playground-sidebar__section--compact">
-                  <summary className="playground-sidebar__section-summary">
-                    <span className="section-label">
-                      <Target aria-hidden="true" size={12} strokeWidth={2} />
-                      Problem Anchors
-                    </span>
-                    <span>{stageContextCards.length}</span>
-                  </summary>
-                  <div className="playground-sidebar__anchor-list">
-                    {stageContextCards.map((card) => (
-                      <article
-                        key={card.label}
-                        className="playground-sidebar__anchor-card"
-                      >
-                        <h3>{card.label}</h3>
-                        <ul className="variant-list">
-                          {card.items.map((item) => (
-                            <li key={item}>{item}</li>
-                          ))}
-                        </ul>
-                      </article>
-                    ))}
-                  </div>
-                </details>
-
-              </div>
-            ) : null}
-
-            {activeSidebarTab === "editorial" ? (
-              <div className="playground-sidebar__tab-sections playground-sidebar__tab-sections--editorial">
-                <section className="playground-sidebar__section playground-sidebar__section--editorial">
-                  <div className="playground-sidebar__section-head">
-                    <p className="section-label">
-                      <ScrollText
-                        aria-hidden="true"
-                        size={12}
-                        strokeWidth={2}
-                      />
-                      Expected Solution
+                  <div className="playground-problem-description__body">
+                    <p>{problem.summary}</p>
+                    <p>
+                      Design this as a production system, not a single feature.
+                      Assume the system must handle {scaleText}. Your answer
+                      should define the users, core workflows, primary entities,
+                      public interfaces, storage choices, read and write paths,
+                      caching or indexing strategy, and the failure modes that
+                      matter at this scale.
                     </p>
-                    <span className="playground-sidebar__section-date">
-                      {editorial.updatedAt
-                        ? new Date(editorial.updatedAt).toLocaleDateString()
-                        : ""}
-                    </span>
+                    <p>
+                      Ground the design in concrete examples. For this problem,
+                      strong examples usually involve {focusAreaText}. When you
+                      describe an example, name the request or event, the entities
+                      it touches, the data store or cache involved, and the
+                      response the user or downstream system observes.
+                    </p>
+                    <p>
+                      Also make the tradeoffs explicit. Call out how the design
+                      avoids {pitfallText}, what consistency guarantees are
+                      realistic, and how the system behaves during traffic
+                      spikes, retries, partial outages, and delayed background
+                      processing.
+                    </p>
+                    <div className="playground-problem-description__examples">
+                      <h2>Example Scenarios</h2>
+                      <ul>
+                        {problem.interviewVariants.map((variant) => (
+                          <li key={variant}>
+                            <strong>{variant}</strong>
+                            <span>
+                              Explain how the system would{" "}
+                              {lowerFirst(stripTerminalPeriod(variant))}, what
+                              changes in the API or data model, and which
+                              tradeoff keeps the core path reliable.
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                  <div className="playground-sidebar__editorial">
-                    {editorial.isLocked ? (
-                      <>
-                        <p>Upgrade to Plus or Pro to view stage solutions.</p>
-                        <button
-                          className="primary-action"
-                          type="button"
-                          onClick={onOpenPricing}
-                        >
-                          View plans
-                        </button>
-                      </>
-                    ) : !authReady ? (
-                      <p>Sign in to view protected solutions.</p>
-                    ) : editorial.isLoading ? (
-                      <SolutionLoadingSkeleton />
-                    ) : editorial.errorMessage ? (
-                      <p>{editorial.errorMessage}</p>
-                    ) : sanitizedEditorialHtml ? (
-                      <div className="playground-sidebar__editorial-content">
-                        <div className="playground-sidebar__editorial-title">
-                          <span>
-                            Step {activeStage.step} of {metrics.totalCount}
-                          </span>
-                          <h2>
-                            {editorial.title ||
-                              `Expected ${activeStage.title} Solution`}
-                          </h2>
-                        </div>
-                        <div
-                          className="playground-sidebar__editorial-body"
-                          dangerouslySetInnerHTML={{
-                            __html: sanitizedEditorialHtml,
-                          }}
+                </article>
+              ) : null}
+
+              {activeSidebarTab === "guides" ? (
+                <div className="playground-sidebar__tab-sections playground-sidebar__tab-sections--guides">
+                  <details
+                    className="playground-sidebar__section playground-sidebar__section--compact"
+                    open={isGuideHintsOpen}
+                    onToggle={(event) =>
+                      setIsGuideHintsOpen(event.currentTarget.open)
+                    }
+                  >
+                    <summary className="playground-sidebar__section-summary playground-sidebar__section-summary--with-action">
+                      <span className="section-label">
+                        <Sparkles
+                          aria-hidden="true"
+                          size={12}
+                          strokeWidth={2}
+                        />
+                        AI Hints
+                      </span>
+                      <div
+                        className="playground-sidebar__summary-action"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }}
+                      >
+                        <PracticeAiReviewPanel
+                          actionMode="button-only"
+                          activeStageTitle={activeStage.title}
+                          assistant={assistant}
+                          onBeforeRequestHints={openGuideHints}
                         />
                       </div>
-                    ) : (
-                      <p>No solution has been added for this stage yet.</p>
-                    )}
-                  </div>
-                </section>
-              </div>
-            ) : null}
+                    </summary>
+                    <div className="playground-sidebar__guide-ai">
+                      <PracticeAiReviewPanel
+                        actionMode="hints-results"
+                        activeStageTitle={activeStage.title}
+                        assistant={assistant}
+                      />
+                    </div>
+                  </details>
 
-            {activeSidebarTab === "ai" ? (
-              <div className="playground-sidebar__tab-sections playground-sidebar__tab-sections--ai">
-                <PracticeAiReviewPanel
-                  actionMode="hints-only"
-                  activeStageTitle={activeStage.title}
-                  assistant={assistant}
-                  onOpenPricing={onOpenPricing}
-                />
-              </div>
-            ) : null}
+                  <details
+                    className="playground-sidebar__section playground-sidebar__section--compact"
+                    open
+                  >
+                    <summary className="playground-sidebar__section-summary">
+                      <span className="section-label">
+                        <BookOpen aria-hidden="true" size={12} strokeWidth={2} />
+                        Prompt Yourself
+                      </span>
+                      <span>{activeStage.prompts.length}</span>
+                    </summary>
+                    <ul className="token-list">
+                      {activeStage.prompts.map((prompt) => (
+                        <li key={prompt}>{prompt}</li>
+                      ))}
+                    </ul>
+                  </details>
+
+                  <details className="playground-sidebar__section playground-sidebar__section--compact">
+                    <summary className="playground-sidebar__section-summary">
+                      <span className="section-label">
+                        <ListChecks
+                          aria-hidden="true"
+                          size={12}
+                          strokeWidth={2}
+                        />
+                        Review Checks
+                      </span>
+                      <span>{activeStage.reviewChecks.length}</span>
+                    </summary>
+                    <ul className="token-list token-list--warning">
+                      {activeStage.reviewChecks.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </details>
+
+                  <details className="playground-sidebar__section playground-sidebar__section--compact">
+                    <summary className="playground-sidebar__section-summary">
+                      <span className="section-label">
+                        <Target aria-hidden="true" size={12} strokeWidth={2} />
+                        Problem Anchors
+                      </span>
+                      <span>{stageContextCards.length}</span>
+                    </summary>
+                    <div className="playground-sidebar__anchor-list">
+                      {stageContextCards.map((card) => (
+                        <article
+                          key={card.label}
+                          className="playground-sidebar__anchor-card"
+                        >
+                          <h3>{card.label}</h3>
+                          <ul className="variant-list">
+                            {card.items.map((item) => (
+                              <li key={item}>{item}</li>
+                            ))}
+                          </ul>
+                        </article>
+                      ))}
+                    </div>
+                  </details>
+                </div>
+              ) : null}
+
+              {activeSidebarTab === "editorial" ? (
+                <div
+                  className={`playground-sidebar__tab-sections playground-sidebar__tab-sections--editorial ${
+                    editorial.isLocked
+                      ? "playground-sidebar__tab-sections--locked"
+                      : ""
+                  }`}
+                >
+                  <section
+                    className={`playground-sidebar__section playground-sidebar__section--editorial ${
+                      editorial.isLocked
+                        ? "playground-sidebar__section--locked"
+                        : ""
+                    }`}
+                  >
+                    {!editorial.isLocked ? (
+                      <div className="playground-sidebar__section-head">
+                        <p className="section-label">
+                          <ScrollText
+                            aria-hidden="true"
+                            size={12}
+                            strokeWidth={2}
+                          />
+                          Expected Solution
+                        </p>
+                        <span className="playground-sidebar__section-date">
+                          {editorial.updatedAt
+                            ? new Date(editorial.updatedAt).toLocaleDateString()
+                            : ""}
+                        </span>
+                      </div>
+                    ) : null}
+                    <div className="playground-sidebar__editorial">
+                      {editorial.isLocked ? (
+                        <div className="playground-sidebar__locked-solution">
+                          <span
+                            aria-hidden="true"
+                            className="playground-sidebar__locked-icon"
+                          >
+                            <Lock size={24} strokeWidth={2} />
+                          </span>
+                          <div className="playground-sidebar__locked-copy">
+                            <h3>Solution locked</h3>
+                            <p>
+                              Upgrade to Plus or Pro to unlock reference
+                              solutions for every interview stage.
+                            </p>
+                          </div>
+                          <button
+                            className="playground-sidebar__upgrade-action"
+                            type="button"
+                            onClick={onOpenPricing}
+                          >
+                            Upgrade
+                          </button>
+                        </div>
+                      ) : !authReady ? (
+                        <p>Sign in to view protected solutions.</p>
+                      ) : editorial.isLoading ? (
+                        <SolutionLoadingSkeleton />
+                      ) : editorial.errorMessage ? (
+                        <p>{editorial.errorMessage}</p>
+                      ) : sanitizedEditorialHtml ? (
+                        <div className="playground-sidebar__editorial-content">
+                          <div className="playground-sidebar__editorial-title">
+                            <span>
+                              Step {activeStage.step} of {metrics.totalCount}
+                            </span>
+                            <h2>
+                              {editorial.title ||
+                                `Expected ${activeStage.title} Solution`}
+                            </h2>
+                          </div>
+                          <div
+                            className="playground-sidebar__editorial-body"
+                            dangerouslySetInnerHTML={{
+                              __html: sanitizedEditorialHtml,
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <p>No solution has been added for this stage yet.</p>
+                      )}
+                    </div>
+                  </section>
+                </div>
+              ) : null}
+
+              {activeSidebarTab === "ai" ? (
+                <div className="playground-sidebar__tab-sections playground-sidebar__tab-sections--ai">
+                  <PracticeAiReviewPanel
+                    actionMode="button-only"
+                    activeStageTitle={activeStage.title}
+                    assistant={assistant}
+                    onBeforeRequestHints={openGuideHints}
+                    onOpenPricing={onOpenPricing}
+                  />
+                </div>
+              ) : null}
+            </div>
           </div>
         </aside>
 
