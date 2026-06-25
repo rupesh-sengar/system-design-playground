@@ -57,7 +57,11 @@ const SidebarUtility = ({
 >) => (
   <div className="playground-sidebar__utility">
     <div className="playground-sidebar__utility-links">
-      <button className="playground-sidebar__link" type="button" onClick={onBack}>
+      <button
+        className="playground-sidebar__link"
+        type="button"
+        onClick={onBack}
+      >
         <ArrowLeft aria-hidden="true" size={14} strokeWidth={2} />
         Library
       </button>
@@ -89,7 +93,10 @@ const SidebarUtility = ({
 const SidebarTabs = ({
   activeSidebarTab,
   onSelectTab,
-}: Pick<PracticePlaygroundSidebarProps, "activeSidebarTab" | "onSelectTab">) => (
+}: Pick<
+  PracticePlaygroundSidebarProps,
+  "activeSidebarTab" | "onSelectTab"
+>) => (
   <div
     className="playground-sidebar__tabs"
     aria-label="Playground sections"
@@ -153,18 +160,16 @@ const SidebarTabs = ({
 const AiPanel = ({
   activeStage,
   assistant,
-  onOpenGuideHints,
   onOpenPricing,
 }: Pick<
   PracticePlaygroundSidebarProps,
-  "activeStage" | "assistant" | "onOpenGuideHints" | "onOpenPricing"
+  "activeStage" | "assistant" | "onOpenPricing"
 >) => (
   <div className="playground-sidebar__tab-sections playground-sidebar__tab-sections--ai">
     <PracticeAiReviewPanel
-      actionMode="button-only"
+      actionMode="validation-only"
       activeStageTitle={activeStage.title}
       assistant={assistant}
-      onBeforeRequestHints={onOpenGuideHints}
       onOpenPricing={onOpenPricing}
     />
   </div>
@@ -204,7 +209,9 @@ export const PracticePlaygroundSidebar = ({
   >
     <div
       className={`playground-sidebar__modal-surface ${
-        shouldShowAuthPrompt ? "playground-sidebar__modal-surface--with-auth" : ""
+        shouldShowAuthPrompt
+          ? "playground-sidebar__modal-surface--with-auth"
+          : ""
       }`}
       onClick={(event) => event.stopPropagation()}
     >
@@ -218,7 +225,9 @@ export const PracticePlaygroundSidebar = ({
         activeSidebarTab={activeSidebarTab}
         onSelectTab={onSelectTab}
       />
-      <AuthPrompt ariaLabel="Sign in to save practice progress" />
+      {activeSidebarTab !== "overview" && (
+        <AuthPrompt ariaLabel="Sign in to save practice progress" />
+      )}
 
       <div
         className={`playground-sidebar__panel ${
@@ -257,7 +266,6 @@ export const PracticePlaygroundSidebar = ({
           <AiPanel
             activeStage={activeStage}
             assistant={assistant}
-            onOpenGuideHints={onOpenGuideHints}
             onOpenPricing={onOpenPricing}
           />
         ) : null}

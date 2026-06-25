@@ -22,6 +22,7 @@ interface PracticeAiReviewPanelProps {
     | "full"
     | "hints-only"
     | "hints-results"
+    | "validation-only"
     | "button-only"
     | "clear-only"
     | "none";
@@ -230,10 +231,14 @@ export const PracticeAiReviewPanel = ({
   const validationResult = activeStageState.validationResult;
   const fullReviewResult = fullDesignReview.result;
   const authReady = isApiAuthReady;
-  const canRequestStageActions =
+  const canRequestHintActions =
     actionMode === "full" ||
     actionMode === "hints-only" ||
     actionMode === "button-only";
+  const canRequestValidationActions =
+    actionMode === "full" || actionMode === "validation-only";
+  const canRequestStageActions =
+    canRequestHintActions || canRequestValidationActions;
   const showSignInCta =
     canRequestStageActions &&
     isConfigured &&
@@ -241,12 +246,14 @@ export const PracticeAiReviewPanel = ({
     !isAuthenticated &&
     !isLoading;
   const showRequestActions = canRequestStageActions && !showSignInCta;
-  const showValidationAction = actionMode === "full";
+  const showHintAction = canRequestHintActions;
+  const showValidationAction = canRequestValidationActions;
   const showHintContent =
     actionMode === "full" ||
     actionMode === "hints-only" ||
     actionMode === "hints-results";
-  const showValidationContent = actionMode === "full";
+  const showValidationContent =
+    actionMode === "full" || actionMode === "validation-only";
   const showCommandSurface = actionMode !== "hints-results";
   const showRecoveryActions =
     actionMode !== "none" && actionMode !== "button-only";
@@ -260,6 +267,12 @@ export const PracticeAiReviewPanel = ({
     (showSignInCta || (authReady && canRequestHints));
   const hintActionLabel =
     activeStageState.hintStatus === "loading" ? "Generating" : "Get hints";
+  const validationActionLabel =
+    activeStageState.validationStatus === "loading"
+      ? "Validating"
+      : actionMode === "validation-only"
+        ? "Validate draft"
+        : "Validate";
   const authStatusLabel = !isConfigured
     ? "Setup required"
     : !canRequestApiToken
@@ -285,8 +298,20 @@ export const PracticeAiReviewPanel = ({
           ? "Refresh suggested"
           : "Hints ready"
         : "No hints";
+  const validationStatusLabel =
+    activeStageState.validationStatus === "loading"
+      ? "Validating"
+      : validationResult
+        ? isValidationStale
+          ? "Refresh suggested"
+          : "Validation ready"
+        : "No validation";
   const commandTitle =
-    actionMode === "hints-only" ? "Contextual hints" : "Stage review";
+    actionMode === "hints-only"
+      ? "Contextual hints"
+      : actionMode === "validation-only"
+        ? "Validate draft"
+        : "Stage review";
   const helperText = !isConfigured
     ? "Configure Auth0 in the frontend before using protected AI routes."
     : !canRequestApiToken
@@ -302,22 +327,13 @@ export const PracticeAiReviewPanel = ({
             : canValidateDraft
               ? "Ready for structured review"
               : "Write at least 20 characters to validate";
-  const hasFullReviewFeedback =
-    showFullReviewContent &&
-    (fullReviewResult !== null ||
-      fullDesignReview.status === "loading" ||
-      fullDesignReview.error !== null);
   const emptyStateText =
-    actionMode === "hints-only"
-      ? "No AI hints yet. Request hints when you want a focused nudge for this stage."
-      : "No AI feedback yet. Use the current stage notes and request hints or validation when you want a review pass.";
+    "No draft validation yet. Validate the current draft when you want a structured review pass.";
 
   const showEmptyState =
-    !hasAnyFeedback &&
-    !hasFullReviewFeedback &&
-    activeStageState.hintStatus !== "loading" &&
+    actionMode === "validation-only" &&
+    validationResult === null &&
     activeStageState.validationStatus !== "loading" &&
-    !activeStageState.hintError &&
     !activeStageState.validationError;
 
   const handleRequestHints = (): void => {
@@ -366,138 +382,6 @@ export const PracticeAiReviewPanel = ({
 
   return (
     <section className="playground-ai">
-      {showCommandSurface ? (
-        <div className="playground-ai__command-surface">
-          <div className="playground-ai__masthead">
-            <span aria-hidden="true" className="playground-ai__masthead-icon">
-              <Sparkles size={18} strokeWidth={2} />
-            </span>
-            <div className="playground-ai__title">
-              <p className="section-label">AI Coach</p>
-              <h3>{activeStageTitle}</h3>
-            </div>
-          </div>
-
-          <div className="playground-ai__status-row" aria-label="AI status">
-            <span
-              className={`playground-ai__status-chip ${
-                authReady && isAuthenticated
-                  ? "playground-ai__status-chip--ready"
-                  : "playground-ai__status-chip--attention"
-              }`}
-            >
-              {authStatusLabel}
-            </span>
-            <span
-              className={`playground-ai__status-chip ${
-                canRequestHints
-                  ? "playground-ai__status-chip--ready"
-                  : "playground-ai__status-chip--muted"
-              }`}
-            >
-              {draftStatusLabel}
-            </span>
-            <span
-              className={`playground-ai__status-chip ${
-                hintResult && !isHintStale
-                  ? "playground-ai__status-chip--ready"
-                  : "playground-ai__status-chip--muted"
-              }`}
-            >
-              {hintStatusLabel}
-            </span>
-          </div>
-
-          <div className="playground-ai__command-bar">
-            <div className="playground-ai__command-copy">
-              <span>Next action</span>
-              <strong>{commandTitle}</strong>
-              <p>{helperText}</p>
-            </div>
-
-            <div className="playground-ai__actions">
-              {showSignInCta ? (
-                <button
-                  className="primary-action playground-ai__primary-action"
-                  type="button"
-                  onClick={() => void login()}
-                >
-                  <LogIn aria-hidden="true" size={15} strokeWidth={2} />
-                  Sign in
-                </button>
-              ) : showRequestActions ? (
-                <>
-                  {renderHintRequestButton()}
-                  {showValidationAction ? (
-                    <button
-                      className="secondary-action"
-                      type="button"
-                      disabled={!authReady || !canValidateDraft}
-                      onClick={() => void actions.validateDraft()}
-                    >
-                      <ShieldCheck
-                        aria-hidden="true"
-                        size={15}
-                        strokeWidth={2}
-                      />
-                      {activeStageState.validationStatus === "loading"
-                        ? "Validating"
-                        : "Validate"}
-                    </button>
-                  ) : null}
-                </>
-              ) : null}
-
-              {showFullReviewAction ? (
-                fullDesignReview.isAvailable ? (
-                  <button
-                    className="secondary-action"
-                    type="button"
-                    disabled={!authReady || !fullDesignReview.canRequest}
-                    onClick={() => void actions.requestFullDesignReview()}
-                  >
-                    <Sparkles aria-hidden="true" size={15} strokeWidth={2} />
-                    {fullDesignReview.status === "loading"
-                      ? "Reviewing"
-                      : "Full review"}
-                  </button>
-                ) : isAuthenticated && onOpenPricing ? (
-                  <button
-                    className="secondary-action"
-                    type="button"
-                    onClick={onOpenPricing}
-                  >
-                    Pro review
-                  </button>
-                ) : null
-              ) : null}
-
-              {showClearAction ? (
-                <button
-                  className="secondary-action"
-                  type="button"
-                  onClick={actions.clearActiveStageFeedback}
-                >
-                  <Trash2 aria-hidden="true" size={15} strokeWidth={2} />
-                  Clear
-                </button>
-              ) : null}
-
-              {showClearFullReviewAction ? (
-                <button
-                  className="secondary-action"
-                  type="button"
-                  onClick={actions.clearFullDesignReview}
-                >
-                  <RotateCcw aria-hidden="true" size={15} strokeWidth={2} />
-                  Reset review
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       {authError ? (
         <div className="playground-ai__banner playground-ai__banner--error">
           <div className="playground-ai__banner-copy">
@@ -634,10 +518,10 @@ export const PracticeAiReviewPanel = ({
                   <strong>{validationResult.score}</strong>
                   <span>/10 score</span>
                 </div>
-                <div className="playground-ai__score-card playground-ai__score-card--secondary">
+                {/*<div className="playground-ai__score-card playground-ai__score-card--secondary">
                   <strong>{validationResult.confidence}</strong>
                   <span>confidence</span>
-                </div>
+                </div>*/}
                 <span className="playground-ai__chip">
                   {formatTimestamp(validationResult.receivedAt)}
                 </span>
