@@ -461,7 +461,7 @@ export const PracticeAiReviewPanel = ({
                       ? "Reviewing"
                       : "Full review"}
                   </button>
-                ) : onOpenPricing ? (
+                ) : isAuthenticated && onOpenPricing ? (
                   <button
                     className="secondary-action"
                     type="button"

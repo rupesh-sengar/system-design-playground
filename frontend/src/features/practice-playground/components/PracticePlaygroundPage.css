@@ -139,6 +139,10 @@
     height: 100%;
 }
 
+.playground-sidebar__modal-surface--with-auth {
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+}
+
 .playground-page .playground-sidebar.playground-sidebar--expanded {
     position: fixed;
     inset: 0;
