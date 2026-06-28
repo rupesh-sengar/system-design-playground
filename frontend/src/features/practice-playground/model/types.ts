@@ -167,6 +167,7 @@ export interface PracticeSessionStorageState {
 
 export interface PracticeStageEditorialState {
   contentHtml: string | null;
+  diagramJson: SystemDesignDiagram | null;
   errorMessage: string | null;
   isLocked: boolean;
   isLoading: boolean;

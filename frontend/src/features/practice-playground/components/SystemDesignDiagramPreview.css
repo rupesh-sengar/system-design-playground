@@ -1,0 +1,181 @@
+.system-diagram-preview {
+    display: grid;
+    gap: 9px;
+    min-width: 0;
+    margin: 0;
+}
+
+.system-diagram-preview figcaption {
+    color: var(--text);
+    font-size: 0.82rem;
+    font-weight: 780;
+    line-height: 1.3;
+}
+
+.system-diagram-preview__viewport {
+    min-width: 0;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-strong);
+    scrollbar-width: thin;
+}
+
+.system-diagram-preview__canvas {
+    display: block;
+    width: max(100%, 720px);
+    height: auto;
+    min-height: 320px;
+}
+
+.system-diagram-preview__grid {
+    fill-opacity: 1;
+}
+
+.system-diagram-preview__canvas pattern path {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 1;
+}
+
+.system-diagram-preview__canvas marker path {
+    fill: var(--muted-strong);
+}
+
+.system-diagram-preview__connector-line {
+    stroke: var(--muted-strong);
+    stroke-linecap: round;
+    stroke-width: 2.5;
+}
+
+.system-diagram-preview__connector-line--async {
+    stroke-dasharray: 9 9;
+}
+
+.system-diagram-preview__connector-line--dependency {
+    stroke-dasharray: 12 7;
+}
+
+.system-diagram-preview__connector-line--plain {
+    stroke: var(--muted);
+    stroke-dasharray: 4 8;
+}
+
+.system-diagram-preview__connector-label rect {
+    fill: var(--surface-strong);
+    stroke: var(--border);
+}
+
+.system-diagram-preview__connector-label text {
+    fill: var(--muted-strong);
+    font-size: 12px;
+    font-weight: 760;
+    text-anchor: middle;
+}
+
+.system-diagram-preview__node-shape {
+    fill: var(--surface-soft);
+    stroke: var(--border-strong);
+    stroke-width: 2;
+}
+
+.system-diagram-preview__node-shape--client,
+.system-diagram-preview__node-shape--cdn,
+.system-diagram-preview__node-shape--dns,
+.system-diagram-preview__node-shape--service-discovery {
+    fill: rgba(82, 145, 212, 0.13);
+    stroke: rgba(82, 145, 212, 0.42);
+}
+
+.system-diagram-preview__node-shape--load-balancer,
+.system-diagram-preview__node-shape--api-gateway,
+.system-diagram-preview__node-shape--rate-limiter {
+    fill: rgba(126, 102, 204, 0.13);
+    stroke: rgba(126, 102, 204, 0.4);
+}
+
+.system-diagram-preview__node-shape--auth,
+.system-diagram-preview__node-shape--monitoring,
+.system-diagram-preview__node-shape--scheduler,
+.system-diagram-preview__node-shape--service,
+.system-diagram-preview__node-shape--worker {
+    fill: rgba(38, 126, 83, 0.13);
+    stroke: rgba(38, 126, 83, 0.38);
+}
+
+.system-diagram-preview__node-shape--database,
+.system-diagram-preview__node-shape--cache,
+.system-diagram-preview__node-shape--search,
+.system-diagram-preview__node-shape--storage {
+    fill: rgba(216, 188, 115, 0.2);
+    stroke: rgba(154, 107, 22, 0.38);
+}
+
+.system-diagram-preview__node-shape--queue,
+.system-diagram-preview__node-shape--stream {
+    fill: rgba(176, 111, 47, 0.14);
+    stroke: rgba(176, 111, 47, 0.38);
+}
+
+.system-diagram-preview__node-shape--external,
+.system-diagram-preview__node-shape--firewall {
+    fill: rgba(173, 64, 64, 0.11);
+    stroke: rgba(173, 64, 64, 0.36);
+}
+
+.system-diagram-preview__node-label {
+    fill: var(--text);
+    font-size: 14px;
+    font-weight: 780;
+    text-anchor: middle;
+}
+
+.system-diagram-preview__node-kind {
+    fill: var(--muted);
+    font-size: 10px;
+    font-weight: 820;
+    text-anchor: middle;
+    text-transform: uppercase;
+}
+
+:root[data-theme="dark"] .system-diagram-preview__viewport {
+    background: var(--surface-strong);
+}
+
+:root[data-theme="dark"] .system-diagram-preview__node-shape--client,
+:root[data-theme="dark"] .system-diagram-preview__node-shape--cdn,
+:root[data-theme="dark"] .system-diagram-preview__node-shape--dns,
+:root[data-theme="dark"] .system-diagram-preview__node-shape--service-discovery {
+    fill: rgba(82, 145, 212, 0.18);
+    stroke: rgba(116, 168, 225, 0.48);
+}
+
+:root[data-theme="dark"] .system-diagram-preview__node-shape--load-balancer,
+:root[data-theme="dark"] .system-diagram-preview__node-shape--api-gateway,
+:root[data-theme="dark"] .system-diagram-preview__node-shape--rate-limiter {
+    fill: rgba(126, 102, 204, 0.2);
+    stroke: rgba(166, 148, 232, 0.5);
+}
+
+:root[data-theme="dark"] .system-diagram-preview__node-shape--auth,
+:root[data-theme="dark"] .system-diagram-preview__node-shape--monitoring,
+:root[data-theme="dark"] .system-diagram-preview__node-shape--scheduler,
+:root[data-theme="dark"] .system-diagram-preview__node-shape--service,
+:root[data-theme="dark"] .system-diagram-preview__node-shape--worker {
+    fill: rgba(82, 190, 126, 0.16);
+    stroke: rgba(82, 190, 126, 0.44);
+}
+
+:root[data-theme="dark"] .system-diagram-preview__node-shape--database,
+:root[data-theme="dark"] .system-diagram-preview__node-shape--cache,
+:root[data-theme="dark"] .system-diagram-preview__node-shape--search,
+:root[data-theme="dark"] .system-diagram-preview__node-shape--storage {
+    fill: rgba(216, 188, 115, 0.18);
+    stroke: rgba(216, 188, 115, 0.44);
+}
+
+:root[data-theme="dark"] .system-diagram-preview__node-shape--external,
+:root[data-theme="dark"] .system-diagram-preview__node-shape--firewall {
+    fill: rgba(216, 98, 98, 0.16);
+    stroke: rgba(230, 126, 126, 0.44);
+}

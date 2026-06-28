@@ -1,9 +1,17 @@
 import { stageIds, type ProblemContext, type StageId } from "../ai/contracts.js";
 import { getCuratedStageRubric } from "../judge/rubrics/curated-stage.registry.js";
 import type { RequirementCheck, StageRubric } from "../judge/types.js";
+import type {
+  SystemDesignConnectorKind,
+  SystemDesignDiagram,
+  SystemDesignDiagramConnector,
+  SystemDesignDiagramNode,
+  SystemDesignNodeKind,
+} from "../../shared/system-design-diagram.js";
 
 export interface StageEditorialSeed {
   contentHtml: string;
+  diagramJson?: SystemDesignDiagram | null;
   problemId: string;
   stageId: StageId;
   title: string;
@@ -1255,6 +1263,242 @@ Ownership:
 - Query service: read models, cache lookup, pagination, freshness metadata.
 - Workers: side effects, projection rebuilds, provider calls, analytics, repair.`;
 
+const DIAGRAM_NODE_WIDTH = 168;
+const DIAGRAM_NODE_HEIGHT = 74;
+
+const diagramLabel = (value: string, fallback = "Component"): string => {
+  const normalizedValue = value.replace(/\s+/g, " ").trim();
+
+  return (normalizedValue || fallback).slice(0, 80);
+};
+
+const diagramNode = (
+  id: string,
+  kind: SystemDesignNodeKind,
+  label: string,
+  x: number,
+  y: number,
+): SystemDesignDiagramNode => ({
+  height: DIAGRAM_NODE_HEIGHT,
+  id,
+  kind,
+  label: diagramLabel(label),
+  width: DIAGRAM_NODE_WIDTH,
+  x,
+  y,
+});
+
+const diagramConnector = (
+  id: string,
+  fromNodeId: string,
+  toNodeId: string,
+  label: string,
+  kind: SystemDesignConnectorKind = "one-way",
+): SystemDesignDiagramConnector => ({
+  fromNodeId,
+  id,
+  kind,
+  label: diagramLabel(label, ""),
+  toNodeId,
+});
+
+const storeKindForLabel = (label: string): SystemDesignNodeKind => {
+  if (/\b(cache|projection|session|presence)\b/i.test(label)) {
+    return "cache";
+  }
+
+  if (/\b(index|search|vector|embedding|ranking)\b/i.test(label)) {
+    return "search";
+  }
+
+  if (/\b(object|blob|artifact|media|file|warehouse|lake)\b/i.test(label)) {
+    return "storage";
+  }
+
+  return "database";
+};
+
+const firstMatchingStore = (
+  profile: SolutionProfile,
+  pattern: RegExp,
+  fallback: string,
+): string =>
+  profile.architecture.stores.find((store) => pattern.test(store)) ?? fallback;
+
+const buildHighLevelDesignDiagram = (
+  profile: SolutionProfile,
+): SystemDesignDiagram => {
+  const primaryStore =
+    profile.architecture.stores[0] ?? `${profile.primaryResourceTitle} DB`;
+  const servingStore = firstMatchingStore(
+    profile,
+    /\b(cache|projection|index|search|vector|metadata|serving)\b/i,
+    profile.architecture.stores[1] ?? "Cache / Projection",
+  );
+  const eventStore = firstMatchingStore(
+    profile,
+    /\b(event|stream|log|queue|ledger|outbox)\b/i,
+    profile.architecture.stores[2] ?? "Event Stream",
+  );
+  const workerLabel = profile.architecture.background[0] ?? "Worker Fleet";
+
+  return {
+    connectors: [
+      diagramConnector(
+        "solution-edge-client-cdn",
+        "solution-clients",
+        "solution-edge",
+        "static",
+      ),
+      diagramConnector(
+        "solution-edge-client-gateway",
+        "solution-clients",
+        "solution-gateway",
+        "API",
+      ),
+      diagramConnector(
+        "solution-edge-cdn-gateway",
+        "solution-edge",
+        "solution-gateway",
+        "edge",
+      ),
+      diagramConnector(
+        "solution-edge-gateway-command",
+        "solution-gateway",
+        "solution-command-service",
+        "mutations",
+      ),
+      diagramConnector(
+        "solution-edge-gateway-query",
+        "solution-gateway",
+        "solution-query-service",
+        "reads",
+      ),
+      diagramConnector(
+        "solution-command-primary-store",
+        "solution-command-service",
+        "solution-primary-store",
+        "source of truth",
+      ),
+      diagramConnector(
+        "solution-command-event-store",
+        "solution-command-service",
+        "solution-event-store",
+        "outbox",
+        "async",
+      ),
+      diagramConnector(
+        "solution-query-serving-store",
+        "solution-query-service",
+        "solution-serving-store",
+        "hot reads",
+        "bidirectional",
+      ),
+      diagramConnector(
+        "solution-query-primary-store",
+        "solution-query-service",
+        "solution-primary-store",
+        "miss",
+        "dependency",
+      ),
+      diagramConnector(
+        "solution-event-workers",
+        "solution-event-store",
+        "solution-workers",
+        "events",
+        "async",
+      ),
+      diagramConnector(
+        "solution-workers-serving-store",
+        "solution-workers",
+        "solution-serving-store",
+        "projections",
+        "async",
+      ),
+      diagramConnector(
+        "solution-workers-observability",
+        "solution-workers",
+        "solution-observability",
+        "metrics",
+        "plain",
+      ),
+      diagramConnector(
+        "solution-gateway-observability",
+        "solution-gateway",
+        "solution-observability",
+        "traces",
+        "plain",
+      ),
+    ],
+    nodes: [
+      diagramNode("solution-clients", "client", "Clients", 56, 250),
+      diagramNode("solution-edge", "cdn", "Edge / CDN", 286, 110),
+      diagramNode(
+        "solution-gateway",
+        "api-gateway",
+        `${profile.domainTitle} API Gateway`,
+        286,
+        250,
+      ),
+      diagramNode(
+        "solution-command-service",
+        "service",
+        `${profile.primaryResourceTitle} Service`,
+        530,
+        178,
+      ),
+      diagramNode(
+        "solution-query-service",
+        "service",
+        `${profile.domainTitle} Query Service`,
+        530,
+        350,
+      ),
+      diagramNode(
+        "solution-primary-store",
+        storeKindForLabel(primaryStore),
+        primaryStore,
+        786,
+        148,
+      ),
+      diagramNode(
+        "solution-serving-store",
+        storeKindForLabel(servingStore),
+        servingStore,
+        786,
+        350,
+      ),
+      diagramNode(
+        "solution-event-store",
+        /\b(queue)\b/i.test(eventStore) ? "queue" : "stream",
+        eventStore,
+        786,
+        540,
+      ),
+      diagramNode(
+        "solution-workers",
+        "worker",
+        workerLabel,
+        1032,
+        540,
+      ),
+      diagramNode(
+        "solution-observability",
+        "monitoring",
+        "Observability / Audit",
+        1032,
+        176,
+      ),
+    ],
+    viewport: {
+      height: 690,
+      width: 1260,
+      x: 0,
+      y: 0,
+    },
+  };
+};
+
 const buildDeepDiveCode = (
   problem: ProblemContext,
   profile: SolutionProfile,
@@ -1280,6 +1524,9 @@ const renderSampleSolution = (
   problem: ProblemContext,
   stageId: StageId,
   sections: string[],
+  options: {
+    diagramJson?: SystemDesignDiagram | null;
+  } = {},
 ): StageEditorialSeed => ({
   contentHtml: [
     renderParagraph(
@@ -1288,6 +1535,7 @@ const renderSampleSolution = (
     renderParagraph(`Scale assumption: ${problem.scale}`),
     ...sections,
   ].join(""),
+  diagramJson: options.diagramJson ?? null,
   problemId: problem.id,
   stageId,
   title: `Reference ${stageLabels[stageId]} Solution: ${problem.title}`,
@@ -1495,50 +1743,57 @@ const buildHighLevelDesignEditorial = (
 ): StageEditorialSeed => {
   const profile = buildSolutionProfile(problem, requirementsRubric);
 
-  return renderSampleSolution(problem, "high-level-design", [
-    renderParagraph(
-      `The design has a small source-of-truth core, separate serving projections for hot reads, and asynchronous workers for slow side effects.`,
-    ),
-    renderCodeBlock(buildArchitectureCode(profile)),
-    renderSection("Components", [
-      `${profile.domainTitle} API gateway: terminates auth, rate limits, request validation, routing, and idempotency checks.`,
-      `${profile.primaryResourceTitle} service: owns ${profile.primaryResourcePlural}, lifecycle transitions, source-of-truth writes, and synchronous correctness.`,
-      `${profile.domainTitle} query service: serves hot reads from cache, projections, indexes, or search structures without overloading the write store.`,
-      ...profile.focus
-        .slice(0, 3)
-        .map(
-          (focusArea) =>
-            `${toTitleCase(focusArea)} component: owns the domain-specific behavior needed for ${focusArea}.`,
-        ),
-      `${profile.architecture.background[0] ?? "worker fleet"}: processes committed events for async side effects, projections, cleanup, and reconciliation.`,
-      "Operations/control plane: owns policy changes, admin overrides, audit views, rollout safety, and manual repair tools.",
-    ]),
-    renderSection("Stores and messaging", [
-      `${profile.architecture.stores[0] ?? "primary database"}: source of truth for ${profile.primaryResourcePlural}, operation records, ownership, and lifecycle state.`,
-      `${profile.architecture.stores[1] ?? "cache"}: read-optimized store for hot ${profile.domain} lookups and derived projections.`,
-      `${profile.architecture.stores[2] ?? "event stream"}: durable outbox/event stream connecting committed writes to workers.`,
-      "Idempotency/dedupe store: protects mutating APIs and async consumers from duplicate work.",
-      "Audit/observability store: records security-sensitive changes, operational metrics, traces, and dead-letter inspection data.",
-    ]),
-    renderSection("Architecture flow", [
-      `Mutations for ${profile.primaryOperation.label} go gateway -> ${profile.primaryResourceTitle} service -> source database plus outbox -> event stream -> workers.`,
-      `Reads for ${profile.readOperation.label} go gateway -> query service -> cache/projection/index -> source fallback on miss.`,
-      "Only the domain service changes source-of-truth state; workers update derived state and external side effects.",
-      "The system keeps correctness in transactional records and accepts eventual consistency for search, feeds, analytics, notifications, and dashboards.",
-      "Observability, audit, and runbooks are part of the design, not post-interview add-ons.",
-    ]),
-    renderSection("Scaling and reliability", [
-      `Partition source tables and streams by tenant, user, resource, or time depending on the hot path at ${problem.scale}.`,
-      `Mitigate ${profile.risks.join(", ")} with sharding, caching, batching, hot-key isolation, back-pressure, and replayable events.`,
-      "Replicate source-of-truth data, define failover behavior, and keep derived projections rebuildable from the event log.",
-      "Do not put API serving, source-of-truth writes, fan-out, indexing, analytics, and admin workflows into one unbounded service.",
-    ]),
-    renderSection("Tradeoffs", [
-      `The chosen design optimizes for ${profile.focus.join(", ")} while keeping optional variants deferred.`,
-      "Global coordination is used only for uniqueness, money/security-sensitive state, or strict lifecycle transitions.",
-      "Everything else is handled with projections, caches, async workers, and reconciliation to keep the system operable at scale.",
-    ]),
-  ]);
+  return renderSampleSolution(
+    problem,
+    "high-level-design",
+    [
+      renderParagraph(
+        `The design has a small source-of-truth core, separate serving projections for hot reads, and asynchronous workers for slow side effects.`,
+      ),
+      renderCodeBlock(buildArchitectureCode(profile)),
+      renderSection("Components", [
+        `${profile.domainTitle} API gateway: terminates auth, rate limits, request validation, routing, and idempotency checks.`,
+        `${profile.primaryResourceTitle} service: owns ${profile.primaryResourcePlural}, lifecycle transitions, source-of-truth writes, and synchronous correctness.`,
+        `${profile.domainTitle} query service: serves hot reads from cache, projections, indexes, or search structures without overloading the write store.`,
+        ...profile.focus
+          .slice(0, 3)
+          .map(
+            (focusArea) =>
+              `${toTitleCase(focusArea)} component: owns the domain-specific behavior needed for ${focusArea}.`,
+          ),
+        `${profile.architecture.background[0] ?? "worker fleet"}: processes committed events for async side effects, projections, cleanup, and reconciliation.`,
+        "Operations/control plane: owns policy changes, admin overrides, audit views, rollout safety, and manual repair tools.",
+      ]),
+      renderSection("Stores and messaging", [
+        `${profile.architecture.stores[0] ?? "primary database"}: source of truth for ${profile.primaryResourcePlural}, operation records, ownership, and lifecycle state.`,
+        `${profile.architecture.stores[1] ?? "cache"}: read-optimized store for hot ${profile.domain} lookups and derived projections.`,
+        `${profile.architecture.stores[2] ?? "event stream"}: durable outbox/event stream connecting committed writes to workers.`,
+        "Idempotency/dedupe store: protects mutating APIs and async consumers from duplicate work.",
+        "Audit/observability store: records security-sensitive changes, operational metrics, traces, and dead-letter inspection data.",
+      ]),
+      renderSection("Architecture flow", [
+        `Mutations for ${profile.primaryOperation.label} go gateway -> ${profile.primaryResourceTitle} service -> source database plus outbox -> event stream -> workers.`,
+        `Reads for ${profile.readOperation.label} go gateway -> query service -> cache/projection/index -> source fallback on miss.`,
+        "Only the domain service changes source-of-truth state; workers update derived state and external side effects.",
+        "The system keeps correctness in transactional records and accepts eventual consistency for search, feeds, analytics, notifications, and dashboards.",
+        "Observability, audit, and runbooks are part of the design, not post-interview add-ons.",
+      ]),
+      renderSection("Scaling and reliability", [
+        `Partition source tables and streams by tenant, user, resource, or time depending on the hot path at ${problem.scale}.`,
+        `Mitigate ${profile.risks.join(", ")} with sharding, caching, batching, hot-key isolation, back-pressure, and replayable events.`,
+        "Replicate source-of-truth data, define failover behavior, and keep derived projections rebuildable from the event log.",
+        "Do not put API serving, source-of-truth writes, fan-out, indexing, analytics, and admin workflows into one unbounded service.",
+      ]),
+      renderSection("Tradeoffs", [
+        `The chosen design optimizes for ${profile.focus.join(", ")} while keeping optional variants deferred.`,
+        "Global coordination is used only for uniqueness, money/security-sensitive state, or strict lifecycle transitions.",
+        "Everything else is handled with projections, caches, async workers, and reconciliation to keep the system operable at scale.",
+      ]),
+    ],
+    {
+      diagramJson: buildHighLevelDesignDiagram(profile),
+    },
+  );
 };
 
 const buildDeepDivesEditorial = (

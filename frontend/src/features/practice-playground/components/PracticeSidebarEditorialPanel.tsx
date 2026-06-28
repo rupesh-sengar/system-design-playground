@@ -5,6 +5,7 @@ import type {
   PracticePlaygroundViewModel,
   PracticeStageDefinition,
 } from "../model/types";
+import { SystemDesignDiagramPreview } from "./SystemDesignDiagramPreview";
 
 interface PracticeSidebarEditorialPanelProps {
   activeStage: PracticeStageDefinition;
@@ -58,6 +59,8 @@ export const PracticeSidebarEditorialPanel = ({
   const sanitizedEditorialHtml = editorial.contentHtml
     ? sanitizeRichTextHtml(editorial.contentHtml)
     : "";
+  const shouldShowSolutionDiagram =
+    activeStage.id === "high-level-design" && Boolean(editorial.diagramJson);
 
   return (
     <div
@@ -126,6 +129,12 @@ export const PracticeSidebarEditorialPanel = ({
                   {editorial.title || `Expected ${activeStage.title} Solution`}
                 </h2>
               </div>
+              {shouldShowSolutionDiagram ? (
+                <SystemDesignDiagramPreview
+                  diagram={editorial.diagramJson}
+                  title="Reference Architecture"
+                />
+              ) : null}
               <div
                 className="playground-sidebar__editorial-body"
                 dangerouslySetInnerHTML={{

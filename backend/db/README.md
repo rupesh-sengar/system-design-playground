@@ -27,6 +27,11 @@ Postgres migrations live in `db/migrations`.
 - tracks creating and updating users from Auth0-backed app users
 - keeps editorial HTML out of the frontend bundle
 
+`013_stage_editorial_diagrams.sql` adds reference solution diagrams:
+
+- adds `diagram_json` to `stage_editorials`
+- stores read-only high-level design architecture diagrams with protected solutions
+
 `005_billing_onboarding.sql` adds the first SaaS billing slice:
 
 - stores onboarding profile answers per user
@@ -71,6 +76,7 @@ psql "$DATABASE_URL" -f db/migrations/007_plus_pro_plan_tiers.sql
 psql "$DATABASE_URL" -f db/migrations/009_app_user_profile_metadata.sql
 psql "$DATABASE_URL" -f db/migrations/010_user_billing_account_summary.sql
 psql "$DATABASE_URL" -f db/migrations/011_user_billing_accounts.sql
+psql "$DATABASE_URL" -f db/migrations/013_stage_editorial_diagrams.sql
 ```
 
 The backend now upserts `app_users`, `user_problem_progress`, and `practice_sessions` from authenticated API calls under `/v1/persistence/*`. Billing and onboarding tables are written by `/v1/billing/*`, `/v1/onboarding/*`, and Razorpay webhooks.

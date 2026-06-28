@@ -1,10 +1,12 @@
 import { baseApi } from "@/shared/api/baseApi";
 import { getApiErrorDetails, requestJson } from "@/shared/api/http";
+import type { SystemDesignDiagram } from "../model/systemDesignDiagram";
 import type { PracticeStageId } from "../model/types";
 
 export interface StageEditorial {
   contentHtml: string;
   createdAt: string;
+  diagramJson: SystemDesignDiagram | null;
   problemId: string;
   stageId: PracticeStageId;
   title: string;
@@ -84,6 +86,7 @@ export const stageEditorialApi = baseApi.injectEndpoints({
       StageEditorial,
       {
         contentHtml: string;
+        diagramJson?: SystemDesignDiagram | null;
         problemId: string;
         stageId: PracticeStageId;
         title?: string;

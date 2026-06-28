@@ -930,6 +930,7 @@ export const usePracticePlayground = (
       },
       editorial: {
         contentHtml: null,
+        diagramJson: null,
         errorMessage: null,
         isLocked: false,
         isLoading: false,
@@ -1190,6 +1191,9 @@ export const usePracticePlayground = (
     editorial: {
       contentHtml: hasEditorialAccess
         ? (currentStageEditorial?.contentHtml ?? null)
+        : null,
+      diagramJson: hasEditorialAccess
+        ? normalizeSystemDesignDiagram(currentStageEditorial?.diagramJson)
         : null,
       errorMessage: stageEditorialError
         ? getApiErrorDetails(

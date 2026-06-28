@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { stageIdSchema } from "../ai/contracts.js";
+import { systemDesignDiagramSchema } from "../../shared/system-design-diagram.js";
 
 export const stageEditorialParamsSchema = z.object({
   problemId: z.string().trim().min(1),
@@ -8,6 +9,7 @@ export const stageEditorialParamsSchema = z.object({
 
 export const upsertStageEditorialSchema = z.object({
   contentHtml: z.string().min(1).max(100_000),
+  diagramJson: systemDesignDiagramSchema.nullable().optional(),
   title: z.string().trim().max(160).optional(),
 });
 
