@@ -11,6 +11,8 @@ import { useAppAuth } from "@/features/auth/app-auth";
 import { Loader } from "@/shared/ui/Loader";
 import "@/shared/ui/shared-ui.css";
 import "./PracticeAiReviewPanel.css";
+import { formatSentenceCase } from "../lib/textFormatting";
+import { AiCreditTooltip, type AiCreditTooltipData } from "./AiCreditTooltip";
 import type {
   PracticeAiMeta,
   PracticeAiRequestError,
@@ -27,6 +29,7 @@ interface PracticeAiReviewPanelProps {
     | "clear-only"
     | "none";
   activeStageTitle: string;
+  aiCreditTooltip?: AiCreditTooltipData;
   assistant: PracticePlaygroundViewModel["assistant"];
   onBeforeRequestHints?: () => void;
   onOpenPricing?: () => void;
@@ -61,7 +64,15 @@ const formatReadinessLabel = (value: string): string =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
-const FeedbackList = ({ items, title }: { items: string[]; title: string }) => {
+const FeedbackList = ({
+  formatItem = (item: string): string => item,
+  items,
+  title,
+}: {
+  formatItem?: (item: string) => string;
+  items: string[];
+  title: string;
+}) => {
   if (items.length === 0) {
     return null;
   }
@@ -71,7 +82,7 @@ const FeedbackList = ({ items, title }: { items: string[]; title: string }) => {
       <h4>{title}</h4>
       <ul>
         {items.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item}>{formatItem(item)}</li>
         ))}
       </ul>
     </section>
@@ -202,6 +213,7 @@ const AiRequestNotice = ({
 export const PracticeAiReviewPanel = ({
   actionMode = "full",
   activeStageTitle,
+  aiCreditTooltip,
   assistant,
   onBeforeRequestHints,
   onOpenPricing,
@@ -284,9 +296,9 @@ export const PracticeAiReviewPanel = ({
           : "Connected";
   const draftStatusLabel =
     actionMode === "hints-only"
-      ? canRequestHints
-        ? "Draft ready"
-        : "Draft needed"
+      ? activeStageState.hintStatus === "loading"
+        ? "Generating"
+        : "Hints ready"
       : canValidateDraft
         ? "Draft ready"
         : "Draft needed";
@@ -321,9 +333,7 @@ export const PracticeAiReviewPanel = ({
         : isLoading
           ? "Authentication is still initializing."
           : actionMode === "hints-only"
-            ? canRequestHints
-              ? "Ready for contextual hints"
-              : "Write at least 20 characters to get hints"
+            ? "Ready for contextual hints"
             : canValidateDraft
               ? "Ready for structured review"
               : "Write at least 20 characters to validate";
@@ -347,15 +357,21 @@ export const PracticeAiReviewPanel = ({
   };
 
   const renderHintRequestButton = (className = "") => (
-    <button
-      className={`primary-action playground-ai__primary-action ${className}`.trim()}
-      type="button"
-      disabled={!canUseHintAction}
-      onClick={handleRequestHints}
+    <AiCreditTooltip
+      align={actionMode === "button-only" ? "end" : "center"}
+      data={aiCreditTooltip}
+      placement={actionMode === "button-only" ? "bottom" : "top"}
     >
-      <Lightbulb aria-hidden="true" size={15} strokeWidth={2} />
-      {hintActionLabel}
-    </button>
+      <button
+        className={`primary-action playground-ai__primary-action ${className}`.trim()}
+        type="button"
+        disabled={!canUseHintAction}
+        onClick={handleRequestHints}
+      >
+        <Lightbulb aria-hidden="true" size={15} strokeWidth={2} />
+        {hintActionLabel}
+      </button>
+    </AiCreditTooltip>
   );
 
   if (!frontendConfig.features.aiReview) {
@@ -440,18 +456,14 @@ export const PracticeAiReviewPanel = ({
       <div className="playground-ai__results">
         {showHintContent && hintResult ? (
           <article className="playground-ai__card">
-            <div className="playground-ai__card-head">
+            {/*<div className="playground-ai__card-head">
               <div>
-                <p className="playground-ai__eyebrow">Hints</p>
-                <h4>Directional coaching</h4>
+                <h4>AI Generated Hints</h4>
               </div>
               <div className="playground-ai__card-meta">
-                <span className="playground-ai__chip">
-                  {formatTimestamp(hintResult.receivedAt)}
-                </span>
                 {isHintStale ? (
                   <span className="playground-ai__chip playground-ai__chip--stale">
-                    Draft changed since request
+                    Draft changed
                   </span>
                 ) : null}
                 {showRecoveryActions ? (
@@ -475,30 +487,31 @@ export const PracticeAiReviewPanel = ({
                   </button>
                 ) : null}
               </div>
-            </div>
-
-            {isHintStale ? (
-              <DraftComparison
-                currentDraft={currentDraft}
-                sourceDraft={hintResult.sourceDraft}
-              />
-            ) : null}
+            </div>*/}
 
             <div className="playground-ai__grid">
-              <FeedbackList items={hintResult.hints} title="Next hints" />
-              <FeedbackList items={hintResult.focusAreas} title="Focus areas" />
+              <FeedbackList
+                formatItem={formatSentenceCase}
+                items={hintResult.hints}
+                title="Next hints"
+              />
+              <FeedbackList
+                formatItem={formatSentenceCase}
+                items={hintResult.focusAreas}
+                title="Focus areas"
+              />
             </div>
 
             {hintResult.caution ? (
               <div className="playground-ai__callout">
                 <strong>Watch out</strong>
-                <p>{hintResult.caution}</p>
+                <p>{formatSentenceCase(hintResult.caution)}</p>
               </div>
             ) : null}
 
             <div className="playground-ai__callout">
               <strong>Next question</strong>
-              <p>{hintResult.nextQuestion}</p>
+              <p>{formatSentenceCase(hintResult.nextQuestion)}</p>
             </div>
           </article>
         ) : null}
@@ -522,9 +535,9 @@ export const PracticeAiReviewPanel = ({
                   <strong>{validationResult.confidence}</strong>
                   <span>confidence</span>
                 </div>*/}
-                <span className="playground-ai__chip">
+                {/*<span className="playground-ai__chip">
                   {formatTimestamp(validationResult.receivedAt)}
-                </span>
+                </span>*/}
                 {isValidationStale ? (
                   <span className="playground-ai__chip playground-ai__chip--stale">
                     Draft changed since request
@@ -555,12 +568,12 @@ export const PracticeAiReviewPanel = ({
 
             <p className="playground-ai__summary">{validationResult.summary}</p>
 
-            {isValidationStale ? (
+            {/*{isValidationStale ? (
               <DraftComparison
                 currentDraft={currentDraft}
                 sourceDraft={validationResult.sourceDraft}
               />
-            ) : null}
+            ) : null}*/}
 
             <div className="playground-ai__grid">
               <FeedbackList

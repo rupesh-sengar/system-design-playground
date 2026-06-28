@@ -70,6 +70,7 @@ Rules:
 - Keep hints directional, not fully revealing the solution.
 - Use the provided stage rubric to anchor the hints.
 - Focus on what to improve next, not everything that is wrong.
+- Write hints, focus areas, cautions, and next questions in sentence case.
 - Return JSON only, with no markdown fences and no extra prose.
 - The JSON must match this shape exactly:
 ${hintJsonContract}`;
@@ -142,7 +143,7 @@ export const buildHintPrompt = (input: GenerateHintsRequest): string => {
     `Maximum hints: ${input.maxHints}`,
     "",
     "Current draft:",
-    input.currentDraft.trim(),
+    input.currentDraft.trim() || "[empty]",
   ].join("\n");
 };
 

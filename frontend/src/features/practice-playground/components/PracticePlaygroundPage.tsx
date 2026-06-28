@@ -6,12 +6,15 @@ import {
   useRef,
   useState,
 } from "react";
+import { frontendConfig } from "@/config/env";
 import { useAppAuth } from "@/features/auth/app-auth";
+import { useGetBillingAccountQuery } from "@/features/billing/api/billingApi";
 import { Loader } from "@/shared/ui/Loader";
 import {
   PracticePlaygroundSidebar,
   type PlaygroundSidebarTab,
 } from "./PracticePlaygroundSidebar";
+import type { AiCreditTooltipData } from "./AiCreditTooltip";
 import {
   PracticeStageboard,
   type HighLevelDesignSurface,
@@ -52,6 +55,49 @@ const MAX_SIDEBAR_WIDTH = 420;
 const clampSidebarWidth = (value: number): number =>
   Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, value));
 
+const createAiCreditTooltip = (input: {
+  billingEnabled: boolean;
+  hasError: boolean;
+  isAuthenticated: boolean;
+  isFetching: boolean;
+  limit: number | null;
+  remaining: number | null;
+}): AiCreditTooltipData | undefined => {
+  if (!input.billingEnabled) {
+    return undefined;
+  }
+
+  if (!input.isAuthenticated) {
+    return {
+      limit: null,
+      remaining: null,
+      status: "signed-out",
+    };
+  }
+
+  if (input.isFetching) {
+    return {
+      limit: null,
+      remaining: null,
+      status: "loading",
+    };
+  }
+
+  if (input.hasError || input.remaining === null || input.limit === null) {
+    return {
+      limit: null,
+      remaining: null,
+      status: "unavailable",
+    };
+  }
+
+  return {
+    limit: input.limit,
+    remaining: input.remaining,
+    status: "ready",
+  };
+};
+
 export const PracticePlaygroundPage = ({
   isPracticed,
   isStarted,
@@ -83,6 +129,16 @@ export const PracticePlaygroundPage = ({
   } = usePracticePlayground(problem, {
     onSessionReset: onUnmarkStarted,
   });
+  const {
+    data: billingAccount,
+    error: billingAccountError,
+    isFetching: isBillingAccountFetching,
+  } = useGetBillingAccountQuery(undefined, {
+    skip:
+      !frontendConfig.features.billing ||
+      !isApiAuthReady ||
+      !isAuthenticated,
+  });
   const [activeSidebarTab, setActiveSidebarTab] =
     useState<PlaygroundSidebarTab>("overview");
   const [sidebarWidth, setSidebarWidth] = useState(MAX_SIDEBAR_WIDTH);
@@ -107,6 +163,14 @@ export const PracticePlaygroundPage = ({
         : storage.isRemote
           ? "Progress is saved to your account."
           : "Progress is saved in this browser.";
+  const aiCreditTooltip = createAiCreditTooltip({
+    billingEnabled: frontendConfig.features.billing,
+    hasError: Boolean(billingAccountError),
+    isAuthenticated,
+    isFetching: isBillingAccountFetching,
+    limit: billingAccount?.usage.monthlyAi.limit ?? null,
+    remaining: billingAccount?.usage.monthlyAi.remaining ?? null,
+  });
 
   useEffect(() => {
     const storedWidth = window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
@@ -355,6 +419,7 @@ export const PracticePlaygroundPage = ({
         <PracticePlaygroundSidebar
           activeSidebarTab={activeSidebarTab}
           activeStage={activeStage}
+          aiCreditTooltip={aiCreditTooltip}
           assistant={assistant}
           authReady={authReady}
           editorial={editorial}
@@ -394,6 +459,7 @@ export const PracticePlaygroundPage = ({
           activeStageDraft={activeStageDraft}
           assistant={assistant}
           authReady={authReady}
+          aiCreditTooltip={aiCreditTooltip}
           isExpanded={isStageboardExpanded}
           isStorageLoading={storage.isLoading}
           stageDrafts={stageDrafts}

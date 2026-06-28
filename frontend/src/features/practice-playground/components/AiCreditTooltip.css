@@ -1,0 +1,249 @@
+.ai-credit-tooltip {
+    position: relative;
+    display: inline-flex;
+    min-width: 0;
+    width: 100%;
+    isolation: isolate;
+}
+
+.ai-credit-tooltip__surface {
+    position: absolute;
+    left: 50%;
+    z-index: 60;
+    display: grid;
+    gap: 10px;
+    width: min(286px, calc(100vw - 24px));
+    padding: 12px;
+    border: 1px solid #deded8;
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--text);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.16);
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    transition:
+        opacity 150ms ease,
+        transform 150ms var(--motion-ease),
+        visibility 150ms ease;
+}
+
+.ai-credit-tooltip--top .ai-credit-tooltip__surface {
+    bottom: calc(100% + 12px);
+    transform: translateX(-50%) translateY(4px) scale(0.98);
+}
+
+.ai-credit-tooltip--bottom .ai-credit-tooltip__surface {
+    top: calc(100% + 12px);
+    transform: translateX(-50%) translateY(-4px) scale(0.98);
+}
+
+.ai-credit-tooltip--align-start .ai-credit-tooltip__surface {
+    left: 0;
+}
+
+.ai-credit-tooltip--align-end .ai-credit-tooltip__surface {
+    right: 0;
+    left: auto;
+}
+
+.ai-credit-tooltip--align-start.ai-credit-tooltip--top
+    .ai-credit-tooltip__surface,
+.ai-credit-tooltip--align-end.ai-credit-tooltip--top
+    .ai-credit-tooltip__surface {
+    transform: translateY(4px) scale(0.98);
+}
+
+.ai-credit-tooltip--align-start.ai-credit-tooltip--bottom
+    .ai-credit-tooltip__surface,
+.ai-credit-tooltip--align-end.ai-credit-tooltip--bottom
+    .ai-credit-tooltip__surface {
+    transform: translateY(-4px) scale(0.98);
+}
+
+.ai-credit-tooltip:hover .ai-credit-tooltip__surface,
+.ai-credit-tooltip:focus-within .ai-credit-tooltip__surface {
+    opacity: 1;
+    visibility: visible;
+}
+
+.ai-credit-tooltip--top:hover .ai-credit-tooltip__surface,
+.ai-credit-tooltip--top:focus-within .ai-credit-tooltip__surface,
+.ai-credit-tooltip--bottom:hover .ai-credit-tooltip__surface,
+.ai-credit-tooltip--bottom:focus-within .ai-credit-tooltip__surface {
+    transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.ai-credit-tooltip--align-start.ai-credit-tooltip--top:hover
+    .ai-credit-tooltip__surface,
+.ai-credit-tooltip--align-start.ai-credit-tooltip--top:focus-within
+    .ai-credit-tooltip__surface,
+.ai-credit-tooltip--align-end.ai-credit-tooltip--top:hover
+    .ai-credit-tooltip__surface,
+.ai-credit-tooltip--align-end.ai-credit-tooltip--top:focus-within
+    .ai-credit-tooltip__surface,
+.ai-credit-tooltip--align-start.ai-credit-tooltip--bottom:hover
+    .ai-credit-tooltip__surface,
+.ai-credit-tooltip--align-start.ai-credit-tooltip--bottom:focus-within
+    .ai-credit-tooltip__surface,
+.ai-credit-tooltip--align-end.ai-credit-tooltip--bottom:hover
+    .ai-credit-tooltip__surface,
+.ai-credit-tooltip--align-end.ai-credit-tooltip--bottom:focus-within
+    .ai-credit-tooltip__surface {
+    transform: translateY(0) scale(1);
+}
+
+.ai-credit-tooltip__surface::after {
+    position: absolute;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    border-color: inherit;
+    background: inherit;
+    content: "";
+}
+
+.ai-credit-tooltip--top .ai-credit-tooltip__surface::after {
+    bottom: -6px;
+    border-right: 1px solid;
+    border-bottom: 1px solid;
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.ai-credit-tooltip--bottom .ai-credit-tooltip__surface::after {
+    top: -6px;
+    border-top: 1px solid;
+    border-left: 1px solid;
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.ai-credit-tooltip--align-start .ai-credit-tooltip__surface::after {
+    left: 22px;
+    transform: rotate(45deg);
+}
+
+.ai-credit-tooltip--align-end .ai-credit-tooltip__surface::after {
+    right: 22px;
+    left: auto;
+    transform: rotate(45deg);
+}
+
+.ai-credit-tooltip__header {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+}
+
+.ai-credit-tooltip__icon {
+    display: inline-grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+}
+
+.ai-credit-tooltip__copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.ai-credit-tooltip__label {
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    line-height: 1.1;
+    text-transform: uppercase;
+}
+
+.ai-credit-tooltip__copy strong {
+    color: var(--text);
+    font-size: 1.28rem;
+    line-height: 1;
+}
+
+.ai-credit-tooltip__copy > span:last-child {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.ai-credit-tooltip__meter {
+    display: block;
+    height: 9px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #ececea;
+}
+
+.ai-credit-tooltip__meter span {
+    display: block;
+    width: var(--ai-credit-tooltip-progress);
+    height: 100%;
+    min-width: 0;
+    border-radius: inherit;
+    background: var(--accent-deep);
+    transition: width 180ms ease;
+}
+
+.ai-credit-tooltip__surface--loading .ai-credit-tooltip__meter span {
+    width: 44%;
+    background: #707070;
+    animation: ai-credit-tooltip-loading 1.15s ease-in-out infinite;
+}
+
+.ai-credit-tooltip__detail {
+    color: var(--muted-strong);
+    font-size: 0.8rem;
+    font-weight: 650;
+    line-height: 1.35;
+}
+
+:root[data-theme="dark"] .ai-credit-tooltip__surface {
+    border-color: #363636;
+    background: #181818;
+    box-shadow: 0 18px 54px rgba(0, 0, 0, 0.48);
+}
+
+:root[data-theme="dark"] .ai-credit-tooltip__icon {
+    border-color: var(--border-strong);
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+}
+
+:root[data-theme="dark"] .ai-credit-tooltip__meter {
+    background: #2a2a2a;
+}
+
+:root[data-theme="dark"] .ai-credit-tooltip__meter span {
+    background: var(--accent-deep);
+}
+
+:root[data-theme="dark"]
+    .ai-credit-tooltip__surface--loading
+    .ai-credit-tooltip__meter
+    span {
+    background: #bdbdbd;
+}
+
+@media (max-width: 760px) {
+    .ai-credit-tooltip__surface {
+        width: min(280px, calc(100vw - 18px));
+    }
+}
+
+@keyframes ai-credit-tooltip-loading {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(240%);
+    }
+}

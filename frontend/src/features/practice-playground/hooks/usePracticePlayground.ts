@@ -947,7 +947,7 @@ export const usePracticePlayground = (
   }
 
   const requestHints = async (): Promise<void> => {
-    if (!problem || activeStagePlainText.trim().length === 0) {
+    if (!problem) {
       return;
     }
 
@@ -1175,9 +1175,7 @@ export const usePracticePlayground = (
         validateDraft,
       },
       activeStageState,
-      canRequestHints:
-        activeStagePlainText.trim().length > 0 &&
-        activeStageState.hintStatus !== "loading",
+      canRequestHints: activeStageState.hintStatus !== "loading",
       canValidateDraft:
         activeStagePlainText.length >= 20 &&
         activeStageState.validationStatus !== "loading",

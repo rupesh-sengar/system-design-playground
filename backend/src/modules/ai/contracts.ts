@@ -50,7 +50,7 @@ export const validateDesignResponseSchema = z.object({
 });
 
 export const generateHintsRequestSchema = z.object({
-  currentDraft: z.string().min(1),
+  currentDraft: z.string(),
   maxHints: z.coerce.number().int().min(1).max(5).default(3),
   problem: problemContextSchema,
   stageId: stageIdSchema,

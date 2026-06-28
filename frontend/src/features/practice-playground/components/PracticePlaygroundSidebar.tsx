@@ -13,6 +13,7 @@ import { PracticeAiReviewPanel } from "./PracticeAiReviewPanel";
 import { PracticeSidebarEditorialPanel } from "./PracticeSidebarEditorialPanel";
 import { PracticeSidebarGuidesPanel } from "./PracticeSidebarGuidesPanel";
 import { PracticeSidebarOverviewPanel } from "./PracticeSidebarOverviewPanel";
+import type { AiCreditTooltipData } from "./AiCreditTooltip";
 import type {
   PracticeMetrics,
   PracticePlaygroundViewModel,
@@ -26,6 +27,7 @@ export type PlaygroundSidebarTab = "overview" | "guides" | "editorial" | "ai";
 interface PracticePlaygroundSidebarProps {
   activeSidebarTab: PlaygroundSidebarTab;
   activeStage: PracticeStageDefinition;
+  aiCreditTooltip?: AiCreditTooltipData;
   assistant: PracticePlaygroundViewModel["assistant"];
   authReady: boolean;
   editorial: PracticePlaygroundViewModel["editorial"];
@@ -159,16 +161,18 @@ const SidebarTabs = ({
 
 const AiPanel = ({
   activeStage,
+  aiCreditTooltip,
   assistant,
   onOpenPricing,
 }: Pick<
   PracticePlaygroundSidebarProps,
-  "activeStage" | "assistant" | "onOpenPricing"
+  "activeStage" | "aiCreditTooltip" | "assistant" | "onOpenPricing"
 >) => (
   <div className="playground-sidebar__tab-sections playground-sidebar__tab-sections--ai">
     <PracticeAiReviewPanel
       actionMode="validation-only"
       activeStageTitle={activeStage.title}
+      aiCreditTooltip={aiCreditTooltip}
       assistant={assistant}
       onOpenPricing={onOpenPricing}
     />
@@ -178,6 +182,7 @@ const AiPanel = ({
 export const PracticePlaygroundSidebar = ({
   activeSidebarTab,
   activeStage,
+  aiCreditTooltip,
   assistant,
   authReady,
   editorial,
@@ -243,6 +248,7 @@ export const PracticePlaygroundSidebar = ({
         {activeSidebarTab === "guides" ? (
           <PracticeSidebarGuidesPanel
             activeStage={activeStage}
+            aiCreditTooltip={aiCreditTooltip}
             assistant={assistant}
             isGuideHintsOpen={isGuideHintsOpen}
             onOpenGuideHints={onOpenGuideHints}
@@ -265,6 +271,7 @@ export const PracticePlaygroundSidebar = ({
         {activeSidebarTab === "ai" ? (
           <AiPanel
             activeStage={activeStage}
+            aiCreditTooltip={aiCreditTooltip}
             assistant={assistant}
             onOpenPricing={onOpenPricing}
           />
