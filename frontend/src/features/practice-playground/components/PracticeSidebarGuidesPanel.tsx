@@ -1,4 +1,6 @@
 import { BookOpen, ListChecks, Sparkles, Target } from "lucide-react";
+import { formatSentenceCase } from "../lib/textFormatting";
+import type { AiCreditTooltipData } from "./AiCreditTooltip";
 import { PracticeAiReviewPanel } from "./PracticeAiReviewPanel";
 import type {
   PracticePlaygroundViewModel,
@@ -8,6 +10,7 @@ import type {
 
 interface PracticeSidebarGuidesPanelProps {
   activeStage: PracticeStageDefinition;
+  aiCreditTooltip?: AiCreditTooltipData;
   assistant: PracticePlaygroundViewModel["assistant"];
   isGuideHintsOpen: boolean;
   onOpenGuideHints: () => void;
@@ -17,6 +20,7 @@ interface PracticeSidebarGuidesPanelProps {
 
 export const PracticeSidebarGuidesPanel = ({
   activeStage,
+  aiCreditTooltip,
   assistant,
   isGuideHintsOpen,
   onOpenGuideHints,
@@ -24,40 +28,6 @@ export const PracticeSidebarGuidesPanel = ({
   stageContextCards,
 }: PracticeSidebarGuidesPanelProps) => (
   <div className="playground-sidebar__tab-sections playground-sidebar__tab-sections--guides">
-    <details
-      className="playground-sidebar__section playground-sidebar__section--compact"
-      open={isGuideHintsOpen}
-      onToggle={(event) => onToggleGuideHints(event.currentTarget.open)}
-    >
-      <summary className="playground-sidebar__section-summary playground-sidebar__section-summary--with-action">
-        <span className="section-label">
-          <Sparkles aria-hidden="true" size={12} strokeWidth={2} />
-          AI Hints
-        </span>
-        <div
-          className="playground-sidebar__summary-action"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-          }}
-        >
-          <PracticeAiReviewPanel
-            actionMode="button-only"
-            activeStageTitle={activeStage.title}
-            assistant={assistant}
-            onBeforeRequestHints={onOpenGuideHints}
-          />
-        </div>
-      </summary>
-      <div className="playground-sidebar__guide-ai">
-        <PracticeAiReviewPanel
-          actionMode="hints-results"
-          activeStageTitle={activeStage.title}
-          assistant={assistant}
-        />
-      </div>
-    </details>
-
     <details
       className="playground-sidebar__section playground-sidebar__section--compact"
       open
@@ -105,11 +75,45 @@ export const PracticeSidebarGuidesPanel = ({
             <h3>{card.label}</h3>
             <ul className="variant-list">
               {card.items.map((item) => (
-                <li key={item}>{item}</li>
+                <li key={item}>{formatSentenceCase(item)}</li>
               ))}
             </ul>
           </article>
         ))}
+      </div>
+    </details>
+    <details
+      className="playground-sidebar__section playground-sidebar__section--compact playground-sidebar__section--with-tooltip"
+      open={isGuideHintsOpen}
+      onToggle={(event) => onToggleGuideHints(event.currentTarget.open)}
+    >
+      <summary className="playground-sidebar__section-summary playground-sidebar__section-summary--with-action">
+        <span className="section-label">
+          <Sparkles aria-hidden="true" size={12} strokeWidth={2} />
+          AI Hints
+        </span>
+        <div
+          className="playground-sidebar__summary-action"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+        >
+          <PracticeAiReviewPanel
+            actionMode="button-only"
+            activeStageTitle={activeStage.title}
+            aiCreditTooltip={aiCreditTooltip}
+            assistant={assistant}
+            onBeforeRequestHints={onOpenGuideHints}
+          />
+        </div>
+      </summary>
+      <div className="playground-sidebar__guide-ai">
+        <PracticeAiReviewPanel
+          actionMode="hints-results"
+          activeStageTitle={activeStage.title}
+          assistant={assistant}
+        />
       </div>
     </details>
   </div>

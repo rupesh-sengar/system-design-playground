@@ -99,6 +99,7 @@ export const coachApi = baseApi.injectEndpoints({
         stageId: PracticeStageId;
       }
     >({
+      invalidatesTags: (result) => (result ? ["BillingAccount"] : []),
       queryFn: async ({ currentDraft, maxHints = 3, problem, stageId }) => {
         try {
           const data = await requestJson<HintResponseEnvelope>(
@@ -131,6 +132,7 @@ export const coachApi = baseApi.injectEndpoints({
         submission: string;
       }
     >({
+      invalidatesTags: (result) => (result ? ["BillingAccount"] : []),
       queryFn: async ({ problem, stageId, submission }) => {
         try {
           const data = await requestJson<ValidationResponseEnvelope>(

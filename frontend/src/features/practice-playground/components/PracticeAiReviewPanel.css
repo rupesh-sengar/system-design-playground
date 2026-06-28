@@ -194,6 +194,10 @@
     white-space: normal;
 }
 
+.playground-ai__command-bar .ai-credit-tooltip {
+    width: 100%;
+}
+
 .playground-ai__command-bar svg {
     flex: 0 0 auto;
 }
@@ -209,22 +213,19 @@
     font-weight: 700;
 }
 
-.playground-ai__kpi,
-.playground-ai__score-card {
+.playground-ai__kpi {
     display: grid;
     gap: 2px;
     align-content: center;
 }
 
-.playground-ai__kpi strong,
-.playground-ai__score-card strong {
+.playground-ai__kpi strong {
     color: var(--text);
     font-size: 1rem;
     line-height: 1;
 }
 
-.playground-ai__kpi span,
-.playground-ai__score-card span {
+.playground-ai__kpi span {
     color: var(--muted);
     font-size: 0.68rem;
     font-weight: 760;
@@ -232,8 +233,7 @@
     text-transform: uppercase;
 }
 
-.playground-ai__kpi--primary,
-.playground-ai__score-card {
+.playground-ai__kpi--primary {
     border-color: rgba(15, 122, 115, 0.2);
     background: rgba(235, 248, 246, 0.84);
 }
@@ -249,14 +249,41 @@
 }
 
 .playground-ai__score-card {
-    min-width: 76px;
-    padding: 9px 10px;
-    border: 1px solid rgba(15, 122, 115, 0.2);
-    border-radius: 10px;
+    display: inline-flex;
+    min-width: 94px;
+    align-items: baseline;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 12px;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--page);
+    box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .playground-ai__score-card strong {
-    font-size: 1.35rem;
+    color: currentColor;
+    font-size: 1.5rem;
+    font-weight: 820;
+    line-height: 1;
+}
+
+.playground-ai__score-card span {
+    color: currentColor;
+    font-size: 0.68rem;
+    font-weight: 820;
+    line-height: 1.1;
+    opacity: 0.74;
+    text-transform: uppercase;
+}
+
+.playground-ai__score-card--secondary {
+    min-width: 0;
+    background: var(--surface-soft);
+    border-color: var(--border);
+    color: var(--text);
+    box-shadow: none;
 }
 
 .playground-ai__score-card--secondary strong {
@@ -626,7 +653,6 @@
     color: var(--text);
 }
 
-:root[data-theme="dark"] .playground-ai__score-card,
 :root[data-theme="dark"] .playground-ai__kpi--primary {
     border-color: rgba(66, 184, 174, 0.22);
     background: rgba(16, 46, 48, 0.72);

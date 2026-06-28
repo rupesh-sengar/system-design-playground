@@ -10,6 +10,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { RichTextEditor } from "@/shared/ui/RichTextEditor";
+import {
+  AiCreditTooltip,
+  type AiCreditTooltipData,
+} from "./AiCreditTooltip";
 import { SystemDesignDrawpad } from "./SystemDesignDrawpad";
 import type {
   PracticePlaygroundViewModel,
@@ -25,6 +29,7 @@ interface PracticeStageboardProps {
   activeDesignSurface: HighLevelDesignSurface;
   activeStage: PracticeStageDefinition;
   activeStageDraft: PracticeStageDraft;
+  aiCreditTooltip?: AiCreditTooltipData;
   assistant: PracticePlaygroundViewModel["assistant"];
   authReady: boolean;
   isExpanded: boolean;
@@ -41,6 +46,7 @@ export const PracticeStageboard = ({
   activeDesignSurface,
   activeStage,
   activeStageDraft,
+  aiCreditTooltip,
   assistant,
   authReady,
   isExpanded,
@@ -216,17 +222,19 @@ export const PracticeStageboard = ({
             ? "Mark stage incomplete"
             : "Mark stage complete"}
         </button>
-        <button
-          className="primary-action"
-          type="button"
-          disabled={authReady ? !assistant.canValidateDraft : false}
-          onClick={onValidateDraft}
-        >
-          <ShieldCheck aria-hidden="true" size={15} strokeWidth={2} />
-          {assistant.activeStageState.validationStatus === "loading"
-            ? "Validating..."
-            : "Validate draft"}
-        </button>
+        <AiCreditTooltip data={aiCreditTooltip} placement="top">
+          <button
+            className="primary-action"
+            type="button"
+            disabled={authReady ? !assistant.canValidateDraft : false}
+            onClick={onValidateDraft}
+          >
+            <ShieldCheck aria-hidden="true" size={15} strokeWidth={2} />
+            {assistant.activeStageState.validationStatus === "loading"
+              ? "Validating..."
+              : "Validate draft"}
+          </button>
+        </AiCreditTooltip>
         <button
           className="primary-action"
           type="button"

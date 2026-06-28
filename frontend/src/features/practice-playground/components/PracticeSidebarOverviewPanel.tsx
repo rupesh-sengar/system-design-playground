@@ -1,8 +1,31 @@
+import { Tag } from "lucide-react";
 import type { PracticeProblem } from "../model/types";
 
 interface PracticeSidebarOverviewPanelProps {
   problem: PracticeProblem;
 }
+
+type ProblemDescriptionTagTone =
+  | "category"
+  | "difficulty-easy"
+  | "difficulty-medium"
+  | "difficulty-hard"
+  | "focus-area";
+
+interface ProblemDescriptionTag {
+  key: string;
+  label: string;
+  tone: ProblemDescriptionTagTone;
+}
+
+const difficultyTagTones: Record<
+  PracticeProblem["difficulty"],
+  ProblemDescriptionTagTone
+> = {
+  Easy: "difficulty-easy",
+  Medium: "difficulty-medium",
+  Hard: "difficulty-hard",
+};
 
 const formatInlineList = (items: string[]): string => {
   if (items.length === 0) {
@@ -26,12 +49,40 @@ const stripTerminalPeriod = (value: string): string =>
 const lowerFirst = (value: string): string =>
   value.length > 0 ? `${value[0].toLocaleLowerCase()}${value.slice(1)}` : value;
 
+const formatTagLabel = (value: string): string =>
+  value
+    .trim()
+    .split(/\s+/)
+    .map((word) => `${word.charAt(0).toLocaleUpperCase()}${word.slice(1)}`)
+    .join(" ");
+
+const buildProblemDescriptionTags = (
+  problem: PracticeProblem,
+): ProblemDescriptionTag[] => [
+  {
+    key: "difficulty",
+    label: problem.difficulty,
+    tone: difficultyTagTones[problem.difficulty],
+  },
+  {
+    key: "category",
+    label: problem.category,
+    tone: "category",
+  },
+  ...problem.focusAreas.map((focusArea, index) => ({
+    key: `focus-area-${index}-${focusArea}`,
+    label: focusArea,
+    tone: "focus-area" as const,
+  })),
+];
+
 export const PracticeSidebarOverviewPanel = ({
   problem,
 }: PracticeSidebarOverviewPanelProps) => {
   const focusAreaText = formatInlineList(problem.focusAreas);
   const pitfallText = formatInlineList(problem.pitfalls);
   const scaleText = stripTerminalPeriod(problem.scale);
+  const problemTags = buildProblemDescriptionTags(problem);
 
   return (
     <article
@@ -45,11 +96,18 @@ export const PracticeSidebarOverviewPanel = ({
           aria-label="Problem tags"
           className="playground-problem-description__tags"
         >
-          {[problem.difficulty, problem.category, ...problem.focusAreas].map(
-            (tag, index) => (
-              <span key={`${tag}-${index}`}>{tag}</span>
-            ),
-          )}
+          {problemTags.map((tag) => (
+            <span
+              key={tag.key}
+              className={[
+                "playground-problem-description__tag",
+                `playground-problem-description__tag--${tag.tone}`,
+              ].join(" ")}
+            >
+              <Tag aria-hidden="true" size={12} strokeWidth={2} />
+              {formatTagLabel(tag.label)}
+            </span>
+          ))}
         </div>
       </header>
 
@@ -75,7 +133,7 @@ export const PracticeSidebarOverviewPanel = ({
           system behaves during traffic spikes, retries, partial outages, and
           delayed background processing.
         </p>
-        <div className="playground-problem-description__examples">
+        {/*<div className="playground-problem-description__examples">
           <h2>Example Scenarios</h2>
           <ul>
             {problem.interviewVariants.map((variant) => (
@@ -90,7 +148,7 @@ export const PracticeSidebarOverviewPanel = ({
               </li>
             ))}
           </ul>
-        </div>
+        </div>*/}
       </div>
     </article>
   );
