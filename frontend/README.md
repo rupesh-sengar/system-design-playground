@@ -1,4 +1,4 @@
-# System Design Lab
+# System Design Park
 
 A React + TypeScript + Vite practice app for system design interview prep. The project ships with a seeded library of interview-style prompts across social, storage, collaboration, commerce, infrastructure, AI, and other domains.
 

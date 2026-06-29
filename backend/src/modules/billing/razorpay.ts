@@ -258,7 +258,7 @@ export class RazorpayBillingClient {
     return {
       description: input.description,
       key: this.getKeyId(),
-      name: "System Design Lab",
+      name: "System Design Park",
       notes: {
         app_user_id: input.userId,
       },

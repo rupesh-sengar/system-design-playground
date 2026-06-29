@@ -78,7 +78,7 @@ export const LandingPage = ({
         <div className="landing-hero__inner">
           <div className="landing-hero__content">
             <p className="eyebrow">Interview practice workspace</p>
-            <h1 id="landing-title">System Design Lab</h1>
+            <h1 id="landing-title">System Design Park</h1>
             <p className="landing-hero__copy">
               Work through curated system design prompts, structure your answer
               in a focused playground, and keep progress visible as you

@@ -24,6 +24,8 @@ import {
 import { createAiRouter } from "./modules/ai/ai.routes.js";
 import { StageEditorialRepository } from "./modules/editorials/editorials.repository.js";
 import { createEditorialsRouter } from "./modules/editorials/editorials.routes.js";
+import { IssueReportRepository } from "./modules/issue-reports/issue-report.repository.js";
+import { createIssueReportRouter } from "./modules/issue-reports/issue-report.routes.js";
 import { createCurrentAppUserMiddleware } from "./modules/persistence/current-app-user.middleware.js";
 import {
   AppUserRepository,
@@ -68,6 +70,7 @@ export const buildApp = (
   const billingAccountRepository = new BillingAccountRepository(database);
   const billingCustomerRepository = new BillingCustomerRepository(database);
   const onboardingProfileRepository = new OnboardingProfileRepository(database);
+  const issueReportRepository = new IssueReportRepository(database);
   const problemProgressRepository = new ProblemProgressRepository(database);
   const practiceSessionRepository = new PracticeSessionRepository(database);
   const stageEditorialRepository = new StageEditorialRepository(database);
@@ -98,6 +101,10 @@ export const buildApp = (
   );
   app.use(express.json({ limit: "1mb" }));
   app.use("/v1/billing", createBillingPlanRouter({ config }));
+  app.use(
+    "/v1/issue-reports",
+    createIssueReportRouter({ issueReportRepository }),
+  );
 
   app.get(
     "/healthz",

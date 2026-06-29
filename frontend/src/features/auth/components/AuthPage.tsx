@@ -31,13 +31,13 @@ const modeContent: Record<
     actionLabel: "Continue with Auth0",
     eyebrow: "Welcome back",
     icon: LogIn,
-    title: "Sign in to System Design Lab",
+    title: "Sign in to System Design Park",
   },
   signup: {
     actionLabel: "Create account",
     eyebrow: "Start practicing",
     icon: UserPlus,
-    title: "Create your System Design Lab account",
+    title: "Create your System Design Park account",
   },
   "reset-password": {
     actionLabel: "Send reset email",

@@ -16,8 +16,6 @@ import "./PricingPage.css";
 
 interface PricingPageProps {
   onOpenAccount: () => void;
-  onOpenLibrary: () => void;
-  onOpenOnboarding: () => void;
 }
 
 type PaidPlan = Exclude<PlanTier, "free">;

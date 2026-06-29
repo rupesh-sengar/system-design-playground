@@ -1,4 +1,11 @@
-import { LogIn, LogOut, UserPlus, X } from "lucide-react";
+import {
+  BookOpenCheck,
+  CircleUserRound,
+  LogIn,
+  LogOut,
+  UserPlus,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { frontendConfig } from "@/config/env";
 import { useGetBillingAccountQuery } from "@/features/billing/api/billingApi";
@@ -8,6 +15,7 @@ import "./auth-session-control.css";
 
 interface AuthSessionControlProps {
   onOpenAccount?: () => void;
+  onOpenGuide?: () => void;
   showGuestSignupPrompt?: boolean;
 }
 
@@ -88,6 +96,7 @@ const isEmailVerificationNotice = (message: string | null): boolean => {
 
 export const AuthSessionControl = ({
   onOpenAccount,
+  onOpenGuide,
   showGuestSignupPrompt = false,
 }: AuthSessionControlProps) => {
   const {
@@ -402,7 +411,21 @@ export const AuthSessionControl = ({
                   onOpenAccount();
                 }}
               >
+                <CircleUserRound aria-hidden="true" size={16} strokeWidth={2} />
                 Account
+              </button>
+            ) : null}
+            {onOpenGuide ? (
+              <button
+                className="session-nav__menu-action"
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onOpenGuide();
+                }}
+              >
+                <BookOpenCheck aria-hidden="true" size={16} strokeWidth={2} />
+                Guide
               </button>
             ) : null}
           </div>

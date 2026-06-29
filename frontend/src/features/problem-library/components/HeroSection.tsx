@@ -16,7 +16,7 @@ export const HeroSection = ({
   <header className="app-header panel">
     <div className="app-header__main">
       <div className="app-header__copy">
-        <p className="eyebrow">System Design Lab</p>
+        <p className="eyebrow">System Design Park</p>
         <h1>Problem Library</h1>
         <p className="app-header__subtitle">
           Browse prompts, narrow the list quickly, and jump straight into a

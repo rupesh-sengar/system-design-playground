@@ -1,7 +1,13 @@
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   AlertTriangle,
-  BookOpenCheck,
+  Bug,
   CheckCircle2,
   CreditCard,
 } from "lucide-react";
@@ -13,6 +19,7 @@ import {
   useProblemLibrary,
 } from "@/features/problem-library";
 import { LandingPage } from "@/features/landing";
+import { IssueReportDialog } from "@/features/issue-reporting";
 import { AccountBillingPage, PricingPage } from "@/features/billing";
 import {
   NewUserTutorial,
@@ -40,12 +47,11 @@ const DEVELOPMENT_NOTICE_LABEL = "This site is still in development";
 
 export default function App() {
   const { features } = frontendConfig;
-  const { isAuthenticated } = useAppAuth();
+  const { isAuthenticated, userEmail, userName } = useAppAuth();
   const {
     goToAccount,
     goToHome,
     goToLibrary,
-    goToOnboarding,
     goToPlayground,
     goToPricing,
     route,
@@ -55,7 +61,9 @@ export default function App() {
   const [isDevelopmentNoticeOpen, setIsDevelopmentNoticeOpen] = useState(
     features.developmentNotice,
   );
+  const [isIssueReportOpen, setIsIssueReportOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const lastNonAccountHashRef = useRef("#/");
   const {
     actions,
     access,
@@ -184,6 +192,16 @@ export default function App() {
     }
   }, [route.name]);
 
+  useEffect(() => {
+    if (route.name !== "account") {
+      lastNonAccountHashRef.current = window.location.hash || "#/";
+    }
+  }, [route]);
+
+  const handleCloseAccount = useCallback((): void => {
+    window.location.hash = lastNonAccountHashRef.current || "#/";
+  }, []);
+
   const renderToolbar = (leadingControl?: ReactNode) => (
     <div className="app-toolbar">
       <div className="app-toolbar__left">
@@ -196,7 +214,7 @@ export default function App() {
           <span className="app-toolbar__brand-mark" aria-hidden="true" />
           <span className="app-toolbar__brand-copy">
             <span className="eyebrow app-toolbar__brand-name">
-              System Design Lab
+              System Design Park
             </span>
             <span className="app-toolbar__brand-context">
               {toolbarContext}
@@ -222,6 +240,19 @@ export default function App() {
             </span>
           </span>
         ) : null}
+        <span className="app-toolbar__icon-control">
+          <button
+            aria-label="Report an issue"
+            className="app-toolbar__icon-button"
+            type="button"
+            onClick={() => setIsIssueReportOpen(true)}
+          >
+            <Bug aria-hidden="true" size={18} strokeWidth={2} />
+          </button>
+          <span className="app-toolbar__tooltip" role="tooltip">
+            Report issue
+          </span>
+        </span>
         {features.billing ? (
           <button
             className="secondary-action app-toolbar__tutorial"
@@ -230,16 +261,6 @@ export default function App() {
           >
             <CreditCard aria-hidden="true" size={15} strokeWidth={2} />
             Pricing
-          </button>
-        ) : null}
-        {isAuthenticated ? (
-          <button
-            className="secondary-action app-toolbar__tutorial"
-            type="button"
-            onClick={() => setIsTutorialOpen(true)}
-          >
-            <BookOpenCheck aria-hidden="true" size={15} strokeWidth={2} />
-            Guide
           </button>
         ) : null}
         {route.name !== "playground" && persistence.errorMessage ? (
@@ -256,6 +277,9 @@ export default function App() {
         <ThemeModeControl />
         <AuthSessionControl
           onOpenAccount={features.billing ? goToAccount : undefined}
+          onOpenGuide={
+            isAuthenticated ? () => setIsTutorialOpen(true) : undefined
+          }
           showGuestSignupPrompt={route.name === "home"}
         />
       </div>
@@ -310,6 +334,15 @@ export default function App() {
 
   const renderOverlays = () => (
     <>
+      <IssueReportDialog
+        isOpen={isIssueReportOpen}
+        problemId={route.name === "playground" ? route.problemId : null}
+        problemTitle={routeProblem?.title ?? null}
+        reporterEmail={isAuthenticated ? userEmail : null}
+        reporterName={isAuthenticated ? userName : null}
+        routeName={route.name}
+        onClose={() => setIsIssueReportOpen(false)}
+      />
       {renderTutorial()}
       {renderDevelopmentNotice()}
     </>
@@ -388,8 +421,6 @@ export default function App() {
 
         <PricingPage
           onOpenAccount={goToAccount}
-          onOpenLibrary={goToLibrary}
-          onOpenOnboarding={features.onboarding ? goToOnboarding : goToLibrary}
         />
         {renderOverlays()}
       </div>
@@ -416,7 +447,7 @@ export default function App() {
         {renderHeader()}
 
         <AccountBillingPage
-          onOpenOnboarding={goToOnboarding}
+          onClose={handleCloseAccount}
           onOpenPricing={goToPricing}
         />
         {renderOverlays()}

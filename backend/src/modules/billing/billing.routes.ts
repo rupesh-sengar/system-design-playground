@@ -96,7 +96,7 @@ const getCheckoutDescription = (
 ): string => {
   const planLabel = plan === "plus" ? "Plus" : "Pro";
 
-  return `System Design Lab ${planLabel} ${interval} subscription`;
+  return `System Design Park ${planLabel} ${interval} subscription`;
 };
 
 export const createBillingPlanRouter = ({
