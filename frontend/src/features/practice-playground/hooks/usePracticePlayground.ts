@@ -85,6 +85,7 @@ const createEmptyFullDesignReviewState =
     result: null,
     status: "idle",
   });
+const STAGE_COMPLETION_VALIDATION_SCORE = 6;
 
 const mergeCoachStateWithDraftFeedback = (
   coachState: PracticeCoachStageStateMap,
@@ -741,6 +742,31 @@ export const usePracticePlayground = (
     }));
   };
 
+  const markStageComplete = (stageId: PracticeStageId): void => {
+    updateSession((current) => {
+      const currentStageDraft = current.stages[stageId];
+
+      if (currentStageDraft.isComplete) {
+        return current;
+      }
+
+      const updatedAt = new Date().toISOString();
+
+      return {
+        ...current,
+        updatedAt,
+        stages: {
+          ...current.stages,
+          [stageId]: {
+            ...currentStageDraft,
+            isComplete: true,
+            updatedAt,
+          },
+        },
+      };
+    });
+  };
+
   const goToNextStage = (): void => {
     if (!session) {
       return;
@@ -1035,6 +1061,9 @@ export const usePracticePlayground = (
         validationStatus: "success",
       }));
       updateStageFeedback(stageId, { validationResult });
+      if (validationResult.score >= STAGE_COMPLETION_VALIDATION_SCORE) {
+        markStageComplete(stageId);
+      }
       toast.success("Structured draft feedback is ready.", {
         title: "Validation Complete",
       });

@@ -502,6 +502,7 @@ const deferredVariant = (variant: string): string => {
 
 const toKebabCase = (value: string): string =>
   value
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
@@ -699,6 +700,13 @@ type SolutionProfile = {
   variants: string[];
 };
 
+type CoreEntityModel = {
+  coreEntities: string[];
+  indexes: string[];
+  modelingDecisions: string[];
+  schemaCode: string;
+};
+
 const derivedDomainFields = (profile: SolutionProfile): string[] =>
   limit(
     [
@@ -745,6 +753,670 @@ type SlugReservation = {
   shortLinkId: string;
   reservedAt: ISODateTime;
 };`;
+
+const slackEntitySchemaCode = `type ISODateTime = string;
+
+type Workspace = {
+  workspaceId: string;
+  enterpriseId?: string;
+  name: string;
+  plan: "free" | "pro" | "enterprise";
+  region: string;
+  retentionPolicyId: string;
+  createdAt: ISODateTime;
+};
+
+type User = {
+  userId: string;
+  email: string;
+  displayName: string;
+  status: "active" | "deactivated";
+};
+
+type WorkspaceMember = {
+  workspaceId: string;
+  userId: string;
+  role: "owner" | "admin" | "member" | "guest";
+  joinedAt: ISODateTime;
+};
+
+type Channel = {
+  channelId: string;
+  workspaceId: string;
+  name: string;
+  visibility: "public" | "private" | "shared";
+  createdByUserId: string;
+  createdAt: ISODateTime;
+  archivedAt?: ISODateTime;
+};
+
+type ChannelMembership = {
+  channelId: string;
+  workspaceId: string;
+  userId: string;
+  role: "member" | "moderator";
+  lastReadMessageId?: string;
+  notificationPreference: "all" | "mentions" | "muted";
+};
+
+type Message = {
+  messageId: string;
+  workspaceId: string;
+  channelId: string;
+  senderUserId: string;
+  parentMessageId?: string;
+  threadId?: string;
+  body: string;
+  version: number;
+  createdAt: ISODateTime;
+  editedAt?: ISODateTime;
+  deletedAt?: ISODateTime;
+};
+
+type Thread = {
+  threadId: string;
+  workspaceId: string;
+  channelId: string;
+  rootMessageId: string;
+  replyCount: number;
+  lastReplyAt: ISODateTime;
+};
+
+type Reaction = {
+  messageId: string;
+  workspaceId: string;
+  userId: string;
+  emoji: string;
+  createdAt: ISODateTime;
+};
+
+type SearchDocument = {
+  documentId: string;
+  workspaceId: string;
+  channelId: string;
+  messageId: string;
+  visibilityAclVersion: number;
+  indexedAt: ISODateTime;
+};
+
+type IntegrationInstallation = {
+  installationId: string;
+  workspaceId: string;
+  appId: string;
+  installedByUserId: string;
+  scopes: string[];
+  status: "active" | "revoked";
+};`;
+
+const urlShortenerCoreEntityModel: CoreEntityModel = {
+  coreEntities: [
+    "ShortLink: source-of-truth row for longUrl, slug/customAlias, status, expiry, owner, and version.",
+    "SlugReservation: uniqueness guard for generated or custom slugs; written transactionally before ShortLink activation.",
+    "RedirectEvent: append-only click event emitted on each redirect for delayed analytics aggregation.",
+    "BlockedUrl/AbuseReview: records malicious URL decisions and prevents unsafe redirects before activation.",
+    "ClickAggregate: rollup by shortLinkId, day, country, referrer, or device class for analytics reads.",
+    "Relationships and cardinality: one owner has many ShortLinks, one ShortLink has one active SlugReservation, one ShortLink has many RedirectEvents, and ClickAggregate maps many events into one materialized projection bucket.",
+  ],
+  indexes: [
+    "Unique index on slug for redirect lookup and collision prevention.",
+    "Owner index on ownerId, createdAt for listing a user's links.",
+    "TTL/lifecycle index on expiresAt and status for expiry cleanup.",
+    "Append-only redirect event partition by shortLinkId or day for analytics aggregation.",
+    "Hot-link cache key by slug with short TTL and single-flight refresh on cache miss.",
+  ],
+  modelingDecisions: [
+    "Slug creation is strongly consistent: reserve slug, create ShortLink, and commit both in one transaction.",
+    "Redirects are read-heavy and cacheable; cache slug -> longUrl/status/expiresAt at edge or regional cache.",
+    "Click analytics are asynchronous; redirect latency does not wait for analytics writes.",
+    "Expired, disabled, or blocked links return a stable error page instead of redirecting.",
+    "Hot links are isolated with cache replication, request coalescing, and per-slug rate/abuse controls.",
+    "Normalize ShortLink and SlugReservation to protect uniqueness; denormalize redirect analytics into ClickAggregate materialized projections for hot reads.",
+    "Scope tradeoff: advanced billing, custom-domain management, and broad analytics exports stay out of scope for the initial version.",
+  ],
+  schemaCode: urlShortenerEntitySchemaCode,
+};
+
+const coreEntityNamesByProblemId: Record<string, string[]> = {
+  "ad-click-counter": [
+    "AdCampaign",
+    "ClickEvent",
+    "DeduplicationKey",
+    "AttributionWindow",
+    "ClickAggregate",
+    "LateEvent",
+  ],
+  "analytics-pipeline": [
+    "EventSchema",
+    "RawEvent",
+    "StreamPartition",
+    "ProcessingJob",
+    "WarehouseTable",
+    "DeduplicationKey",
+  ],
+  "api-gateway": [
+    "Route",
+    "UpstreamService",
+    "Consumer",
+    "AuthPolicy",
+    "RateLimitPolicy",
+    "RequestLog",
+  ],
+  "audit-log": [
+    "AuditEvent",
+    "Actor",
+    "Resource",
+    "TamperProofSegment",
+    "RetentionPolicy",
+    "ExportJob",
+  ],
+  autocomplete: [
+    "SearchTerm",
+    "PrefixIndexEntry",
+    "Suggestion",
+    "RankingSignal",
+    "TrendWindow",
+    "LocaleDictionary",
+  ],
+  "calendar-scheduler": [
+    "Calendar",
+    "CalendarEvent",
+    "RecurrenceRule",
+    "Attendee",
+    "AvailabilitySlot",
+    "Invitation",
+    "Reminder",
+  ],
+  cdn: [
+    "CacheObject",
+    "Origin",
+    "EdgeLocation",
+    "RoutingRule",
+    "PurgeRequest",
+    "CachePolicy",
+  ],
+  "checkout-service": [
+    "Cart",
+    "Order",
+    "PricingSnapshot",
+    "InventoryReservation",
+    "PaymentAttempt",
+    "CheckoutSession",
+  ],
+  "cloud-drive": [
+    "File",
+    "Folder",
+    "FileVersion",
+    "Chunk",
+    "SharePermission",
+    "SyncCursor",
+  ],
+  "collaborative-docs": [
+    "Document",
+    "DocumentVersion",
+    "Operation",
+    "CursorPresence",
+    "Comment",
+    "Permission",
+  ],
+  "collaborative-whiteboard": [
+    "Board",
+    "CanvasObject",
+    "Delta",
+    "ViewportPresence",
+    "BoardSnapshot",
+    "Permission",
+  ],
+  "config-service": [
+    "ConfigKey",
+    "ConfigVersion",
+    "Environment",
+    "ValidationRule",
+    "Rollout",
+    "Rollback",
+  ],
+  "digital-wallet": [
+    "Wallet",
+    "Account",
+    "LedgerEntry",
+    "BalanceSnapshot",
+    "Transfer",
+    "ReconciliationRun",
+  ],
+  "distributed-cache": [
+    "CacheKey",
+    "CacheEntry",
+    "Shard",
+    "Replica",
+    "EvictionPolicy",
+    "InvalidationEvent",
+  ],
+  "email-service": [
+    "Mailbox",
+    "Message",
+    "ConversationThread",
+    "Folder",
+    "Attachment",
+    "SpamVerdict",
+    "SearchDocument",
+  ],
+  "facebook-news-feed": [
+    "User",
+    "Post",
+    "FriendEdge",
+    "FeedItem",
+    "RankingFeature",
+    "AdCandidate",
+  ],
+  "feature-flags": [
+    "FeatureFlag",
+    "Environment",
+    "FlagVariant",
+    "TargetingRule",
+    "Segment",
+    "EvaluationEvent",
+    "ChangeSet",
+  ],
+  "file-storage": [
+    "File",
+    "Chunk",
+    "Replica",
+    "PlacementRecord",
+    "RepairJob",
+    "NamespaceEntry",
+  ],
+  "food-delivery": [
+    "Order",
+    "Restaurant",
+    "Courier",
+    "DispatchAssignment",
+    "DeliveryRoute",
+    "EtaSnapshot",
+  ],
+  "fraud-detection": [
+    "Transaction",
+    "FeatureVector",
+    "RiskScore",
+    "FraudRule",
+    "Case",
+    "FeedbackLabel",
+  ],
+  "geofence-alerts": [
+    "Geofence",
+    "DeviceLocation",
+    "GeofenceEvent",
+    "AlertSubscription",
+    "DeduplicationWindow",
+    "Notification",
+  ],
+  "identity-sso": [
+    "Tenant",
+    "IdentityProvider",
+    "User",
+    "FederatedIdentity",
+    "Session",
+    "Token",
+    "Policy",
+  ],
+  "image-hosting": [
+    "Image",
+    "ImageVariant",
+    "Album",
+    "MetadataRecord",
+    "ResizeJob",
+    "CdnInvalidation",
+  ],
+  "instagram-feed": [
+    "User",
+    "MediaPost",
+    "FollowEdge",
+    "FeedItem",
+    "RankingSignal",
+    "MediaAsset",
+  ],
+  "inventory-management": [
+    "Sku",
+    "Warehouse",
+    "InventoryLedger",
+    "Reservation",
+    "StockLevel",
+    "ReconciliationRun",
+  ],
+  jira: [
+    "Project",
+    "Issue",
+    "Workflow",
+    "StatusTransition",
+    "Board",
+    "Sprint",
+    "PermissionScheme",
+  ],
+  "job-scheduler": [
+    "JobDefinition",
+    "Schedule",
+    "Trigger",
+    "Execution",
+    "Lease",
+    "RetryPolicy",
+  ],
+  "kanban-board": [
+    "Board",
+    "Column",
+    "Card",
+    "CardOrder",
+    "ActivityEvent",
+    "Permission",
+  ],
+  "linkedin-feed": [
+    "Member",
+    "Post",
+    "ConnectionEdge",
+    "FeedItem",
+    "CompanyPage",
+    "RankingFeature",
+  ],
+  "live-streaming": [
+    "Stream",
+    "Broadcaster",
+    "IngestSession",
+    "ChatMessage",
+    "ViewerSession",
+    "Recording",
+  ],
+  "log-aggregation": [
+    "LogEvent",
+    "LogStream",
+    "IngestionBatch",
+    "IndexSegment",
+    "RetentionPolicy",
+    "QueryJob",
+  ],
+  "metrics-dashboard": [
+    "MetricSeries",
+    "MetricSample",
+    "LabelSet",
+    "Dashboard",
+    "AlertRule",
+    "DownsampledRollup",
+  ],
+  "model-serving": [
+    "Model",
+    "ModelVersion",
+    "Endpoint",
+    "Deployment",
+    "TrafficSplit",
+    "PredictionLog",
+  ],
+  netflix: [
+    "Title",
+    "VideoAsset",
+    "PlaybackSession",
+    "Profile",
+    "ViewingProgress",
+    "CdnManifest",
+  ],
+  "notification-service": [
+    "Notification",
+    "Template",
+    "RecipientPreference",
+    "DeliveryAttempt",
+    "ProviderEndpoint",
+    "SuppressionRule",
+  ],
+  "object-storage": [
+    "Bucket",
+    "Object",
+    "ObjectVersion",
+    "MultipartUpload",
+    "ReplicationRule",
+    "LifecyclePolicy",
+  ],
+  "order-tracking": [
+    "Order",
+    "Shipment",
+    "TrackingEvent",
+    "CarrierWebhook",
+    "TimelineEntry",
+    "NotificationSubscription",
+  ],
+  pastebin: [
+    "Paste",
+    "PasteVersion",
+    "Slug",
+    "VisibilityPolicy",
+    "ExpirationPolicy",
+    "AbuseReview",
+  ],
+  "payment-gateway": [
+    "Merchant",
+    "PaymentIntent",
+    "PaymentMethod",
+    "Charge",
+    "LedgerEntry",
+    "Refund",
+    "WebhookDelivery",
+    "IdempotencyRecord",
+  ],
+  "presence-service": [
+    "UserPresence",
+    "DeviceSession",
+    "Heartbeat",
+    "PresenceSubscription",
+    "VisibilityRule",
+    "FanoutCursor",
+  ],
+  "promotion-engine": [
+    "Promotion",
+    "Coupon",
+    "EligibilityRule",
+    "Redemption",
+    "PriorityPolicy",
+    "AbuseSignal",
+  ],
+  "pub-sub": [
+    "Topic",
+    "Partition",
+    "Producer",
+    "ConsumerGroup",
+    "ConsumerOffset",
+    "Message",
+  ],
+  "push-fanout": [
+    "PushMessage",
+    "DeviceToken",
+    "ProviderBatch",
+    "DeliveryAttempt",
+    "RetrySchedule",
+    "DeliveryReceipt",
+  ],
+  "rate-limiter": [
+    "RateLimitPolicy",
+    "LimitKey",
+    "CounterWindow",
+    "TokenBucket",
+    "QuotaDecision",
+    "OverrideRule",
+  ],
+  recommendations: [
+    "UserProfile",
+    "Item",
+    "CandidateSet",
+    "RankingFeature",
+    "Recommendation",
+    "FeedbackEvent",
+  ],
+  reddit: [
+    "Community",
+    "Post",
+    "Comment",
+    "Vote",
+    "ModerationAction",
+    "RankingScore",
+  ],
+  "ride-sharing": [
+    "Rider",
+    "Driver",
+    "Trip",
+    "LocationUpdate",
+    "MatchOffer",
+    "Payment",
+  ],
+  "route-planner": [
+    "MapSegment",
+    "RouteRequest",
+    "RoutePlan",
+    "TrafficObservation",
+    "MapVersion",
+    "Waypoint",
+  ],
+  "search-engine": [
+    "Document",
+    "CrawlRecord",
+    "IndexShard",
+    "PostingList",
+    "RankingSignal",
+    "QueryLog",
+  ],
+  "service-discovery": [
+    "Service",
+    "ServiceInstance",
+    "HealthCheck",
+    "Registration",
+    "WatchSubscription",
+    "EndpointSnapshot",
+  ],
+  "session-store": [
+    "Session",
+    "SessionToken",
+    "Device",
+    "RevocationRecord",
+    "RefreshToken",
+    "RegionReplica",
+  ],
+  spotify: [
+    "Track",
+    "Album",
+    "Playlist",
+    "PlaybackSession",
+    "AudioChunk",
+    "RecommendationSignal",
+  ],
+  "stories-service": [
+    "Story",
+    "MediaAsset",
+    "ViewerEdge",
+    "PrivacyRule",
+    "RankingSignal",
+    "ExpirationPolicy",
+  ],
+  "support-ticketing": [
+    "Ticket",
+    "Conversation",
+    "Customer",
+    "Agent",
+    "RoutingRule",
+    "SlaPolicy",
+    "Message",
+  ],
+  "task-queue": [
+    "Task",
+    "Queue",
+    "Lease",
+    "RetryPolicy",
+    "DeadLetterEntry",
+    "Worker",
+  ],
+  "time-series-database": [
+    "MetricSeries",
+    "Sample",
+    "Shard",
+    "Block",
+    "CompactionJob",
+    "RetentionPolicy",
+  ],
+  "twitter-timeline": [
+    "User",
+    "Tweet",
+    "FollowEdge",
+    "TimelineEntry",
+    "FanoutJob",
+    "RankingSignal",
+  ],
+  "vector-search": [
+    "VectorDocument",
+    "Embedding",
+    "IndexShard",
+    "MetadataFilter",
+    "SearchQuery",
+    "ReindexJob",
+  ],
+  "video-conferencing": [
+    "Meeting",
+    "Participant",
+    "MediaSession",
+    "SfuNode",
+    "Recording",
+    "ChatMessage",
+  ],
+  "web-crawler": [
+    "Url",
+    "CrawlFrontier",
+    "FetchAttempt",
+    "RobotsPolicy",
+    "ContentDocument",
+    "DeduplicationFingerprint",
+  ],
+  whatsapp: [
+    "User",
+    "Device",
+    "Conversation",
+    "ConversationMember",
+    "Message",
+    "DeliveryReceipt",
+    "EncryptionKeyBundle",
+    "MediaAttachment",
+  ],
+  youtube: [
+    "Video",
+    "Channel",
+    "Creator",
+    "TranscodeJob",
+    "PlaybackManifest",
+    "Comment",
+  ],
+};
+
+const slackCoreEntityModel: CoreEntityModel = {
+  coreEntities: [
+    "Workspace: tenant boundary for billing, region, retention policy, enterprise controls, and namespace isolation.",
+    "User and WorkspaceMember: User is the global identity; WorkspaceMember maps a user into one workspace with role, guest state, and membership lifecycle.",
+    "Channel and ChannelMembership: Channel belongs to a workspace; ChannelMembership maps many users to many channels and stores role, last-read cursor, and notification preference.",
+    "Message: immutable message identity plus editable versioned body, sender, channel, workspace, timestamps, and delete/tombstone state.",
+    "Thread: root message plus reply count and lastReplyAt; thread replies are Messages with parentMessageId/threadId, not a separate generic blob.",
+    "Reaction: per-message per-user emoji reaction, separated from Message so high-churn reactions do not rewrite message rows.",
+    "SearchDocument: denormalized, permission-filtered search projection keyed by workspaceId/channelId/messageId with ACL version and indexedAt.",
+    "IntegrationInstallation/Bot: installed app identity, scopes, status, installer, and target workspace for workflow bots and webhooks.",
+    "RetentionPolicy/AuditEvent: enterprise retention, legal hold, delete policy, and administrative audit trail.",
+  ],
+  indexes: [
+    "Workspace lookup by workspaceId and enterpriseId; WorkspaceMember by workspaceId,userId for auth and role checks.",
+    "Channel lookup by workspaceId,channelId and channel list by workspaceId,visibility,name.",
+    "ChannelMembership index by channelId,userId for permission checks and by userId for sidebar/channel listing.",
+    "Message primary access path by workspaceId,channelId,createdAt/messageId for history pagination and websocket replay.",
+    "Thread index by workspaceId,threadId and parentMessageId for reply pagination and unread thread badges.",
+    "SearchDocument full-text index partitioned by workspaceId with ACL filters from channel membership and retention policy.",
+    "Presence/session state is ephemeral and keyed by userId/deviceId/socketId outside the durable message model.",
+  ],
+  modelingDecisions: [
+    "Normalize Workspace, User, Channel, Membership, Message, Thread, Reaction, and IntegrationInstallation because they have different ownership, lifecycle, write rates, and access patterns.",
+    "Denormalize unread counters, recent channel list, thread summaries, and SearchDocument projections for hot reads; rebuild them from Message and AuditEvent streams.",
+    "Partition durable messages by workspaceId and channelId/time so one enterprise tenant or hot channel cannot overload the global message store.",
+    "Keep message edits/deletes versioned with tombstones so search, retention, audit, and clients can converge safely.",
+    "Permission checks always combine WorkspaceMember, ChannelMembership, retention policy, and integration scopes before returning history or search results.",
+    "Large file attachments live in object storage; Message stores metadata, attachment ids, and preview state only.",
+    "Scope tradeoff: shared channels, workflow bot execution, and legal hold workflows are modeled as extensions but not required for the first durable chat model.",
+  ],
+  schemaCode: slackEntitySchemaCode,
+};
 
 const buildEntitySchemaCode = (
   problem: ProblemContext,
@@ -804,6 +1476,183 @@ type ${resourceType}Event = {
   newVersion: number;
   occurredAt: ISODateTime;
 };`;
+};
+
+const splitEntitySubject = (value: string): string[] =>
+  unique(
+    value
+      .replace(/\b(read|write|create|update|delete|serve|support|manage)\b/gi, " ")
+      .split(/\s+(?:and|or)\s+|,|\/|&/gi)
+      .map((entry) =>
+        entry
+          .replace(
+            /\b(model|models|service|services|handling|support|management|semantics|controls|architecture)\b/gi,
+            " ",
+          )
+          .trim(),
+      )
+      .filter((entry) => entry.length >= 3),
+  );
+
+const deriveCoreEntityNames = (
+  problem: ProblemContext,
+  profile: SolutionProfile,
+  operationSubjects: string[],
+): string[] => {
+  const curatedEntityNames = coreEntityNamesByProblemId[problem.id];
+
+  if (curatedEntityNames) {
+    return curatedEntityNames;
+  }
+
+  const fromOperations = operationSubjects.flatMap(splitEntitySubject);
+  const fromFocus = profile.focus
+    .filter(
+      (focusArea) =>
+        !/\b(cache|caching|fan-out|latency|ranking|partition|shard|scale|architecture|pipeline)\b/i.test(
+          focusArea,
+        ),
+    )
+    .flatMap(splitEntitySubject);
+  const fromSummary = splitEntitySubject(problem.summary);
+  const candidates = unique([
+    ...fromOperations,
+    ...fromFocus,
+    ...fromSummary,
+    profile.primaryResource,
+  ])
+    .map((entityName) => toTitleCase(singularizePhrase(entityName)))
+    .filter(
+      (entityName) =>
+        entityName.length >= 3 &&
+        !/\b(Add|Handle|Support|Design|System|Low|High|Fast|Heavy|Rich|Core)\b/i.test(
+          entityName,
+        ),
+    );
+
+  return unique(candidates).slice(0, 6);
+};
+
+const buildGenericCoreEntitySchemaCode = (
+  entityNames: string[],
+  profile: SolutionProfile,
+): string => {
+  const domainTypes = entityNames
+    .map((entityName) => {
+      const typeName = toPascalIdentifier(entityName);
+      const idField = `${toCamelIdentifier(entityName)}Id`;
+
+      return `type ${typeName} = {
+  ${idField}: string;
+  tenantId: string;
+  ownerId?: string;
+  status: "pending" | "active" | "disabled" | "deleted";
+  version: number;
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+};`;
+    })
+    .join("\n\n");
+
+  return `type ISODateTime = string;
+
+type Tenant = {
+  tenantId: string;
+  plan: string;
+  region: string;
+  status: "active" | "suspended";
+};
+
+type Actor = {
+  actorId: string;
+  tenantId: string;
+  role: string;
+  status: "active" | "disabled";
+};
+
+${domainTypes}
+
+type ${toPascalIdentifier(profile.primaryResource)}Relationship = {
+  relationshipId: string;
+  tenantId: string;
+  fromEntityType: string;
+  fromEntityId: string;
+  toEntityType: string;
+  toEntityId: string;
+  relationshipType: "owns" | "member_of" | "references" | "subscribes_to";
+  cardinality: "one-to-one" | "one-to-many" | "many-to-many";
+  createdAt: ISODateTime;
+};
+
+type ${toPascalIdentifier(profile.primaryResource)}Event = {
+  eventId: string;
+  tenantId: string;
+  actorId: string;
+  entityType: string;
+  entityId: string;
+  eventType: string;
+  previousVersion: number;
+  newVersion: number;
+  occurredAt: ISODateTime;
+};`;
+};
+
+const buildGenericCoreEntityModel = (
+  problem: ProblemContext,
+  profile: SolutionProfile,
+  operationSubjects: string[],
+): CoreEntityModel => {
+  const entityNames = deriveCoreEntityNames(problem, profile, operationSubjects);
+  const [primaryEntity, secondaryEntity, tertiaryEntity] = entityNames;
+  const primaryName = primaryEntity ?? profile.primaryResourceTitle;
+  const secondaryName = secondaryEntity ?? `${profile.domainTitle} Projection`;
+  const tertiaryName = tertiaryEntity ?? `${profile.domainTitle} Event`;
+
+  return {
+    coreEntities: [
+      "Tenant/Actor: tenantId, actorId, role, plan/quota tier, permissions, region, status, createdAt, and updatedAt.",
+      ...entityNames.map(
+        (entityName) =>
+          `${entityName}: domain entity with its own id, tenantId, owner or parent id, status, version, lifecycle timestamps, and domain-specific fields for ${profile.focus.slice(0, 3).join(", ")}.`,
+      ),
+      `${primaryName}Relationship: explicit relationship/mapping table for ownership, membership, routing, visibility, subscriptions, assignments, or graph edges with cardinality and effective dates.`,
+      `${primaryName}Event: append-only event history for mutations, replay, debugging, projections, search indexing, analytics, and audit trails.`,
+      `${secondaryName}Projection: denormalized/materialized read model for the hottest query path so reads do not overload source-of-truth entities.`,
+    ],
+    indexes: [
+      `Primary lookup: ${primaryName} by tenantId plus stable resource identifier or external key.`,
+      `Relationship lookup: tenantId plus fromEntityId/toEntityId for ${primaryName} to ${secondaryName} joins and membership checks.`,
+      `Owner-scoped list: tenantId/ownerId plus status, createdAt, or updatedAt for paginated reads.`,
+      "Idempotency lookup: tenantId plus idempotencyKey to dedupe retried writes.",
+      `Event replay lookup: tenantId plus entityId/version or occurredAt for rebuilding ${tertiaryName} projections and debugging.`,
+      "Lifecycle/retention index: status, expiresAt, deletedAt, or archivedAt for cleanup, retention, and audit workflows.",
+    ],
+    modelingDecisions: [
+      `Normalize ${entityNames.slice(0, 4).join(", ")} because they have distinct ownership, lifecycle, access patterns, and write rates.`,
+      `Denormalize ${secondaryName}Projection, counters, search documents, feed/list views, or dashboard rows for hot reads and rebuild them from append-only events.`,
+      `Partition the hottest source table by tenantId plus resource/time because the stated scale is ${stripTerminalPunctuation(problem.scale)}.`,
+      `Large payloads, media, exports, model artifacts, or logs go to object storage; transactional rows keep metadata, references, status, and version.`,
+      `The model addresses ${profile.risks.join(", ")} with uniqueness constraints, version checks, relationship cardinality, audit events, and lifecycle policies.`,
+      `Scope tradeoff: ${profile.variants.join(", ")} stay as extension entities or projections unless the interview explicitly asks for them in v1.`,
+    ],
+    schemaCode: buildGenericCoreEntitySchemaCode(entityNames, profile),
+  };
+};
+
+const buildCoreEntityModel = (
+  problem: ProblemContext,
+  profile: SolutionProfile,
+  operationSubjects: string[],
+): CoreEntityModel => {
+  if (problem.id === "url-shortener") {
+    return urlShortenerCoreEntityModel;
+  }
+
+  if (problem.id === "slack") {
+    return slackCoreEntityModel;
+  }
+
+  return buildGenericCoreEntityModel(problem, profile, operationSubjects);
 };
 
 const buildSolutionProfile = (
@@ -1074,12 +1923,14 @@ const buildGenericApiSpecCode = (
 Headers:
 {
   "Authorization": "Bearer <access_token>",
+  "X-Tenant-Id": "tenant_123",
   "Idempotency-Key": "req_01J..."
 }
-Request:
+Request body schema:
 {
   "tenantId": "tenant_123",
   "actorId": "user_123",
+  "clientRequestId": "client_req_123",
   "payload": ${JSON.stringify(createPayload, null, 2).replace(/\n/g, "\n  ")}
 }
 Response 201:
@@ -1087,7 +1938,11 @@ Response 201:
   "${resourceIdField}": "${resourceIdValue}",
   "status": "active",
   "version": 1,
-  "createdAt": "2026-06-21T10:00:00Z"
+  "createdAt": "2026-06-21T10:00:00Z",
+  "links": {
+    "self": "/v1/${problem.id}/${profile.primaryResourcePath}/${resourceIdValue}",
+    "operations": "/v1/${problem.id}/operations/op_123"
+  }
 }
 
 ---
@@ -1096,20 +1951,25 @@ POST /v1/${problem.id}/${profile.primaryResourcePath}/{${resourceIdField}}/actio
 Headers:
 {
   "Authorization": "Bearer <access_token>",
+  "X-Tenant-Id": "tenant_123",
   "Idempotency-Key": "req_01K..."
 }
-Request:
+Request body schema:
 {
   "tenantId": "tenant_123",
   "actorId": "user_123",
+  "expectedVersion": 1,
+  "callbackUrl": "https://client.example.com/webhooks/${problem.id}",
   "payload": ${JSON.stringify(runtimePayload, null, 2).replace(/\n/g, "\n  ")}
 }
-Response 200:
+Response 202:
 {
   "${resourceIdField}": "${resourceIdValue}",
   "status": "accepted",
+  "operationId": "op_123",
+  "statusUrl": "/v1/${problem.id}/operations/op_123",
   "result": {
-    "decision": "allowed",
+    "decision": "pending",
     "reason": "${toCamelIdentifier(runtimeOperation.label)}"
   },
   "version": 2
@@ -1121,7 +1981,8 @@ GET /v1/${problem.id}/${profile.primaryResourcePath}/{${resourceIdField}}
 Query:
 {
   "tenantId": "tenant_123",
-  "include": "status,metadata"
+  "include": "status,metadata",
+  "readConsistency": "eventual|strong"
 }
 Response 200:
 {
@@ -1129,7 +1990,66 @@ Response 200:
   "tenantId": "tenant_123",
   "status": "active",
   "version": 2,
+  "etag": "W/\\"${resourceIdValue}:2\\"",
+  "freshness": "cache_hit|projection|source_read",
   "data": ${JSON.stringify(createPayload, null, 2).replace(/\n/g, "\n  ")}
+}
+
+---
+
+GET /v1/${problem.id}/${profile.primaryResourcePath}?cursor=&limit=50&status=&ownerId=&sort=updatedAt_desc
+Response 200:
+{
+  "items": [
+    {
+      "${resourceIdField}": "${resourceIdValue}",
+      "tenantId": "tenant_123",
+      "status": "active",
+      "version": 2
+    }
+  ],
+  "pagination": {
+    "cursor": "next_cursor",
+    "limit": 50,
+    "hasMore": true
+  },
+  "filters": {
+    "status": "active",
+    "ownerId": "user_123"
+  }
+}
+
+---
+
+POST /v1/${problem.id}/${profile.primaryResourcePath}:batchGet
+Request body schema:
+{
+  "tenantId": "tenant_123",
+  "${resourceIdField}s": ["${resourceIdValue}"],
+  "fields": ["status", "version", "metadata"]
+}
+Response 207:
+{
+  "results": [
+    {
+      "${resourceIdField}": "${resourceIdValue}",
+      "statusCode": 200,
+      "body": { "status": "active", "version": 2 }
+    }
+  ]
+}
+
+---
+
+GET /v1/${problem.id}/operations/{operationId}
+Response 200:
+{
+  "operationId": "op_123",
+  "${resourceIdField}": "${resourceIdValue}",
+  "status": "pending|succeeded|failed",
+  "retryable": true,
+  "lastError": null,
+  "updatedAt": "2026-06-21T10:00:03Z"
 }`;
 };
 
@@ -1137,13 +2057,17 @@ const urlShortenerApiSpecCode = `POST /v1/short-links
 Headers:
 {
   "Authorization": "Bearer <access_token>",
+  "X-Tenant-Id": "tenant_123",
   "Idempotency-Key": "req_01J..."
 }
-Request:
+Request body schema:
 {
+  "tenantId": "tenant_123",
+  "ownerId": "user_123",
   "longUrl": "https://example.com/articles/system-design?ref=interview",
   "customAlias": "summer-sale",
-  "expiresAt": "2026-07-21T10:00:00Z"
+  "expiresAt": "2026-07-21T10:00:00Z",
+  "callbackUrl": "https://client.example.com/webhooks/short-links"
 }
 Response 201:
 {
@@ -1157,6 +2081,10 @@ Response 201:
 ---
 
 GET /{slug}
+Query:
+{
+  "preview": false
+}
 Response 302:
 Headers:
 {
@@ -1175,15 +2103,52 @@ Side effect:
 
 ---
 
-GET /v1/short-links/{shortLinkId}/analytics?from=&to=&groupBy=day
+GET /v1/short-links?cursor=&limit=50&ownerId=&status=&sort=createdAt_desc
+Response 200:
+{
+  "items": [
+    {
+      "shortLinkId": "sl_123",
+      "slug": "summer-sale",
+      "shortUrl": "https://sho.rt/summer-sale",
+      "status": "active",
+      "version": 1
+    }
+  ],
+  "pagination": {
+    "cursor": "next_cursor",
+    "limit": 50,
+    "hasMore": true
+  }
+}
+
+---
+
+GET /v1/short-links/{shortLinkId}/analytics?from=&to=&groupBy=day&cursor=&limit=100
 Response 200:
 {
   "shortLinkId": "sl_123",
   "totalClicks": 18420,
   "uniqueVisitorsApprox": 12600,
+  "pagination": {
+    "cursor": "next_cursor",
+    "limit": 100
+  },
   "buckets": [
     { "day": "2026-06-21", "clicks": 932 }
   ]
+}
+
+---
+
+GET /v1/operations/{operationId}
+Response 200:
+{
+  "operationId": "op_123",
+  "shortLinkId": "sl_123",
+  "status": "pending|succeeded|failed",
+  "retryable": true,
+  "lastError": null
 }`;
 
 const buildApiSpecCode = (
@@ -1195,6 +2160,67 @@ const buildApiSpecCode = (
   }
 
   return buildGenericApiSpecCode(problem, profile);
+};
+
+const buildApiErrorContractCode = (): string => `Common error response body:
+{
+  "error": {
+    "code": "validation_error|unauthorized|forbidden|not_found|conflict|rate_limited|timeout|dependency_unavailable",
+    "message": "Human-readable error",
+    "retryable": false,
+    "fieldErrors": {
+      "payload.exampleField": "required"
+    },
+    "requestId": "req_123"
+  }
+}
+
+Status code semantics:
+- 400 validation_error: request body, path, query, or schema field is invalid.
+- 401 unauthorized: missing or invalid auth token.
+- 403 forbidden: authenticated actor lacks authorization for tenant scope.
+- 404 not_found: resource identifier or path does not exist in this tenant.
+- 409 conflict: version mismatch, duplicate idempotency key with different payload, or uniqueness conflict.
+- 422 unprocessable_entity: contract is valid but domain validation failed.
+- 429 rate_limited: quota exceeded; include Retry-After and rate limit reset headers.
+- 503 timeout or dependency_unavailable: retry with backoff when retryable is true.`;
+
+const buildApiAsyncContractCode = (
+  problem: ProblemContext,
+  profile: SolutionProfile,
+): string => {
+  const resourceIdField = `${toCamelIdentifier(profile.primaryResource)}Id`;
+  const resourceIdValue = `${toCamelIdentifier(profile.primaryResource)}_123`;
+  const eventSubject = toKebabCase(
+    requirementSubject(profile.primaryOperation.label) || profile.primaryResource,
+  );
+  const eventName = `${problem.id}.${eventSubject}.${eventActionForOperation(
+    profile.primaryOperation.label,
+  )}`.replace(/-/g, ".");
+
+  return `Async event and callback contract:
+{
+  "eventId": "evt_123",
+  "eventType": "${eventName}",
+  "tenantId": "tenant_123",
+  "actorId": "user_123",
+  "${resourceIdField}": "${resourceIdValue}",
+  "operationId": "op_123",
+  "idempotencyKey": "req_01J...",
+  "previousVersion": 1,
+  "newVersion": 2,
+  "status": "succeeded|failed",
+  "occurredAt": "2026-06-21T10:00:05Z",
+  "payload": {
+    "domain": "${profile.domain}",
+    "resource": "${profile.primaryResource}"
+  }
+}
+
+Delivery:
+- Publish the event to the queue or stream after the source-of-truth transaction commits.
+- POST the same payload to callbackUrl/webhook subscribers with HMAC signature headers.
+- Consumers dedupe by eventId and ${resourceIdField}; callbacks retry with exponential backoff and dead-letter after bounded attempts.`;
 };
 
 const buildEventSchemaCode = (
@@ -1582,64 +2608,16 @@ const buildCoreEntitiesEditorial = (
     profile.operations.map((operation) => requirementSubject(operation.label)),
     5,
   );
-  const coreEntities =
-    problem.id === "url-shortener"
-      ? [
-          "ShortLink: source-of-truth row for longUrl, slug/customAlias, status, expiry, owner, and version.",
-          "SlugReservation: uniqueness guard for generated or custom slugs; written transactionally before ShortLink activation.",
-          "RedirectEvent: append-only click event emitted on each redirect for delayed analytics aggregation.",
-          "BlockedUrl/AbuseReview: records malicious URL decisions and prevents unsafe redirects before activation.",
-          "ClickAggregate: rollup by shortLinkId, day, country, referrer, or device class for analytics reads.",
-        ]
-      : [
-          `Tenant/User/Actor: id, plan or quota tier, permissions, preferences, region, status, createdAt, and updatedAt.`,
-          `${profile.primaryResourceTitle}: id, ownerId, tenantId, status, version, createdAt, updatedAt, expiresAt when needed, and domain fields for ${operationSubjects
-            .slice(0, 3)
-            .join(", ")}.`,
-          `${profile.primaryResourceTitle}Operation: requestId, idempotencyKey, actorId, target ${profile.primaryResource} id, operation type, payload hash, status, retry count, and error code.`,
-          `${profile.primaryResourceTitle}Relationship: captures membership, ownership, routing, visibility, assignment, subscription, or graph edges with cardinality and effective dates.`,
-          `${profile.primaryResourceTitle}Event: append-only eventId, resourceId, actorId, event type, previousVersion, newVersion, occurredAt, and replay metadata.`,
-        ];
-  const indexes =
-    problem.id === "url-shortener"
-      ? [
-          "Unique index on slug for redirect lookup and collision prevention.",
-          "Owner index on ownerId, createdAt for listing a user's links.",
-          "TTL/lifecycle index on expiresAt and status for expiry cleanup.",
-          "Append-only redirect event partition by shortLinkId or day for analytics aggregation.",
-          "Hot-link cache key by slug with short TTL and single-flight refresh on cache miss.",
-        ]
-      : [
-          `Primary lookup: ${profile.primaryResource} by id or external key for ${profile.readOperation.label}.`,
-          `Owner-scoped list: tenantId/ownerId plus status or createdAt for paginated reads of ${profile.primaryResourcePlural}.`,
-          "Idempotency lookup: tenantId plus idempotencyKey to dedupe retried writes.",
-          "Event replay lookup: resourceId plus version or occurredAt for rebuilding read models and debugging.",
-          "TTL or lifecycle index: expiresAt/status for cleanup, revocation, archival, or delayed workflows.",
-        ];
-  const modelingDecisions =
-    problem.id === "url-shortener"
-      ? [
-          "Slug creation is strongly consistent: reserve slug, create ShortLink, and commit both in one transaction.",
-          "Redirects are read-heavy and cacheable; cache slug -> longUrl/status/expiresAt at edge or regional cache.",
-          "Click analytics are asynchronous; redirect latency does not wait for analytics writes.",
-          "Expired, disabled, or blocked links return a stable error page instead of redirecting.",
-          "Hot links are isolated with cache replication, request coalescing, and per-slug rate/abuse controls.",
-        ]
-      : [
-          `The source of truth is normalized enough to protect ${profile.primaryResourcePlural}, while hot reads use denormalized projections keyed by tenant/user/resource.`,
-          `Partition the hottest table by ${profile.focus.join(", ")} or by tenant/resource/time, because the stated scale is ${stripTerminalPunctuation(problem.scale)}.`,
-          `Large payloads, media, model artifacts, exports, or logs go to object storage; transactional tables keep metadata and references.`,
-          `The model prevents ${profile.risks.join(", ")} through uniqueness constraints, version checks, status transitions, TTLs, and audit events.`,
-        ];
+  const entityModel = buildCoreEntityModel(problem, profile, operationSubjects);
 
   return renderSampleSolution(problem, "core-entities", [
     renderParagraph(
-      `The data model centers on ${profile.primaryResourcePlural}, with explicit ownership, lifecycle state, and event history.`,
+      `The data model separates source-of-truth entities, relationship mappings, append-only events, and read projections instead of collapsing the domain into one generic record.`,
     ),
-    renderCodeBlock(buildEntitySchemaCode(problem, profile)),
-    renderSection("Core entities", coreEntities),
-    renderSection("Indexes and access patterns", indexes),
-    renderSection("Modeling decisions", modelingDecisions),
+    renderCodeBlock(entityModel.schemaCode),
+    renderSection("Core entities", entityModel.coreEntities),
+    renderSection("Indexes and access patterns", entityModel.indexes),
+    renderSection("Modeling decisions", entityModel.modelingDecisions),
   ]);
 };
 
@@ -1655,19 +2633,22 @@ const buildApiEditorial = (
   const apiContractSummaries =
     problem.id === "url-shortener"
       ? [
-          "POST /v1/short-links: create a short link from a long URL with optional custom alias and expiry.",
-          "GET /{slug}: resolve the slug and return a 302 redirect with cache headers.",
-          "GET /v1/short-links/{shortLinkId}/analytics?from=&to=&groupBy=day: return aggregated click analytics.",
+          "POST /v1/short-links: create a short link using tenantId, ownerId, longUrl, optional customAlias, expiry, Authorization, X-Tenant-Id, and Idempotency-Key.",
+          "GET /{slug}: resolve the public slug path to a 302 redirect, enforce abuse/expiry validation, and emit a redirectServed event asynchronously.",
+          "GET /v1/short-links?cursor=&limit=&ownerId=&status=: list links with cursor pagination, filters, stable sorting, tenant scope, and bounded limits.",
+          "GET /v1/short-links/{shortLinkId}/analytics?from=&to=&groupBy=&cursor=&limit=: read analytics using filters, pagination, freshness metadata, and versioned response fields.",
+          "GET /v1/operations/{operationId}: poll asynchronous creation, analytics rebuild, abuse scan, or callback delivery status.",
         ]
       : [
-          `POST /v1/${problem.id}/${profile.primaryResourcePath}: create or configure ${profile.primaryResourcePlural}.`,
+          `POST /v1/${problem.id}/${profile.primaryResourcePath}: create or configure ${profile.primaryResourcePlural} with tenantId, actorId, request body schema, Authorization, X-Tenant-Id, and Idempotency-Key.`,
           `POST /v1/${problem.id}/${profile.primaryResourcePath}/{${toCamelIdentifier(
             profile.primaryResource,
-          )}Id}/actions/${runtimeAction}: execute ${lowerFirst(runtimeOperation.label)}.`,
+          )}Id}/actions/${runtimeAction}: execute ${lowerFirst(runtimeOperation.label)} with expectedVersion, callbackUrl, async status, and retry-safe duplicate handling.`,
           `GET /v1/${problem.id}/${profile.primaryResourcePath}/{${toCamelIdentifier(
             profile.primaryResource,
-          )}Id}: read current state, metadata, and version.`,
-          `GET /v1/${problem.id}/${profile.primaryResourcePath}?cursor=&limit=&status=&ownerId=: paginated list endpoint for operational views and user history.`,
+          )}Id}: read current state, metadata, freshness, etag, ownership scope, and version.`,
+          `GET /v1/${problem.id}/${profile.primaryResourcePath}?cursor=&limit=&status=&ownerId=&sort=: paginated list endpoint with filters, cursor, page limit, stable sorting, and tenant scope.`,
+          `POST /v1/${problem.id}/${profile.primaryResourcePath}:batchGet and GET /v1/${problem.id}/operations/{operationId}: bounded batch reads plus async status polling for long-running work.`,
         ];
 
   return renderSampleSolution(problem, "api-interface", [
@@ -1676,11 +2657,17 @@ const buildApiEditorial = (
     ),
     renderCodeBlock(buildApiSpecCode(problem, profile)),
     renderSection("External API contract", apiContractSummaries),
-    renderSection("Request and response shape", [
-      "Requests include actorId or authenticated subject, tenantId, idempotencyKey for mutations, domain payload, client request timestamp, and optional conditional version.",
-      "Responses include resource id, status, version, createdAt/updatedAt, user-visible state, and links to status or retry endpoints when work is asynchronous.",
-      "Errors distinguish validation, unauthorized, forbidden, not found, conflict/version mismatch, rate limited, dependency timeout, and retryable internal failure.",
-      "High-volume reads use cursor pagination, stable sorting, bounded filters, and freshness metadata.",
+    renderSection("Request and response contracts", [
+      "Every request body has a concrete schema with tenantId, actorId or authenticated subject, domain payload fields, clientRequestId, path resource identifiers, and validation rules for required fields.",
+      "Every response body returns the resource id, tenant scope, status, version, createdAt/updatedAt where relevant, freshness or etag metadata, and links to self, operation status, retry, or callback resources.",
+      "Path identifiers and body identifiers are intentionally separate: the path selects the resource boundary, while body fields carry actor, tenant, expectedVersion, filters, and operation-specific payload.",
+      "Versioning uses /v1 paths, additive fields, stable enum values, deprecation windows, and backward compatible response changes.",
+    ]),
+    renderSection("Pagination, filtering, and batching", [
+      "High-volume reads use cursor pagination, page limit caps, stable sort keys, bounded filters, and explicit hasMore/next cursor metadata.",
+      "List endpoints filter by tenantId, ownerId, status, time range, and domain-specific fields without allowing unbounded scans.",
+      "Batch reads use a capped :batchGet endpoint with partial success status codes so clients do not fan out hundreds of single-resource requests.",
+      "The contract names freshness on reads so clients understand when they are seeing cache, projection, or source data.",
     ]),
     renderSection("Internal events", [
       ...profile.operations
@@ -1688,11 +2675,22 @@ const buildApiEditorial = (
         .map((operation) => eventContract(problem, profile, operation)),
       "Consumers must be idempotent and use the event ID/resource version as the dedupe key.",
     ]),
+    renderCodeBlock(buildApiAsyncContractCode(problem, profile)),
     renderCodeBlock(buildEventSchemaCode(problem, profile)),
+    renderSection("Auth, validation, versioning, and errors", [
+      "Authentication uses Authorization headers; authorization checks tenant scope, owner scope, role, and quota before the domain service changes state.",
+      "Validation errors identify the invalid request body field, query parameter, or path identifier so clients can fix bad contracts.",
+      "Rate limits use quota buckets per tenant/actor/resource and return 429 with Retry-After, remaining quota, and reset headers.",
+      "Error status codes distinguish 400 validation_error, 401 unauthorized, 403 forbidden, 404 not_found, 409 conflict or duplicate request, 422 domain validation, 429 rate_limited, 503 timeout or dependency_unavailable.",
+      "Retryable errors are explicit; mutating APIs require idempotency keys so duplicate retries return the original operation result instead of creating duplicate work.",
+    ]),
+    renderCodeBlock(buildApiErrorContractCode()),
     renderSection("Contract guarantees", [
       "Authentication, authorization, quota checks, validation, and idempotency happen before committing a mutation.",
       "Slow fan-out, provider calls, indexing, ranking, notifications, or analytics return accepted/status and complete asynchronously.",
+      "Async operations return an operationId and statusUrl; completion is delivered by event stream, callback, or webhook and can be safely retried.",
       `The contract handles ${profile.risks.join(", ")} without exposing storage topology to clients.`,
+      "Scope tradeoff: the initial version keeps advanced admin workflows, broad analytics exports, and cross-product automation out of scope unless they are central to the prompt.",
     ]),
   ]);
 };

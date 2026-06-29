@@ -543,7 +543,7 @@ export const PracticeAiReviewPanel = ({
                     Draft changed since request
                   </span>
                 ) : null}
-                {showRecoveryActions ? (
+                {/*{showRecoveryActions ? (
                   <button
                     aria-label={
                       activeStageState.validationStatus === "loading"
@@ -562,7 +562,7 @@ export const PracticeAiReviewPanel = ({
                   >
                     <RotateCcw aria-hidden="true" size={14} strokeWidth={2} />
                   </button>
-                ) : null}
+                ) : null}*/}
               </div>
             </div>
 
