@@ -32,6 +32,8 @@ export interface BillingAccountState {
   usage: {
     monthlyAi: {
       limit: number;
+      periodEnd: string | null;
+      periodStart: string;
       remaining: number;
       used: number;
     };
@@ -50,10 +52,18 @@ const FREE_STARTER_PROBLEM_IDS = new Set([
   "audit-log",
 ]);
 
-const getMonthStart = (): Date => {
+interface AiUsagePeriod {
+  end: Date | null;
+  start: Date;
+}
+
+const getCalendarMonthUsagePeriod = (): AiUsagePeriod => {
   const now = new Date();
 
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  return {
+    end: null,
+    start: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
+  };
 };
 
 const resolveActivePlanTier = (
@@ -79,6 +89,38 @@ const getMonthlyAiLimit = (
   return (
     billingAccount.monthlyAiQuotaOverride ?? config.usageQuotas.monthlyAi[tier]
   );
+};
+
+const parseOptionalDate = (value: string | null): Date | null => {
+  if (!value) {
+    return null;
+  }
+
+  const parsedDate = new Date(value);
+
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+};
+
+const resolveAiUsagePeriod = (
+  tier: PlanTier,
+  subscription: UserSubscriptionRecord | null,
+): AiUsagePeriod => {
+  if (tier === "free") {
+    return getCalendarMonthUsagePeriod();
+  }
+
+  const subscriptionPeriodStart = parseOptionalDate(
+    subscription?.currentPeriodStart ?? null,
+  );
+
+  if (!subscriptionPeriodStart) {
+    return getCalendarMonthUsagePeriod();
+  }
+
+  return {
+    end: parseOptionalDate(subscription?.currentPeriodEnd ?? null),
+    start: subscriptionPeriodStart,
+  };
 };
 
 export class BillingAccessService {
@@ -124,10 +166,12 @@ export class BillingAccessService {
       billingAccount,
       tier,
     );
-    const monthlyAiUsed = await this.usageEventRepository.countMonthlyAiUsage(
+    const aiUsagePeriod = resolveAiUsagePeriod(tier, subscription);
+    const monthlyAiUsed = await this.usageEventRepository.countAiUsage({
+      periodEnd: aiUsagePeriod.end,
+      periodStart: aiUsagePeriod.start,
       userId,
-      getMonthStart(),
-    );
+    });
     const isPaid = tier !== "free";
 
     return {
@@ -148,6 +192,8 @@ export class BillingAccessService {
       usage: {
         monthlyAi: {
           limit: monthlyAiLimit,
+          periodEnd: aiUsagePeriod.end?.toISOString() ?? null,
+          periodStart: aiUsagePeriod.start.toISOString(),
           remaining: Math.max(0, monthlyAiLimit - monthlyAiUsed),
           used: monthlyAiUsed,
         },

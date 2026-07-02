@@ -182,7 +182,7 @@ export default function App() {
           ? "Pricing"
           : route.name === "onboarding" && features.onboarding
             ? "Setup"
-            : route.name === "account" && features.billing
+            : route.name === "account"
               ? "Account"
               : "Problem Library";
 
@@ -276,7 +276,7 @@ export default function App() {
         ) : null}
         <ThemeModeControl />
         <AuthSessionControl
-          onOpenAccount={features.billing ? goToAccount : undefined}
+          onOpenAccount={goToAccount}
           onOpenGuide={
             isAuthenticated ? () => setIsTutorialOpen(true) : undefined
           }
@@ -441,14 +441,15 @@ export default function App() {
     );
   }
 
-  if (route.name === "account" && features.billing) {
+  if (route.name === "account") {
     return (
       <div className="shell">
         {renderHeader()}
 
         <AccountBillingPage
+          isBillingEnabled={features.billing}
           onClose={handleCloseAccount}
-          onOpenPricing={goToPricing}
+          onOpenPricing={features.billing ? goToPricing : goToLibrary}
         />
         {renderOverlays()}
       </div>

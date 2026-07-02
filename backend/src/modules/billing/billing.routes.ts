@@ -252,7 +252,10 @@ export const createRazorpayWebhookRouter = ({
         request.header("x-razorpay-signature"),
       );
 
-      await razorpayWebhookService.handleEvent(event);
+      await razorpayWebhookService.handleEvent({
+        event,
+        eventId: request.header("x-razorpay-event-id") ?? null,
+      });
 
       response.json({
         received: true,

@@ -8,6 +8,7 @@ import type {
   BillingAccountRepository,
   BillingCustomerRepository,
   PlanTier,
+  RazorpayWebhookEventRepository,
   SubscriptionStatus,
   UserSubscriptionRepository,
 } from "./billing.repository.js";
@@ -55,6 +56,11 @@ interface RazorpaySubscriptionObject {
   notes?: unknown;
   plan_id?: unknown;
   status?: unknown;
+}
+
+interface RazorpayWebhookHandlingInput {
+  event: unknown;
+  eventId: string | null;
 }
 
 const allowedSubscriptionStatuses = new Set<SubscriptionStatus>([
@@ -321,18 +327,43 @@ export class RazorpayWebhookService {
     private readonly config: AppConfig,
     private readonly billingAccountRepository: BillingAccountRepository,
     private readonly billingCustomerRepository: BillingCustomerRepository,
+    private readonly webhookEventRepository: RazorpayWebhookEventRepository,
     private readonly subscriptionRepository: UserSubscriptionRepository,
   ) {}
 
-  async handleEvent(rawEvent: unknown): Promise<void> {
-    const event = rawEvent as RazorpayWebhookEvent;
+  async handleEvent(input: RazorpayWebhookHandlingInput): Promise<void> {
+    const event = input.event as RazorpayWebhookEvent;
     const eventName = readString(event.event);
+    const eventRecord = await this.webhookEventRepository.claimForProcessing({
+      eventId: readString(input.eventId),
+      eventName: eventName ?? "unknown",
+      payload: input.event,
+    });
 
-    if (!eventName?.startsWith("subscription.")) {
+    if (!eventRecord.shouldProcess || !eventRecord.eventRecordId) {
       return;
     }
 
-    await this.handleSubscriptionChange(event.payload?.subscription?.entity);
+    try {
+      const didSyncSubscription = await this.handleSubscriptionChange(
+        event.payload?.subscription?.entity,
+      );
+
+      if (!didSyncSubscription) {
+        await this.webhookEventRepository.markIgnored(
+          eventRecord.eventRecordId,
+        );
+        return;
+      }
+
+      await this.webhookEventRepository.markProcessed(eventRecord.eventRecordId);
+    } catch (error) {
+      await this.webhookEventRepository.markFailed(
+        eventRecord.eventRecordId,
+        error,
+      );
+      throw error;
+    }
   }
 
   async syncSubscriptionForUser(
@@ -383,13 +414,15 @@ export class RazorpayWebhookService {
     return "plus";
   }
 
-  private async handleSubscriptionChange(rawSubscription: unknown): Promise<void> {
+  private async handleSubscriptionChange(
+    rawSubscription: unknown,
+  ): Promise<boolean> {
     const subscription = toSubscriptionObject(rawSubscription);
     const razorpayCustomerId = readString(subscription.customer_id);
     const razorpaySubscriptionId = readString(subscription.id);
 
     if (!razorpaySubscriptionId) {
-      return;
+      return false;
     }
 
     const userId =
@@ -404,9 +437,11 @@ export class RazorpayWebhookService {
         : null);
 
     if (!userId) {
-      return;
+      return false;
     }
 
     await this.syncSubscriptionForUser(userId, subscription);
+
+    return true;
   }
 }

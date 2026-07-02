@@ -6,6 +6,7 @@ import {
   BillingAccountRepository,
   BillingCustomerRepository,
   OnboardingProfileRepository,
+  RazorpayWebhookEventRepository,
   UsageEventRepository,
   UserSubscriptionRepository,
 } from "./modules/billing/billing.repository.js";
@@ -70,6 +71,9 @@ export const buildApp = (
   const billingAccountRepository = new BillingAccountRepository(database);
   const billingCustomerRepository = new BillingCustomerRepository(database);
   const onboardingProfileRepository = new OnboardingProfileRepository(database);
+  const razorpayWebhookEventRepository = new RazorpayWebhookEventRepository(
+    database,
+  );
   const issueReportRepository = new IssueReportRepository(database);
   const problemProgressRepository = new ProblemProgressRepository(database);
   const practiceSessionRepository = new PracticeSessionRepository(database);
@@ -88,6 +92,7 @@ export const buildApp = (
     config,
     billingAccountRepository,
     billingCustomerRepository,
+    razorpayWebhookEventRepository,
     userSubscriptionRepository,
   );
 

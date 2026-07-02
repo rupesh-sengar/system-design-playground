@@ -56,6 +56,8 @@ export interface BillingAccount {
   usage: {
     monthlyAi: {
       limit: number;
+      periodEnd: string | null;
+      periodStart: string;
       remaining: number;
       used: number;
     };

@@ -16,6 +16,11 @@ export type SubscriptionStatus =
   | "resumed";
 export type BillingPlanSource = "admin" | "default" | "subscription";
 export type UsageEventType = "ai_hint" | "ai_validation";
+export type RazorpayWebhookProcessingStatus =
+  | "processing"
+  | "processed"
+  | "ignored"
+  | "failed";
 
 type IsoDateValue = Date | string | null;
 
@@ -75,6 +80,11 @@ export interface OnboardingProfileRecord {
   interviewTimeline: string | null;
   targetRole: string | null;
   updatedAt: string;
+}
+
+export interface RazorpayWebhookProcessingClaim {
+  eventRecordId: string | null;
+  shouldProcess: boolean;
 }
 
 const mapBillingCustomerRecord = (
@@ -146,6 +156,137 @@ const mapOnboardingProfileRecord = (
   targetRole: row.target_role,
   updatedAt: toIsoString(row.updated_at),
 });
+
+const formatWebhookProcessingError = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  return "Webhook processing failed.";
+};
+
+export class RazorpayWebhookEventRepository {
+  constructor(private readonly database: PostgresDatabase) {}
+
+  async claimForProcessing(input: {
+    eventId: string | null;
+    eventName: string;
+    payload: unknown;
+  }): Promise<RazorpayWebhookProcessingClaim> {
+    const payload = JSON.stringify(input.payload ?? {});
+
+    if (!input.eventId) {
+      const result = await this.database.query<{ id: string }>(
+        `
+          insert into razorpay_webhook_events (
+            event_name,
+            payload,
+            processing_status
+          )
+          values ($1, $2::jsonb, 'processing')
+          returning id
+        `,
+        [input.eventName, payload],
+      );
+
+      return {
+        eventRecordId: result.rows[0]?.id ?? null,
+        shouldProcess: true,
+      };
+    }
+
+    const result = await this.database.query<{ id: string }>(
+      `
+        with attempted_insert as (
+          insert into razorpay_webhook_events (
+            razorpay_event_id,
+            event_name,
+            payload,
+            processing_status
+          )
+          values ($1, $2, $3::jsonb, 'processing')
+          on conflict (razorpay_event_id)
+          do nothing
+          returning id
+        ),
+        attempted_retry as (
+          update razorpay_webhook_events
+          set
+            event_name = $2,
+            payload = $3::jsonb,
+            processing_status = 'processing',
+            error_message = null,
+            processed_at = null,
+            updated_at = now()
+          where razorpay_event_id = $1
+            and (
+              processing_status = 'failed'
+              or (
+                processing_status = 'processing'
+                and updated_at < now() - interval '10 minutes'
+              )
+            )
+          returning id
+        )
+        select id from attempted_insert
+        union all
+        select id from attempted_retry
+        limit 1
+      `,
+      [input.eventId, input.eventName, payload],
+    );
+
+    return {
+      eventRecordId: result.rows[0]?.id ?? null,
+      shouldProcess: Boolean(result.rows[0]),
+    };
+  }
+
+  async markIgnored(eventRecordId: string): Promise<void> {
+    await this.markFinished(eventRecordId, "ignored");
+  }
+
+  async markProcessed(eventRecordId: string): Promise<void> {
+    await this.markFinished(eventRecordId, "processed");
+  }
+
+  async markFailed(eventRecordId: string, error: unknown): Promise<void> {
+    await this.database.query(
+      `
+        update razorpay_webhook_events
+        set
+          processing_status = 'failed',
+          error_message = $2,
+          processed_at = null,
+          updated_at = now()
+        where id = $1
+      `,
+      [eventRecordId, formatWebhookProcessingError(error)],
+    );
+  }
+
+  private async markFinished(
+    eventRecordId: string,
+    status: Extract<RazorpayWebhookProcessingStatus, "processed" | "ignored">,
+  ): Promise<void> {
+    await this.database.query(
+      `
+        update razorpay_webhook_events
+        set
+          processing_status = $2,
+          error_message = null,
+          processed_at = now(),
+          updated_at = now()
+        where id = $1
+      `,
+      [eventRecordId, status],
+    );
+  }
+}
 
 export class BillingAccountRepository {
   constructor(private readonly database: PostgresDatabase) {}
@@ -433,27 +574,43 @@ export class UserSubscriptionRepository {
       updated_at: IsoDateValue;
     }>(
       `
-        insert into user_subscriptions (
-          user_id,
-          razorpay_subscription_id,
-          razorpay_plan_id,
-          plan_tier,
-          status,
-          current_period_start,
-          current_period_end,
-          cancel_at_period_end
+        with upserted as (
+          insert into user_subscriptions (
+            user_id,
+            razorpay_subscription_id,
+            razorpay_plan_id,
+            plan_tier,
+            status,
+            current_period_start,
+            current_period_end,
+            cancel_at_period_end
+          )
+          values ($1, $2, $3, $4, $5, $6, $7, $8)
+          on conflict (razorpay_subscription_id)
+          do update set
+            razorpay_plan_id = excluded.razorpay_plan_id,
+            plan_tier = excluded.plan_tier,
+            status = excluded.status,
+            current_period_start = excluded.current_period_start,
+            current_period_end = excluded.current_period_end,
+            cancel_at_period_end = excluded.cancel_at_period_end,
+            updated_at = now()
+          where user_subscriptions.current_period_start is null
+            or (
+              excluded.current_period_start is not null
+              and excluded.current_period_start >= user_subscriptions.current_period_start
+            )
+          returning
+            razorpay_subscription_id,
+            razorpay_plan_id,
+            plan_tier,
+            status,
+            current_period_start,
+            current_period_end,
+            cancel_at_period_end,
+            updated_at
         )
-        values ($1, $2, $3, $4, $5, $6, $7, $8)
-        on conflict (razorpay_subscription_id)
-        do update set
-          razorpay_plan_id = excluded.razorpay_plan_id,
-          plan_tier = excluded.plan_tier,
-          status = excluded.status,
-          current_period_start = excluded.current_period_start,
-          current_period_end = excluded.current_period_end,
-          cancel_at_period_end = excluded.cancel_at_period_end,
-          updated_at = now()
-        returning
+        select
           razorpay_subscription_id,
           razorpay_plan_id,
           plan_tier,
@@ -462,6 +619,21 @@ export class UserSubscriptionRepository {
           current_period_end,
           cancel_at_period_end,
           updated_at
+        from upserted
+        union all
+        select
+          razorpay_subscription_id,
+          razorpay_plan_id,
+          plan_tier,
+          status,
+          current_period_start,
+          current_period_end,
+          cancel_at_period_end,
+          updated_at
+        from user_subscriptions
+        where razorpay_subscription_id = $2
+          and not exists (select 1 from upserted)
+        limit 1
       `,
       [
         input.userId,
@@ -484,7 +656,11 @@ export class UserSubscriptionRepository {
 export class UsageEventRepository {
   constructor(private readonly database: PostgresDatabase) {}
 
-  async countMonthlyAiUsage(userId: string, monthStart: Date): Promise<number> {
+  async countAiUsage(input: {
+    periodEnd: Date | null;
+    periodStart: Date;
+    userId: string;
+  }): Promise<number> {
     const result = await this.database.query<{ used: number }>(
       `
         select coalesce(sum(quantity), 0)::int as used
@@ -492,8 +668,14 @@ export class UsageEventRepository {
         where user_id = $1
           and event_type = any($2::usage_event_type[])
           and created_at >= $3
+          and ($4::timestamptz is null or created_at < $4)
       `,
-      [userId, ["ai_hint", "ai_validation"], monthStart],
+      [
+        input.userId,
+        ["ai_hint", "ai_validation"],
+        input.periodStart,
+        input.periodEnd,
+      ],
     );
 
     return result.rows[0]?.used ?? 0;

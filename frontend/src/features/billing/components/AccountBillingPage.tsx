@@ -32,6 +32,7 @@ import { useGetBillingAccountQuery } from "../api/billingApi";
 import "./AccountBillingPage.css";
 
 interface AccountBillingPageProps {
+  isBillingEnabled: boolean;
   onClose: () => void;
   onOpenPricing: () => void;
 }
@@ -509,6 +510,7 @@ const LegalDocument = ({
 );
 
 export const AccountBillingPage = ({
+  isBillingEnabled,
   onClose,
   onOpenPricing,
 }: AccountBillingPageProps) => {
@@ -538,7 +540,7 @@ export const AccountBillingPage = ({
     error: billingError,
     isFetching,
   } = useGetBillingAccountQuery(undefined, {
-    skip: !isApiAuthReady,
+    skip: !isBillingEnabled || !isApiAuthReady,
   });
   const {
     data: onboardingProfile,
@@ -549,6 +551,18 @@ export const AccountBillingPage = ({
   });
   const [updateOnboardingProfile, updateOnboardingProfileState] =
     useUpdateOnboardingProfileMutation();
+  const availableNavigation = useMemo(
+    () =>
+      isBillingEnabled
+        ? accountNavigation
+        : accountNavigation.filter(
+            (item) =>
+              item.id !== "billing" &&
+              item.id !== "usage" &&
+              item.id !== "subscription",
+          ),
+    [isBillingEnabled],
+  );
   const usage = billingAccount?.usage.monthlyAi;
   const usagePercent = useMemo(() => {
     if (!usage || usage.limit === 0) {
@@ -557,7 +571,7 @@ export const AccountBillingPage = ({
 
     return Math.min(100, Math.round((usage.used / usage.limit) * 100));
   }, [usage]);
-  const billingErrorMessage = billingError
+  const billingErrorMessage = isBillingEnabled && billingError
     ? getApiErrorMessage(billingError, "Unable to load billing account.")
     : null;
   const onboardingProfileErrorMessage = onboardingProfileError
@@ -593,8 +607,8 @@ export const AccountBillingPage = ({
         ? "Loading"
         : "Unavailable";
   const activeNavigationItem =
-    accountNavigation.find((item) => item.id === activeSectionId) ??
-    accountNavigation[0];
+    availableNavigation.find((item) => item.id === activeSectionId) ??
+    availableNavigation[0];
   const pathRecommendation = useMemo(
     () =>
       buildPathRecommendation({
@@ -624,6 +638,14 @@ export const AccountBillingPage = ({
         : ["Requirements", "Scalability"],
     );
   }, [onboardingProfile]);
+
+  useEffect(() => {
+    if (availableNavigation.some((item) => item.id === activeSectionId)) {
+      return;
+    }
+
+    setActiveSectionId("general");
+  }, [activeSectionId, availableNavigation]);
 
   const toggleFocusArea = (focusArea: string): void => {
     setFocusAreas((currentFocusAreas) => {
@@ -681,15 +703,17 @@ export const AccountBillingPage = ({
 
   if (!isConfigured || !canRequestApiToken) {
     return renderUnauthenticatedState(
-      "Billing unavailable",
-      "Auth0 and API audience configuration are required for account billing.",
+      "Account unavailable",
+      "Auth0 and API audience configuration are required for account settings.",
     );
   }
 
   if (!isAuthenticated) {
     return renderUnauthenticatedState(
       "Sign in required",
-      "Sign in to view plan state, usage, subscription period, and billing controls.",
+      isBillingEnabled
+        ? "Sign in to view account settings, plan state, usage, subscription period, and billing controls."
+        : "Sign in to view account settings, profile details, and setup preferences.",
       <button
         className="account-button account-button--primary"
         disabled={isLoading}
@@ -716,7 +740,11 @@ export const AccountBillingPage = ({
           value="System Design Park"
         />
         <AccountRow
-          detail="Used for billing, saved work, and account recovery."
+          detail={
+            isBillingEnabled
+              ? "Used for billing, saved work, and account recovery."
+              : "Used for saved work and account recovery."
+          }
           icon={<UserRound aria-hidden="true" size={18} strokeWidth={2} />}
           label="Signed in as"
           value={displayName}
@@ -1037,7 +1065,7 @@ export const AccountBillingPage = ({
     <div className="account-settings">
       <aside className="account-sidebar" aria-label="Account settings sections">
         <nav className="account-nav">
-          {accountNavigation.map((item) => {
+          {availableNavigation.map((item) => {
             const Icon = item.icon;
 
             return (
